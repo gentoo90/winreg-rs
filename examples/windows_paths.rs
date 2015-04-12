@@ -11,6 +11,6 @@ fn main() {
     println!("ProgramFiles = {}\nCommonFiles = {}", program_files, common_files);
 
     let hkcu = winreg::RegKey::predef(HKEY_CURRENT_USER);
-    let test_key = hkcu.open(Path::new("Software"), KEY_WRITE).unwrap();
+    let test_key = hkcu.create(Path::new("Software\\WinregRsExample1"), KEY_ALL_ACCESS).unwrap();
     test_key.set_value(Path::new("Test123"), &String::from_str("written by Rust")).unwrap();
 }

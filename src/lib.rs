@@ -29,8 +29,8 @@ impl RegKey {
     }
 
     pub fn open(&self, path: &Path, perms: winapi::REGSAM) -> RegResult<RegKey> {
-        let mut new_hkey: winapi::HKEY = ptr::null_mut();
         let c_path = to_utf16(path);
+        let mut new_hkey: winapi::HKEY = ptr::null_mut();
         match unsafe{
             advapi32::RegOpenKeyExW(
                 self.hkey,
@@ -38,6 +38,28 @@ impl RegKey {
                 0,
                 perms,
                 &mut new_hkey,
+            )
+        } {
+            0 => Ok(RegKey{ hkey: new_hkey }),
+            err => Err(RegError{ err: err })
+        }
+    }
+
+    pub fn create(&self, path: &Path, perms: winapi::REGSAM) -> RegResult<RegKey> {
+        let c_path = to_utf16(path);
+        let mut new_hkey: winapi::HKEY = ptr::null_mut();
+        let mut disp: winapi::DWORD = 0;
+        match unsafe{
+            advapi32::RegCreateKeyExW(
+                self.hkey,
+                c_path.as_ptr(),
+                0,
+                ptr::null(),
+                winapi::REG_OPTION_NON_VOLATILE,
+                perms,
+                ptr::null_mut(),
+                &mut new_hkey,
+                &mut disp
             )
         } {
             0 => Ok(RegKey{ hkey: new_hkey }),
@@ -128,7 +150,7 @@ mod test {
     #[test]
     fn test_string_value() {
         let hkcu = RegKey::predef(HKEY_CURRENT_USER);
-        let sw = hkcu.open(Path::new("Software"), KEY_ALL_ACCESS).unwrap();
+        let sw = hkcu.create(Path::new("Software\\WinregRsTestKey"), KEY_ALL_ACCESS).unwrap();
         let name = Path::new("WinregRsTestVal");
         let val1 = String::from_str("Test123 $%^&|+-*/\\()");
         assert!(sw.set_value(name, &val1).is_ok());
