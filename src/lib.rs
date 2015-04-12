@@ -28,7 +28,7 @@ impl RegKey {
         RegKey{ hkey: hkey }
     }
 
-    pub fn open(&self, path: &Path, perms: winapi::REGSAM) -> RegResult<RegKey> {
+    pub fn open_subkey(&self, path: &Path, perms: winapi::REGSAM) -> RegResult<RegKey> {
         let c_path = to_utf16(path);
         let mut new_hkey: winapi::HKEY = ptr::null_mut();
         match unsafe{
@@ -45,7 +45,8 @@ impl RegKey {
         }
     }
 
-    pub fn create(&self, path: &Path, perms: winapi::REGSAM) -> RegResult<RegKey> {
+    /// Will also create all missing parent keys. Will open key if it already exists.
+    pub fn create_subkey(&self, path: &Path, perms: winapi::REGSAM) -> RegResult<RegKey> {
         let c_path = to_utf16(path);
         let mut new_hkey: winapi::HKEY = ptr::null_mut();
         let mut disp: winapi::DWORD = 0;
@@ -59,7 +60,7 @@ impl RegKey {
                 perms,
                 ptr::null_mut(),
                 &mut new_hkey,
-                &mut disp
+                &mut disp // TODO: return this somehow
             )
         } {
             0 => Ok(RegKey{ hkey: new_hkey }),
@@ -141,16 +142,16 @@ mod test {
     #[test]
     fn test_key_open() {
         let hklm = RegKey::predef(HKEY_LOCAL_MACHINE);
-        let win = hklm.open(Path::new("Software\\Microsoft\\Windows"), KEY_READ);
+        let win = hklm.open_subkey(Path::new("Software\\Microsoft\\Windows"), KEY_READ);
         assert!(win.is_ok());
-        assert!(win.unwrap().open(Path::new("CurrentVersion\\"), KEY_READ).is_ok());
-        assert!(hklm.open(Path::new("i\\just\\hope\\nobody\\created\\that\\key"), KEY_READ).is_err());
+        assert!(win.unwrap().open_subkey(Path::new("CurrentVersion\\"), KEY_READ).is_ok());
+        assert!(hklm.open_subkey(Path::new("i\\just\\hope\\nobody\\created\\that\\key"), KEY_READ).is_err());
     }
 
     #[test]
     fn test_string_value() {
         let hkcu = RegKey::predef(HKEY_CURRENT_USER);
-        let sw = hkcu.create(Path::new("Software\\WinregRsTestKey"), KEY_ALL_ACCESS).unwrap();
+        let sw = hkcu.create_subkey(Path::new("Software\\WinregRsTestKey"), KEY_ALL_ACCESS).unwrap();
         let name = Path::new("WinregRsTestVal");
         let val1 = String::from_str("Test123 $%^&|+-*/\\()");
         assert!(sw.set_value(name, &val1).is_ok());
