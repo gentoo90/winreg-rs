@@ -1,6 +1,6 @@
 //! Crate for accessing MS Windows registry
 #![feature(std_misc)]
-#![feature(collections)]
+#![cfg_attr(test, feature(collections))]
 extern crate winapi;
 extern crate advapi32;
 use std::path::Path;
@@ -109,22 +109,30 @@ fn to_utf16<T: AsOsStr>(s: T) -> Vec<u16> {
     s.as_os_str().encode_wide().chain(Some(0).into_iter()).collect()
 }
 
-#[test]
-fn test_key_open() {
-    let hklm = RegKey::predef(winapi::HKEY_LOCAL_MACHINE);
-    let win = hklm.open(Path::new("Software\\Microsoft\\Windows"), winapi::KEY_READ);
-    assert!(win.is_ok());
-    assert!(win.unwrap().open(Path::new("CurrentVersion\\"), winapi::KEY_READ).is_ok());
-    assert!(hklm.open(Path::new("i\\just\\hope\\nobody\\created\\that\\key"), winapi::KEY_READ).is_err());
-}
 
-#[test]
-fn test_string_value() {
-    let hkcu = RegKey::predef(winapi::HKEY_CURRENT_USER);
-    let sw = hkcu.open(Path::new("Software"), winapi::KEY_ALL_ACCESS).unwrap();
-    let name = Path::new("WinregRsTestString");
-    let val1 = String::from_str("Test123 $%^&|+-*/\\()");
-    assert!(sw.set_value(name, &val1).is_ok());
-    let val2: String = sw.get_value(name).unwrap();
-    assert_eq!(val1, val2);
+#[cfg(test)]
+mod test {
+    use super::*;
+    use super::types::*;
+    use std::path::Path;
+
+    #[test]
+    fn test_key_open() {
+        let hklm = RegKey::predef(HKEY_LOCAL_MACHINE);
+        let win = hklm.open(Path::new("Software\\Microsoft\\Windows"), KEY_READ);
+        assert!(win.is_ok());
+        assert!(win.unwrap().open(Path::new("CurrentVersion\\"), KEY_READ).is_ok());
+        assert!(hklm.open(Path::new("i\\just\\hope\\nobody\\created\\that\\key"), KEY_READ).is_err());
+    }
+
+    #[test]
+    fn test_string_value() {
+        let hkcu = RegKey::predef(HKEY_CURRENT_USER);
+        let sw = hkcu.open(Path::new("Software"), KEY_ALL_ACCESS).unwrap();
+        let name = Path::new("WinregRsTestVal");
+        let val1 = String::from_str("Test123 $%^&|+-*/\\()");
+        assert!(sw.set_value(name, &val1).is_ok());
+        let val2: String = sw.get_value(name).unwrap();
+        assert_eq!(val1, val2);
+    }
 }
