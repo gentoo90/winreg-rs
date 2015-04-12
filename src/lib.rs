@@ -2,18 +2,26 @@
 #![feature(std_misc)]
 #![cfg_attr(test, feature(collections))]
 extern crate winapi;
+extern crate kernel32;
 extern crate advapi32;
 use std::path::Path;
 use std::ptr;
+use std::fmt;
 use std::ffi::AsOsStr;
 use std::os::windows::ffi::OsStrExt;
 use types::{FromReg, ToReg};
 
 pub mod types;
 
-#[derive(Debug)]
 pub struct RegError {
     err: winapi::LONG,
+}
+
+impl fmt::Debug for RegError {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        write!(f, "RegError {{ err: {:?}, message: {:?} }}",
+                   self.err, error_string(self.err))
+    }
 }
 
 pub type RegResult<T> = std::result::Result<T, RegError>;
@@ -143,6 +151,38 @@ impl Drop for RegKey {
 
 fn to_utf16<T: AsOsStr>(s: T) -> Vec<u16> {
     s.as_os_str().encode_wide().chain(Some(0).into_iter()).collect()
+}
+
+// copycat of rust/src/libstd/sys/windows/os.rs::error_string
+// `use std::sys::os::error_string` leads to
+// error: function `error_string` is private.
+// Get a detailed string description for the given error number
+fn error_string(errnum: winapi::LONG) -> String {
+    let mut buf = [0 as winapi::WCHAR; 2048];
+    unsafe {
+        let res = kernel32::FormatMessageW(winapi::FORMAT_MESSAGE_FROM_SYSTEM |
+                                 winapi::FORMAT_MESSAGE_IGNORE_INSERTS,
+                                 ptr::null_mut(),
+                                 errnum as winapi::DWORD,
+                                 0,
+                                 buf.as_mut_ptr(),
+                                 buf.len() as winapi::DWORD,
+                                 ptr::null_mut());
+        if res == 0 {
+            // Sometimes FormatMessageW can fail e.g. system doesn't like langId,
+            // let fm_err = errno();
+            return format!("OS Error {} (FormatMessageW() returned error)",
+                           errnum);
+        }
+
+        let b = buf.iter().position(|&b| b == 0).unwrap_or(buf.len());
+        let msg = String::from_utf16(&buf[..b]);
+        match msg {
+            Ok(msg) => msg,
+            Err(..) => format!("OS Error {} (FormatMessageW() returned \
+                                invalid UTF-16)", errnum),
+        }
+    }
 }
 
 

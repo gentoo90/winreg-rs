@@ -7,4 +7,5 @@ description = "Rust bindings to MS Windows Registry API"
 
 [dependencies]
 winapi = "*"
+kernel32-sys = "*"
 advapi32-sys = "*"
