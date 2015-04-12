@@ -1,10 +1,13 @@
 //! Crate for accessing MS Windows registry
+#![feature(std_misc)]
+#![feature(collections)]
 extern crate winapi;
 extern crate advapi32;
 use std::path::Path;
 use std::ptr;
+use std::ffi::AsOsStr;
 use std::os::windows::ffi::OsStrExt;
-use types::FromReg;
+use types::{FromReg, ToReg};
 
 pub mod types;
 
@@ -57,8 +60,30 @@ impl RegKey {
             )
         } {
             0 => {
-                unsafe{ buf.set_len((buf_len >> 1) as usize); }
+                // set length to wchars count - 1 (trailing \0)
+                unsafe{ buf.set_len(((buf_len >> 1) - 1) as usize); }
                 Ok(FromReg::convert_from_bytes(buf))
+            },
+            err => Err(RegError{ err: err })
+        }
+    }
+
+    pub fn set_value<T: ToReg>(&self, name: &Path, value: &T) -> RegResult<()> {
+        let c_name = to_utf16(name);
+        let c_value = value.convert_to_bytes();
+        let v_type = value.get_val_type();
+        match unsafe{
+            advapi32::RegSetValueExW(
+                self.hkey,
+                c_name.as_ptr(),
+                0,
+                v_type,
+                c_value.as_ptr() as *const winapi::BYTE,
+                (c_value.len()*2) as u32
+            )
+        } {
+            0 => {
+                Ok(())
             },
             err => Err(RegError{ err: err })
         }
@@ -80,7 +105,7 @@ impl Drop for RegKey {
     }
 }
 
-fn to_utf16(s: &Path) -> Vec<u16> {
+fn to_utf16<T: AsOsStr>(s: T) -> Vec<u16> {
     s.as_os_str().encode_wide().chain(Some(0).into_iter()).collect()
 }
 
@@ -91,4 +116,15 @@ fn test_key_open() {
     assert!(win.is_ok());
     assert!(win.unwrap().open(Path::new("CurrentVersion\\"), winapi::KEY_READ).is_ok());
     assert!(hklm.open(Path::new("i\\just\\hope\\nobody\\created\\that\\key"), winapi::KEY_READ).is_err());
+}
+
+#[test]
+fn test_string_value() {
+    let hkcu = RegKey::predef(winapi::HKEY_CURRENT_USER);
+    let sw = hkcu.open(Path::new("Software"), winapi::KEY_ALL_ACCESS).unwrap();
+    let name = Path::new("WinregRsTestString");
+    let val1 = String::from_str("Test123 $%^&|+-*/\\()");
+    assert!(sw.set_value(name, &val1).is_ok());
+    let val2: String = sw.get_value(name).unwrap();
+    assert_eq!(val1, val2);
 }
