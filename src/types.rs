@@ -37,15 +37,29 @@ pub use winapi::{REG_NONE,
                  REG_RESOURCE_REQUIREMENTS_LIST,
                  REG_QWORD,
                  REG_QWORD_LITTLE_ENDIAN};
+use super::{RegError,RegResult};
 
 /// A trait for types that can be loaded from registry values.
 pub trait FromReg {
-    fn convert_from_bytes(buf: Vec<u16>) -> Self;
+    fn convert_from_bytes(buf: Vec<u16>, buf_type: winapi::DWORD) -> RegResult<Self>;
 }
 
 impl FromReg for String {
-    fn convert_from_bytes(buf: Vec<u16>) -> String {
-        String::from_utf16(&buf).unwrap()
+    fn convert_from_bytes(buf: Vec<u16>, buf_type: winapi::DWORD) -> RegResult<String> {
+        match buf_type {
+            REG_SZ | REG_EXPAND_SZ | REG_MULTI_SZ => {
+                match String::from_utf16(&buf) {
+                    Ok(s) => {
+                        if buf_type == REG_MULTI_SZ {
+                            return Ok(s.replace("\u{0}", "\n"))
+                        }
+                        Ok(s)
+                    },
+                    Err(_) => Err(RegError{ err: winapi::ERROR_INVALID_BLOCK })
+                }
+            },
+            _ => Err(RegError{ err: winapi::ERROR_BAD_FILE_TYPE })
+        }
     }
 }
 

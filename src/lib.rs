@@ -14,7 +14,7 @@ use types::{FromReg, ToReg};
 pub mod types;
 
 pub struct RegError {
-    err: winapi::LONG,
+    err: winapi::DWORD,
 }
 
 impl fmt::Debug for RegError {
@@ -46,7 +46,7 @@ impl RegKey {
                 0,
                 perms,
                 &mut new_hkey,
-            )
+            ) as winapi::DWORD
         } {
             0 => Ok(RegKey{ hkey: new_hkey }),
             err => Err(RegError{ err: err })
@@ -69,7 +69,7 @@ impl RegKey {
                 ptr::null_mut(),
                 &mut new_hkey,
                 &mut disp // TODO: return this somehow
-            )
+            ) as winapi::DWORD
         } {
             0 => Ok(RegKey{ hkey: new_hkey }),
             err => Err(RegError{ err: err })
@@ -82,7 +82,7 @@ impl RegKey {
             advapi32::RegDeleteKeyW(
                 self.hkey,
                 c_path.as_ptr(),
-            )
+            ) as winapi::DWORD
         } {
             0 => Ok(()),
             err => Err(RegError{ err: err })
@@ -95,7 +95,7 @@ impl RegKey {
             advapi32::RegDeleteTreeW(
                 self.hkey,
                 c_path.as_ptr(),
-            )
+            ) as winapi::DWORD
         } {
             0 => Ok(()),
             err => Err(RegError{ err: err })
@@ -105,21 +105,22 @@ impl RegKey {
     pub fn get_value<T: FromReg>(&self, name: &Path) -> RegResult<T> {
         let c_name = to_utf16(name);
         let mut buf_len: winapi::DWORD = winapi::MAX_PATH as winapi::DWORD;
+        let mut buf_type: winapi::DWORD = 0;
         let mut buf: Vec<u16> = Vec::with_capacity(buf_len as usize);
         match unsafe{
             advapi32::RegQueryValueExW(
                 self.hkey,
                 c_name.as_ptr() as *const u16,
                 ptr::null_mut(),
-                ptr::null_mut(),
+                &mut buf_type,
                 buf.as_mut_ptr() as winapi::LPBYTE,
                 &mut buf_len
-            )
+            ) as winapi::DWORD
         } {
             0 => {
                 // set length to wchars count - 1 (trailing \0)
                 unsafe{ buf.set_len(((buf_len >> 1) - 1) as usize); }
-                Ok(FromReg::convert_from_bytes(buf))
+                FromReg::convert_from_bytes(buf, buf_type)
             },
             err => Err(RegError{ err: err })
         }
@@ -137,7 +138,7 @@ impl RegKey {
                 v_type,
                 c_value.as_ptr() as *const winapi::BYTE,
                 (c_value.len()*2) as u32
-            )
+            ) as winapi::DWORD
         } {
             0 => {
                 Ok(())
@@ -148,7 +149,7 @@ impl RegKey {
 
     fn close_(&mut self) -> RegResult<()> {
         match unsafe{
-            advapi32::RegCloseKey(self.hkey)
+            advapi32::RegCloseKey(self.hkey) as winapi::DWORD
         } {
             0 => Ok(()),
             err => Err(RegError{ err: err })
@@ -170,7 +171,7 @@ fn to_utf16<T: AsOsStr>(s: T) -> Vec<u16> {
 // `use std::sys::os::error_string` leads to
 // error: function `error_string` is private.
 // Get a detailed string description for the given error number
-fn error_string(errnum: winapi::LONG) -> String {
+fn error_string(errnum: winapi::DWORD) -> String {
     let mut buf = [0 as winapi::WCHAR; 2048];
     unsafe {
         let res = kernel32::FormatMessageW(winapi::FORMAT_MESSAGE_FROM_SYSTEM |
