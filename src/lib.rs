@@ -1,13 +1,11 @@
 //! Crate for accessing MS Windows registry
-#![feature(std_misc)]
 #![cfg_attr(test, feature(collections))]
 extern crate winapi;
 extern crate kernel32;
 extern crate advapi32;
-use std::path::Path;
 use std::ptr;
 use std::fmt;
-use std::ffi::AsOsStr;
+use std::ffi::OsStr;
 use std::os::windows::ffi::OsStrExt;
 use types::{FromReg, ToReg};
 
@@ -36,7 +34,7 @@ impl RegKey {
         RegKey{ hkey: hkey }
     }
 
-    pub fn open_subkey(&self, path: &Path, perms: winapi::REGSAM) -> RegResult<RegKey> {
+    pub fn open_subkey<P: AsRef<OsStr>>(&self, path: P, perms: winapi::REGSAM) -> RegResult<RegKey> {
         let c_path = to_utf16(path);
         let mut new_hkey: winapi::HKEY = ptr::null_mut();
         match unsafe{
@@ -54,7 +52,7 @@ impl RegKey {
     }
 
     /// Will also create all missing parent keys. Will open key if it already exists.
-    pub fn create_subkey(&self, path: &Path, perms: winapi::REGSAM) -> RegResult<RegKey> {
+    pub fn create_subkey<P: AsRef<OsStr>>(&self, path: P, perms: winapi::REGSAM) -> RegResult<RegKey> {
         let c_path = to_utf16(path);
         let mut new_hkey: winapi::HKEY = ptr::null_mut();
         let mut disp: winapi::DWORD = 0;
@@ -76,7 +74,7 @@ impl RegKey {
         }
     }
 
-    pub fn delete_subkey(&self, path: &Path) -> RegResult<()> {
+    pub fn delete_subkey<P: AsRef<OsStr>>(&self, path: P) -> RegResult<()> {
         let c_path = to_utf16(path);
         match unsafe{
             advapi32::RegDeleteKeyW(
@@ -89,7 +87,7 @@ impl RegKey {
         }
     }
 
-    pub fn delete_subkey_all(&self, path: &Path) -> RegResult<()> {
+    pub fn delete_subkey_all<P: AsRef<OsStr>>(&self, path: P) -> RegResult<()> {
         let c_path = to_utf16(path);
         match unsafe{
             advapi32::RegDeleteTreeW(
@@ -102,7 +100,7 @@ impl RegKey {
         }
     }
 
-    pub fn get_value<T: FromReg>(&self, name: &Path) -> RegResult<T> {
+    pub fn get_value<T: FromReg, P: AsRef<OsStr>>(&self, name: P) -> RegResult<T> {
         let c_name = to_utf16(name);
         let mut buf_len: winapi::DWORD = winapi::MAX_PATH as winapi::DWORD;
         let mut buf_type: winapi::DWORD = 0;
@@ -126,7 +124,7 @@ impl RegKey {
         }
     }
 
-    pub fn set_value<T: ToReg>(&self, name: &Path, value: &T) -> RegResult<()> {
+    pub fn set_value<T: ToReg, P: AsRef<OsStr>>(&self, name: P, value: &T) -> RegResult<()> {
         let c_name = to_utf16(name);
         let c_value = value.convert_to_bytes();
         let v_type = value.get_val_type();
@@ -163,8 +161,8 @@ impl Drop for RegKey {
     }
 }
 
-fn to_utf16<T: AsOsStr>(s: T) -> Vec<u16> {
-    s.as_os_str().encode_wide().chain(Some(0).into_iter()).collect()
+fn to_utf16<P: AsRef<OsStr>>(s: P) -> Vec<u16> {
+    s.as_ref().encode_wide().chain(Some(0).into_iter()).collect()
 }
 
 // copycat of rust/src/libstd/sys/windows/os.rs::error_string
@@ -204,39 +202,50 @@ fn error_string(errnum: winapi::DWORD) -> String {
 mod test {
     use super::*;
     use super::types::*;
-    use std::path::Path;
 
     #[test]
-    fn test_key_open() {
+    fn test_open_subkey() {
         let hklm = RegKey::predef(HKEY_LOCAL_MACHINE);
-        let win = hklm.open_subkey(Path::new("Software\\Microsoft\\Windows"), KEY_READ);
+        let win = hklm.open_subkey("Software\\Microsoft\\Windows", KEY_READ);
         assert!(win.is_ok());
-        assert!(win.unwrap().open_subkey(Path::new("CurrentVersion\\"), KEY_READ).is_ok());
-        assert!(hklm.open_subkey(Path::new("i\\just\\hope\\nobody\\created\\that\\key"), KEY_READ).is_err());
+        assert!(win.unwrap().open_subkey("CurrentVersion\\", KEY_READ).is_ok());
+        assert!(hklm.open_subkey("i\\just\\hope\\nobody\\created\\that\\key", KEY_READ).is_err());
+    }
+
+    const KEY_PATH: &'static str = "Software\\WinregRsTestKey";
+
+    fn create_test_key() -> RegKey {
+        RegKey::predef(HKEY_CURRENT_USER)
+        .create_subkey(KEY_PATH, KEY_ALL_ACCESS).unwrap()
+    }
+
+    fn delete_test_key() {
+        RegKey::predef(HKEY_CURRENT_USER)
+        .delete_subkey(KEY_PATH).unwrap();
     }
 
     #[test]
-    fn test_string_value() {
-        let hkcu = RegKey::predef(HKEY_CURRENT_USER);
-        let path = Path::new("Software\\WinregRsTestKey");
-        let name = Path::new("WinregRsTestVal");
-        let val1 = String::from_str("Test123 $%^&|+-*/\\()");
-
-        let sw = hkcu.create_subkey(path, KEY_ALL_ACCESS).unwrap();
-        assert!(sw.set_value(name, &val1).is_ok());
-        let val2: String = sw.get_value(name).unwrap();
-        assert_eq!(val1, val2);
-        assert!(hkcu.delete_subkey(path).is_ok());
+    fn test_create_delete_subkey() {
+        create_test_key();
+        delete_test_key();
     }
 
     #[test]
     fn test_delete_subkey_all() {
-        let hkcu = RegKey::predef(HKEY_CURRENT_USER);
-        let path = Path::new("Software\\WinregRsTestKey2");
-        {
-            hkcu.create_subkey(&path.join("with\\sub\\keys"),
-                               KEY_READ).unwrap();
-        }
-        assert!(hkcu.delete_subkey_all(path).is_ok());
+        let key = create_test_key();
+        key.create_subkey("with\\sub\\keys", KEY_READ).unwrap();
+        assert!(RegKey::predef(HKEY_CURRENT_USER).delete_subkey_all(KEY_PATH).is_ok());
+    }
+
+    #[test]
+    fn test_string_value() {
+        let key = create_test_key();
+        let name = "WinregRsTestVal";
+        let val1 = String::from_str("Test123 \n$%^&|+-*/\\()");
+
+        assert!(key.set_value(name, &val1).is_ok());
+        let val2: String = key.get_value(name).unwrap();
+        assert_eq!(val1, val2);
+        delete_test_key();
     }
 }
