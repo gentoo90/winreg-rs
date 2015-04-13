@@ -89,6 +89,19 @@ impl RegKey {
         }
     }
 
+    pub fn delete_subkey_all(&self, path: &Path) -> RegResult<()> {
+        let c_path = to_utf16(path);
+        match unsafe{
+            advapi32::RegDeleteTreeW(
+                self.hkey,
+                c_path.as_ptr(),
+            )
+        } {
+            0 => Ok(()),
+            err => Err(RegError{ err: err })
+        }
+    }
+
     pub fn get_value<T: FromReg>(&self, name: &Path) -> RegResult<T> {
         let c_name = to_utf16(name);
         let mut buf_len: winapi::DWORD = winapi::MAX_PATH as winapi::DWORD;
@@ -213,5 +226,16 @@ mod test {
         let val2: String = sw.get_value(name).unwrap();
         assert_eq!(val1, val2);
         assert!(hkcu.delete_subkey(path).is_ok());
+    }
+
+    #[test]
+    fn test_delete_subkey_all() {
+        let hkcu = RegKey::predef(HKEY_CURRENT_USER);
+        let path = Path::new("Software\\WinregRsTestKey2");
+        {
+            hkcu.create_subkey(&path.join("with\\sub\\keys"),
+                               KEY_READ).unwrap();
+        }
+        assert!(hkcu.delete_subkey_all(path).is_ok());
     }
 }
