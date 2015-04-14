@@ -37,7 +37,7 @@ impl RegKey {
     pub fn open_subkey<P: AsRef<OsStr>>(&self, path: P, perms: winapi::REGSAM) -> RegResult<RegKey> {
         let c_path = to_utf16(path);
         let mut new_hkey: winapi::HKEY = ptr::null_mut();
-        match unsafe{
+        match unsafe {
             advapi32::RegOpenKeyExW(
                 self.hkey,
                 c_path.as_ptr(),
@@ -56,7 +56,7 @@ impl RegKey {
         let c_path = to_utf16(path);
         let mut new_hkey: winapi::HKEY = ptr::null_mut();
         let mut disp: winapi::DWORD = 0;
-        match unsafe{
+        match unsafe {
             advapi32::RegCreateKeyExW(
                 self.hkey,
                 c_path.as_ptr(),
@@ -76,7 +76,7 @@ impl RegKey {
 
     pub fn delete_subkey<P: AsRef<OsStr>>(&self, path: P) -> RegResult<()> {
         let c_path = to_utf16(path);
-        match unsafe{
+        match unsafe {
             advapi32::RegDeleteKeyW(
                 self.hkey,
                 c_path.as_ptr(),
@@ -100,12 +100,13 @@ impl RegKey {
         }
     }
 
+    /// Gets the `Default` value if `name` is an empty string
     pub fn get_value<T: FromReg, P: AsRef<OsStr>>(&self, name: P) -> RegResult<T> {
         let c_name = to_utf16(name);
         let mut buf_len: winapi::DWORD = winapi::MAX_PATH as winapi::DWORD;
         let mut buf_type: winapi::DWORD = 0;
         let mut buf: Vec<u16> = Vec::with_capacity(buf_len as usize);
-        match unsafe{
+        match unsafe {
             advapi32::RegQueryValueExW(
                 self.hkey,
                 c_name.as_ptr() as *const u16,
@@ -124,6 +125,7 @@ impl RegKey {
         }
     }
 
+    /// Sets the `Default` value if `name` is an empty string
     pub fn set_value<T: ToReg, P: AsRef<OsStr>>(&self, name: P, value: &T) -> RegResult<()> {
         let c_name = to_utf16(name);
         let c_value = value.convert_to_bytes();
@@ -138,15 +140,27 @@ impl RegKey {
                 (c_value.len()*2) as u32
             ) as winapi::DWORD
         } {
-            0 => {
-                Ok(())
-            },
+            0 => Ok(()),
+            err => Err(RegError{ err: err })
+        }
+    }
+
+    /// Deletes the `Default` value if `name` is an empty string
+    pub fn delete_value<P: AsRef<OsStr>>(&self, name: P) -> RegResult<()> {
+        let c_name = to_utf16(name);
+        match unsafe {
+            advapi32::RegDeleteValueW(
+                self.hkey,
+                c_name.as_ptr(),
+            ) as winapi::DWORD
+        } {
+            0 => Ok(()),
             err => Err(RegError{ err: err })
         }
     }
 
     fn close_(&mut self) -> RegResult<()> {
-        match unsafe{
+        match unsafe {
             advapi32::RegCloseKey(self.hkey) as winapi::DWORD
         } {
             0 => Ok(()),
@@ -246,6 +260,15 @@ mod test {
         assert!(key.set_value(name, &val1).is_ok());
         let val2: String = key.get_value(name).unwrap();
         assert_eq!(val1, val2);
+        delete_test_key();
+    }
+
+    #[test]
+    fn test_delete_value() {
+        let key = create_test_key();
+        let name = "WinregRsTestVal";
+        key.set_value(name, &"Qwerty123").unwrap();
+        assert!(key.delete_value(name).is_ok());
         delete_test_key();
     }
 }
