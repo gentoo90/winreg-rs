@@ -76,3 +76,11 @@ impl ToReg for String {
         super::to_utf16(self)
     }
 }
+
+impl<'a> ToReg for &'a str {
+    fn get_val_type(&self) -> winapi::DWORD {REG_SZ}
+
+    fn convert_to_bytes(&self) -> Vec<u16> {
+        super::to_utf16(self)
+    }
+}

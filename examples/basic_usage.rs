@@ -1,4 +1,3 @@
-#![feature(collections)]
 extern crate winreg;
 use std::path::Path;
 use winreg::RegKey;
@@ -17,7 +16,7 @@ fn main() {
     let hkcu = RegKey::predef(HKEY_CURRENT_USER);
     let path = Path::new("Software").join("WinregRsExample1");
     let key = hkcu.create_subkey(&path, KEY_ALL_ACCESS).unwrap();
-    key.set_value("Test123", &String::from_str("written by Rust")).unwrap();
+    key.set_value("Test123", &"written by Rust").unwrap();
     let val: String = key.get_value("Test123").unwrap();
     println!("Test123 = {}", val);
     key.create_subkey("sub\\key", KEY_ALL_ACCESS).unwrap();
