@@ -102,7 +102,7 @@ impl RegKey {
     /// Gets the `Default` value if `name` is an empty string
     pub fn get_value<T: FromReg, P: AsRef<OsStr>>(&self, name: P) -> RegResult<T> {
         let c_name = to_utf16(name);
-        let mut buf_len: winapi::DWORD = winapi::MAX_PATH as winapi::DWORD;
+        let mut buf_len: winapi::DWORD = 2048 as winapi::DWORD;
         let mut buf_type: winapi::DWORD = 0;
         let mut buf: Vec<u16> = Vec::with_capacity(buf_len as usize);
         match unsafe {
@@ -116,8 +116,7 @@ impl RegKey {
             ) as winapi::DWORD
         } {
             0 => {
-                // set length to wchars count - 1 (trailing \0)
-                unsafe{ buf.set_len(((buf_len >> 1) - 1) as usize); }
+                unsafe{ buf.set_len((buf_len >> 1) as usize); }
                 FromReg::convert_from_bytes(buf, buf_type)
             },
             err => Err(RegError{ err: err })
@@ -266,6 +265,19 @@ mod test {
 
         key.set_value(name, &val1).unwrap();
         let val2: String = key.get_value(name).unwrap();
+        assert_eq!(val1, val2);
+        delete_test_key(path);
+    }
+
+    #[test]
+    fn test_u32_value() {
+        let path = "U32Value";
+        let key = create_test_key(path);
+        let name = "RustU32Val";
+        let val1 = 1234567890u32;
+
+        key.set_value(name, &val1).unwrap();
+        let val2: u32 = key.get_value(name).unwrap();
         assert_eq!(val1, val2);
         delete_test_key(path);
     }

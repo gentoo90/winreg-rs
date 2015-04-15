@@ -16,10 +16,16 @@ fn main() {
     let hkcu = RegKey::predef(HKEY_CURRENT_USER);
     let path = Path::new("Software").join("WinregRsExample1");
     let key = hkcu.create_subkey(&path, KEY_ALL_ACCESS).unwrap();
-    key.set_value("Test123", &"written by Rust").unwrap();
-    let val: String = key.get_value("Test123").unwrap();
-    key.delete_value("Test123").unwrap();
-    println!("Test123 = {}", val);
+
+    key.set_value("TestSZ", &"written by Rust").unwrap();
+    let sz_val: String = key.get_value("TestSZ").unwrap();
+    key.delete_value("TestSZ").unwrap();
+    println!("TestSZ = {}", sz_val);
+
+    key.set_value("TestDWORD", &1234567890u32).unwrap();
+    let dword_val: u32 = key.get_value("TestDWORD").unwrap();
+    println!("TestDWORD = {}", dword_val);
+
     key.create_subkey("sub\\key", KEY_ALL_ACCESS).unwrap();
     hkcu.delete_subkey_all(&path).unwrap();
 

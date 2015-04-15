@@ -49,7 +49,8 @@ impl FromReg for String {
         match buf_type {
             REG_SZ | REG_EXPAND_SZ | REG_MULTI_SZ => {
                 match String::from_utf16(&buf) {
-                    Ok(s) => {
+                    Ok(mut s) => {
+                        s.pop(); // remove trailing \0
                         if buf_type == REG_MULTI_SZ {
                             return Ok(s.replace("\u{0}", "\n"))
                         }
@@ -57,6 +58,20 @@ impl FromReg for String {
                     },
                     Err(_) => Err(RegError{ err: winapi::ERROR_INVALID_BLOCK })
                 }
+            },
+            _ => Err(RegError{ err: winapi::ERROR_BAD_FILE_TYPE })
+        }
+    }
+}
+
+impl FromReg for u32 {
+    fn convert_from_bytes(buf: Vec<u16>, buf_type: winapi::DWORD) -> RegResult<u32> {
+        match buf_type {
+            REG_DWORD => {
+                Ok(
+                    ((buf[1] as u32) << 16) |
+                    (buf[0] as u32)
+                )
             },
             _ => Err(RegError{ err: winapi::ERROR_BAD_FILE_TYPE })
         }
@@ -82,5 +97,16 @@ impl<'a> ToReg for &'a str {
 
     fn convert_to_bytes(&self) -> Vec<u16> {
         super::to_utf16(self)
+    }
+}
+
+impl ToReg for u32 {
+    fn get_val_type(&self) -> winapi::DWORD {REG_DWORD}
+
+    fn convert_to_bytes(&self) -> Vec<u16> {
+        let mut bytes: Vec<u16> = Vec::with_capacity(2);
+        bytes.push((self & 0xFFFF) as u16);
+        bytes.push(((self & 0xFFFF0000) >> 16) as u16);
+        bytes
     }
 }
