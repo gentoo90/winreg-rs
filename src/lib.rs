@@ -1,5 +1,4 @@
 //! Crate for accessing MS Windows registry
-#![cfg_attr(test, feature(collections))]
 extern crate winapi;
 extern crate kernel32;
 extern crate advapi32;
@@ -160,6 +159,8 @@ impl RegKey {
     }
 
     fn close_(&mut self) -> RegResult<()> {
+        // don't try to close predefined keys
+        if self.hkey >= winapi::HKEY_CLASSES_ROOT { return Ok(()) };
         match unsafe {
             advapi32::RegCloseKey(self.hkey) as winapi::DWORD
         } {
@@ -226,49 +227,56 @@ mod test {
         assert!(hklm.open_subkey("i\\just\\hope\\nobody\\created\\that\\key", KEY_READ).is_err());
     }
 
-    const KEY_PATH: &'static str = "Software\\WinregRsTestKey";
-
-    fn create_test_key() -> RegKey {
+    fn create_test_key(path: &str) -> RegKey {
+        let mut full_path = "Software\\WinRegRsTest".to_string();
+        full_path.push_str(path);
         RegKey::predef(HKEY_CURRENT_USER)
-        .create_subkey(KEY_PATH, KEY_ALL_ACCESS).unwrap()
+        .create_subkey(full_path, KEY_ALL_ACCESS).unwrap()
     }
 
-    fn delete_test_key() {
+    fn delete_test_key(path: &str) {
+        let mut full_path = "Software\\WinRegRsTest".to_string();
+        full_path.push_str(path);
         RegKey::predef(HKEY_CURRENT_USER)
-        .delete_subkey(KEY_PATH).unwrap();
+        .delete_subkey(full_path).unwrap();
     }
 
     #[test]
     fn test_create_delete_subkey() {
-        create_test_key();
-        delete_test_key();
+        let path = "CreateDeleteSubkey";
+        create_test_key(path);
+        delete_test_key(path);
     }
 
     #[test]
     fn test_delete_subkey_all() {
-        let key = create_test_key();
+        let path = "DeleteSubkeyAll";
+        let key = create_test_key(path);
         key.create_subkey("with\\sub\\keys", KEY_READ).unwrap();
-        assert!(RegKey::predef(HKEY_CURRENT_USER).delete_subkey_all(KEY_PATH).is_ok());
+        assert!(RegKey::predef(HKEY_CURRENT_USER)
+            .delete_subkey_all("Software\\WinRegRsTestDeleteSubkeyAll").is_ok());
     }
 
     #[test]
     fn test_string_value() {
-        let key = create_test_key();
-        let name = "WinregRsTestVal";
-        let val1 = String::from_str("Test123 \n$%^&|+-*/\\()");
+        let path = "StringValue";
+        let key = create_test_key(path);
+        let name = "RustStringVal";
+        let val1 = "Test123 \n$%^&|+-*/\\()".to_string();
 
-        assert!(key.set_value(name, &val1).is_ok());
+        key.set_value(name, &val1).unwrap();
         let val2: String = key.get_value(name).unwrap();
         assert_eq!(val1, val2);
-        delete_test_key();
+        delete_test_key(path);
     }
 
     #[test]
     fn test_delete_value() {
-        let key = create_test_key();
+        let path = "StringValue";
+        let key = create_test_key(path);
         let name = "WinregRsTestVal";
         key.set_value(name, &"Qwerty123").unwrap();
         assert!(key.delete_value(name).is_ok());
-        delete_test_key();
+        delete_test_key(path);
     }
 }
