@@ -33,7 +33,13 @@ impl RegKey {
         RegKey{ hkey: hkey }
     }
 
-    pub fn open_subkey<P: AsRef<OsStr>>(&self, path: P, perms: winapi::REGSAM) -> RegResult<RegKey> {
+    /// Open subkey with `KEY_ALL_ACCESS` permissions.
+    /// To open with different permissions use `open_subkey_with_flags`.
+    pub fn open_subkey<P: AsRef<OsStr>>(&self, path: P) -> RegResult<RegKey> {
+        self.open_subkey_with_flags(path, winapi::KEY_ALL_ACCESS)
+    }
+
+    pub fn open_subkey_with_flags<P: AsRef<OsStr>>(&self, path: P, perms: winapi::REGSAM) -> RegResult<RegKey> {
         let c_path = to_utf16(path);
         let mut new_hkey: winapi::HKEY = ptr::null_mut();
         match unsafe {
@@ -50,8 +56,15 @@ impl RegKey {
         }
     }
 
-    /// Will also create all missing parent keys. Will open key if it already exists.
-    pub fn create_subkey<P: AsRef<OsStr>>(&self, path: P, perms: winapi::REGSAM) -> RegResult<RegKey> {
+    /// Create subkey (and all missing parent keys)
+    /// and open it with `KEY_ALL_ACCESS` permissions.
+    /// Will just open key if it already exists.
+    /// To create with different permissions use `create_subkey_with_flags`.
+    pub fn create_subkey<P: AsRef<OsStr>>(&self, path: P) -> RegResult<RegKey> {
+        self.create_subkey_with_flags(path, winapi::KEY_ALL_ACCESS)
+    }
+
+    pub fn create_subkey_with_flags<P: AsRef<OsStr>>(&self, path: P, perms: winapi::REGSAM) -> RegResult<RegKey> {
         let c_path = to_utf16(path);
         let mut new_hkey: winapi::HKEY = ptr::null_mut();
         let mut disp: winapi::DWORD = 0;
@@ -73,6 +86,8 @@ impl RegKey {
         }
     }
 
+    /// Delete key. Cannot delete if it nas subkeys.
+    /// Use `delete_subkey_all` for that.
     pub fn delete_subkey<P: AsRef<OsStr>>(&self, path: P) -> RegResult<()> {
         let c_path = to_utf16(path);
         match unsafe {
@@ -86,6 +101,7 @@ impl RegKey {
         }
     }
 
+    /// Recursively delete key with all its subkeys and values.
     pub fn delete_subkey_all<P: AsRef<OsStr>>(&self, path: P) -> RegResult<()> {
         let c_path = to_utf16(path);
         match unsafe{
@@ -99,7 +115,7 @@ impl RegKey {
         }
     }
 
-    /// Gets the `Default` value if `name` is an empty string
+    /// Get the `Default` value if `name` is an empty string
     pub fn get_value<T: FromReg, P: AsRef<OsStr>>(&self, name: P) -> RegResult<T> {
         let c_name = to_utf16(name);
         let mut buf_len: winapi::DWORD = 2048 as winapi::DWORD;
@@ -123,7 +139,7 @@ impl RegKey {
         }
     }
 
-    /// Sets the `Default` value if `name` is an empty string
+    /// Set the `Default` value if `name` is an empty string
     pub fn set_value<T: ToReg, P: AsRef<OsStr>>(&self, name: P, value: &T) -> RegResult<()> {
         let c_name = to_utf16(name);
         let c_value = value.convert_to_bytes();
@@ -143,7 +159,7 @@ impl RegKey {
         }
     }
 
-    /// Deletes the `Default` value if `name` is an empty string
+    /// Delete the `Default` value if `name` is an empty string
     pub fn delete_value<P: AsRef<OsStr>>(&self, name: P) -> RegResult<()> {
         let c_name = to_utf16(name);
         match unsafe {
@@ -220,17 +236,17 @@ mod test {
     #[test]
     fn test_open_subkey() {
         let hklm = RegKey::predef(HKEY_LOCAL_MACHINE);
-        let win = hklm.open_subkey("Software\\Microsoft\\Windows", KEY_READ);
+        let win = hklm.open_subkey("Software\\Microsoft\\Windows");
         assert!(win.is_ok());
-        assert!(win.unwrap().open_subkey("CurrentVersion\\", KEY_READ).is_ok());
-        assert!(hklm.open_subkey("i\\just\\hope\\nobody\\created\\that\\key", KEY_READ).is_err());
+        assert!(win.unwrap().open_subkey_with_flags("CurrentVersion\\", KEY_READ).is_ok());
+        assert!(hklm.open_subkey("i\\just\\hope\\nobody\\created\\that\\key").is_err());
     }
 
     fn create_test_key(path: &str) -> RegKey {
         let mut full_path = "Software\\WinRegRsTest".to_string();
         full_path.push_str(path);
         RegKey::predef(HKEY_CURRENT_USER)
-        .create_subkey(full_path, KEY_ALL_ACCESS).unwrap()
+        .create_subkey(full_path).unwrap()
     }
 
     fn delete_test_key(path: &str) {
@@ -251,7 +267,7 @@ mod test {
     fn test_delete_subkey_all() {
         let path = "DeleteSubkeyAll";
         let key = create_test_key(path);
-        key.create_subkey("with\\sub\\keys", KEY_READ).unwrap();
+        key.create_subkey_with_flags("with\\sub\\keys", KEY_READ).unwrap();
         assert!(RegKey::predef(HKEY_CURRENT_USER)
             .delete_subkey_all("Software\\WinRegRsTestDeleteSubkeyAll").is_ok());
     }
