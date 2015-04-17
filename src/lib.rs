@@ -234,12 +234,12 @@ mod test {
     use super::types::*;
 
     #[test]
-    fn test_open_subkey() {
+    fn test_open_subkey_with_flags() {
         let hklm = RegKey::predef(HKEY_LOCAL_MACHINE);
-        let win = hklm.open_subkey("Software\\Microsoft\\Windows");
+        let win = hklm.open_subkey_with_flags("Software\\Microsoft\\Windows", KEY_READ);
         assert!(win.is_ok());
         assert!(win.unwrap().open_subkey_with_flags("CurrentVersion\\", KEY_READ).is_ok());
-        assert!(hklm.open_subkey("i\\just\\hope\\nobody\\created\\that\\key").is_err());
+        assert!(hklm.open_subkey_with_flags("i\\just\\hope\\nobody\\created\\that\\key", KEY_READ).is_err());
     }
 
     fn create_test_key(path: &str) -> RegKey {
