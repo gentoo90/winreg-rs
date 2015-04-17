@@ -3,6 +3,16 @@ winreg
 
 Rust bindings to MS Windows Registry API. Work in progress.
 
+Currently it can:
+* open registry key
+* create registry key
+* delete registry key
+* delete registry key recursively
+* read `String` from `REG_SZ`, `REG_EXPAND_SZ` or `REG_MULTI_SZ` value
+* read `u32` from `REG_DWORD` value
+* write `String` and `&str` into `REG_SZ` value
+* write `u32` into `REG_DWORD` value
+
 ## Usage
 
 ```rust

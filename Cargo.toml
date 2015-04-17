@@ -1,11 +1,14 @@
 [package]
 name = "winreg"
-version = "0.0.1"
+version = "0.1.0"
 authors = ["Igor Shaula <gentoo90@gmail.com>"]
 license = "MIT"
 description = "Rust bindings to MS Windows Registry API"
+repository = "https://github.com/gentoo90/winreg-rs"
+readme = "README.md"
+keywords = ["Windows", "WinSDK", "Registry"]
 
 [dependencies]
-winapi = "*"
-kernel32-sys = "*"
-advapi32-sys = "*"
+winapi = "0.1.17"
+kernel32-sys = "0.1.0"
+advapi32-sys = "0.1.0"
