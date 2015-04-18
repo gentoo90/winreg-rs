@@ -1,3 +1,8 @@
+// Copyright 2015, Igor Shaula
+// Licensed under the MIT License <LICENSE or
+// http://opensource.org/licenses/MIT>. This file
+// may not be copied, modified, or distributed
+// except according to those terms.
 //! Crate for accessing MS Windows registry
 extern crate winapi;
 extern crate kernel32;
@@ -294,6 +299,19 @@ mod test {
 
         key.set_value(name, &val1).unwrap();
         let val2: u32 = key.get_value(name).unwrap();
+        assert_eq!(val1, val2);
+        delete_test_key(path);
+    }
+
+    #[test]
+    fn test_u64_value() {
+        let path = "U32Value";
+        let key = create_test_key(path);
+        let name = "RustU32Val";
+        let val1 = 1234567891011121314u64;
+
+        key.set_value(name, &val1).unwrap();
+        let val2: u64 = key.get_value(name).unwrap();
         assert_eq!(val1, val2);
         delete_test_key(path);
     }

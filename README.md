@@ -10,8 +10,10 @@ Currently it can:
 * delete registry key recursively
 * read `String` from `REG_SZ`, `REG_EXPAND_SZ` or `REG_MULTI_SZ` value
 * read `u32` from `REG_DWORD` value
+* read `u64` from `REG_QWORD` value
 * write `String` and `&str` into `REG_SZ` value
 * write `u32` into `REG_DWORD` value
+* write `u64` into `REG_QWORD` value
 
 ## Usage
 
@@ -43,6 +45,10 @@ fn main() {
     key.set_value("TestDWORD", &1234567890u32).unwrap();
     let dword_val: u32 = key.get_value("TestDWORD").unwrap();
     println!("TestDWORD = {}", dword_val);
+
+    key.set_value("TestQWORD", &1234567891011121314u64).unwrap();
+    let qword_val: u64 = key.get_value("TestQWORD").unwrap();
+    println!("TestQWORD = {}", qword_val);
 
     key.create_subkey("sub\\key").unwrap();
     hkcu.delete_subkey_all(&path).unwrap();

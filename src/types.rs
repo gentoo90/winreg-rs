@@ -1,3 +1,8 @@
+// Copyright 2015, Igor Shaula
+// Licensed under the MIT License <LICENSE or
+// http://opensource.org/licenses/MIT>. This file
+// may not be copied, modified, or distributed
+// except according to those terms.
 //! Traits for loading/saving Registry values
 extern crate winapi;
 pub use winapi::{HKEY_CLASSES_ROOT,
@@ -78,6 +83,22 @@ impl FromReg for u32 {
     }
 }
 
+impl FromReg for u64 {
+    fn convert_from_bytes(buf: Vec<u16>, buf_type: winapi::DWORD) -> RegResult<u64> {
+        match buf_type {
+            REG_QWORD => {
+                Ok(
+                    ((buf[3] as u64) << 48) |
+                    ((buf[2] as u64) << 32) |
+                    ((buf[1] as u64) << 16) |
+                    (buf[0] as u64)
+                )
+            },
+            _ => Err(RegError{ err: winapi::ERROR_BAD_FILE_TYPE })
+        }
+    }
+}
+
 /// A trait for types that can be written into registry values.
 pub trait ToReg {
     fn get_val_type(&self) -> winapi::DWORD;
@@ -107,6 +128,19 @@ impl ToReg for u32 {
         let mut bytes: Vec<u16> = Vec::with_capacity(2);
         bytes.push((self & 0xFFFF) as u16);
         bytes.push(((self & 0xFFFF0000) >> 16) as u16);
+        bytes
+    }
+}
+
+impl ToReg for u64 {
+    fn get_val_type(&self) -> winapi::DWORD {REG_QWORD}
+
+    fn convert_to_bytes(&self) -> Vec<u16> {
+        let mut bytes: Vec<u16> = Vec::with_capacity(4);
+        bytes.push((self & 0xFFFF) as u16);
+        bytes.push(((self & 0xFFFF_0000) >> 16) as u16);
+        bytes.push(((self & 0xFFFF_0000_0000) >> 32) as u16);
+        bytes.push(((self & 0xFFFF_0000_0000_0000) >> 48) as u16);
         bytes
     }
 }

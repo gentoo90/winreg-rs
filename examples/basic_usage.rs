@@ -1,3 +1,8 @@
+// Copyright 2015, Igor Shaula
+// Licensed under the MIT License <LICENSE or
+// http://opensource.org/licenses/MIT>. This file
+// may not be copied, modified, or distributed
+// except according to those terms.
 extern crate winreg;
 use std::path::Path;
 use winreg::RegKey;
@@ -25,6 +30,10 @@ fn main() {
     key.set_value("TestDWORD", &1234567890u32).unwrap();
     let dword_val: u32 = key.get_value("TestDWORD").unwrap();
     println!("TestDWORD = {}", dword_val);
+
+    key.set_value("TestQWORD", &1234567891011121314u64).unwrap();
+    let qword_val: u64 = key.get_value("TestQWORD").unwrap();
+    println!("TestQWORD = {}", qword_val);
 
     key.create_subkey("sub\\key").unwrap();
     hkcu.delete_subkey_all(&path).unwrap();
