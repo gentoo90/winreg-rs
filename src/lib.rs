@@ -9,6 +9,7 @@ extern crate kernel32;
 extern crate advapi32;
 use std::ptr;
 use std::fmt;
+use std::default::Default;
 use std::ffi::OsStr;
 use std::os::windows::ffi::OsStrExt;
 use types::{FromReg, ToReg};
@@ -31,6 +32,20 @@ pub type RegResult<T> = std::result::Result<T, RegError>;
 #[derive(Debug)]
 pub struct RegKey {
     hkey: winapi::HKEY,
+}
+
+#[derive(Debug,Default)]
+pub struct RegKeyMetadata {
+    // Class: winapi::LPWSTR,
+    // ClassLen: winapi::DWORD,
+    sub_keys: winapi::DWORD,
+    max_sub_key_len: winapi::DWORD,
+    max_class_len: winapi::DWORD,
+    values: winapi::DWORD,
+    max_value_name_len: winapi::DWORD,
+    max_value_len: winapi::DWORD,
+    // SecurityDescriptor: winapi::DWORD,
+    // LastWriteTime: winapi::PFILETIME,
 }
 
 impl RegKey {
@@ -87,6 +102,29 @@ impl RegKey {
             ) as winapi::DWORD
         } {
             0 => Ok(RegKey{ hkey: new_hkey }),
+            err => Err(RegError{ err: err })
+        }
+    }
+
+    pub fn query_info(&self) -> RegResult<RegKeyMetadata> {
+        let mut info: RegKeyMetadata = Default::default();
+        match unsafe {
+            advapi32::RegQueryInfoKeyW(
+                self.hkey,
+                ptr::null_mut(), // Class: winapi::LPWSTR,
+                ptr::null_mut(), // ClassLen: winapi::DWORD,
+                ptr::null_mut(), // Reserved
+                &mut info.sub_keys,
+                &mut info.max_sub_key_len,
+                &mut info.max_class_len,
+                &mut info.values,
+                &mut info.max_value_name_len,
+                &mut info.max_value_len,
+                ptr::null_mut(), // lpcbSecurityDescriptor: LPDWORD,
+                ptr::null_mut(), // lpftLastWriteTime: PFILETIME,
+            ) as winapi::DWORD
+        } {
+            0 => Ok(info),
             err => Err(RegError{ err: err })
         }
     }
@@ -239,11 +277,11 @@ mod test {
     use super::types::*;
 
     #[test]
-    fn test_open_subkey_with_flags() {
+    fn test_open_subkey_with_flags_query_info() {
         let hklm = RegKey::predef(HKEY_LOCAL_MACHINE);
-        let win = hklm.open_subkey_with_flags("Software\\Microsoft\\Windows", KEY_READ);
-        assert!(win.is_ok());
-        assert!(win.unwrap().open_subkey_with_flags("CurrentVersion\\", KEY_READ).is_ok());
+        let win = hklm.open_subkey_with_flags("Software\\Microsoft\\Windows", KEY_READ).unwrap();
+        assert!(win.query_info().is_ok());
+        assert!(win.open_subkey_with_flags("CurrentVersion\\", KEY_READ).is_ok());
         assert!(hklm.open_subkey_with_flags("i\\just\\hope\\nobody\\created\\that\\key", KEY_READ).is_err());
     }
 

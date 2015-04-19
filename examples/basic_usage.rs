@@ -16,6 +16,8 @@ fn main() {
     let pf: String = cur_ver.get_value("ProgramFilesDir").unwrap();
     let dp: String = cur_ver.get_value("DevicePath").unwrap();
     println!("ProgramFiles = {}\nDevicePath = {}", pf, dp);
+    let info = cur_ver.query_info().unwrap();
+    println!("info = {:?}", info);
 
     println!("And now lets write something...");
     let hkcu = RegKey::predef(HKEY_CURRENT_USER);
