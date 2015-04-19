@@ -129,6 +129,10 @@ impl RegKey {
         }
     }
 
+    pub fn enum_keys<'a>(&'a self) -> EnumKeys<'a> {
+        EnumKeys{key: self, index: 0}
+    }
+
     /// Delete key. Cannot delete if it nas subkeys.
     /// Use `delete_subkey_all` for that.
     pub fn delete_subkey<P: AsRef<OsStr>>(&self, path: P) -> RegResult<()> {
@@ -231,6 +235,41 @@ impl RegKey {
 impl Drop for RegKey {
     fn drop(&mut self) {
         self.close_().unwrap();
+    }
+}
+
+pub struct EnumKeys<'key> {
+    key: &'key RegKey,
+    index: winapi::DWORD,
+}
+
+impl<'key> Iterator for EnumKeys<'key> {
+    type Item = RegResult<String>;
+
+    fn next(&mut self) -> Option<Self::Item> {
+        let mut name_len = 2048;
+        let mut name = [0 as winapi::WCHAR; 2048];
+        match unsafe {
+            advapi32::RegEnumKeyExW(
+                self.key.hkey,
+                self.index,
+                name.as_mut_ptr(),
+                &mut name_len,
+                ptr::null_mut(), // reserved
+                ptr::null_mut(), // lpClass: LPWSTR,
+                ptr::null_mut(), // lpcClass: LPDWORD,
+                ptr::null_mut(), // lpftLastWriteTime: PFILETIME,
+            ) as winapi::DWORD
+        } {
+            0 => {
+                self.index += 1;
+                Some(Ok(String::from_utf16(&name[..name_len as usize]).unwrap()))
+            },
+            winapi::ERROR_NO_MORE_ITEMS => None,
+            err => {
+                Some(Err(RegError{ err: err }))
+            }
+        }
     }
 }
 

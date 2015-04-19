@@ -14,9 +14,11 @@ Currently it can:
 * write `String` and `&str` into `REG_SZ` value
 * write `u32` into `REG_DWORD` value
 * write `u64` into `REG_QWORD` value
+* iterate through subkey names
 
 ## Usage
 
+Basic usage:
 ```rust
 extern crate winreg;
 use std::path::Path;
@@ -55,5 +57,22 @@ fn main() {
 
     println!("Trying to open nonexisting key...");
     println!("{:?}", hkcu.open_subkey(&path).unwrap_err());
+}
+```
+
+Iterators:
+```rust
+extern crate winreg;
+use winreg::RegKey;
+use winreg::types::*;
+
+fn main() {
+    println!("File extensions, registered in system:");
+    for i in RegKey::predef(HKEY_CLASSES_ROOT)
+        .enum_keys().map(|x| x.unwrap())
+        .filter(|x| x.starts_with("."))
+    {
+        println!("{}", i);
+    }
 }
 ```
