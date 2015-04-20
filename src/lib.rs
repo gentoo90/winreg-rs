@@ -246,7 +246,7 @@ pub struct EnumKeys<'key> {
 impl<'key> Iterator for EnumKeys<'key> {
     type Item = RegResult<String>;
 
-    fn next(&mut self) -> Option<Self::Item> {
+    fn next(&mut self) -> Option<RegResult<String>> {
         let mut name_len = 2048;
         let mut name = [0 as winapi::WCHAR; 2048];
         match unsafe {
