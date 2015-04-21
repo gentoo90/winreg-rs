@@ -48,6 +48,11 @@ pub struct RegKeyMetadata {
     // LastWriteTime: winapi::PFILETIME,
 }
 
+pub struct RegValue {
+    bytes: Vec<u16>,
+    vtype: winapi::DWORD,
+}
+
 impl RegKey {
     pub fn predef(hkey: winapi::HKEY) -> RegKey {
         RegKey{ hkey: hkey }
@@ -164,6 +169,13 @@ impl RegKey {
 
     /// Get the `Default` value if `name` is an empty string
     pub fn get_value<T: FromReg, P: AsRef<OsStr>>(&self, name: P) -> RegResult<T> {
+        match self.get_raw_value(name) {
+            Ok(ref val) => FromReg::convert_from_bytes(val),
+            Err(err) => Err(err)
+        }
+    }
+
+    pub fn get_raw_value<P: AsRef<OsStr>>(&self, name: P) -> RegResult<RegValue> {
         let c_name = to_utf16(name);
         let mut buf_len: winapi::DWORD = 2048 as winapi::DWORD;
         let mut buf_type: winapi::DWORD = 0;
@@ -180,7 +192,7 @@ impl RegKey {
         } {
             0 => {
                 unsafe{ buf.set_len((buf_len >> 1) as usize); }
-                FromReg::convert_from_bytes(buf, buf_type)
+                Ok(RegValue{ bytes: buf, vtype: buf_type })
             },
             err => Err(RegError{ err: err })
         }
@@ -188,17 +200,19 @@ impl RegKey {
 
     /// Set the `Default` value if `name` is an empty string
     pub fn set_value<T: ToReg, P: AsRef<OsStr>>(&self, name: P, value: &T) -> RegResult<()> {
+        self.set_raw_value(name, &value.convert_to_bytes())
+    }
+
+    pub fn set_raw_value<P: AsRef<OsStr>>(&self, name: P, value: &RegValue) -> RegResult<()> {
         let c_name = to_utf16(name);
-        let c_value = value.convert_to_bytes();
-        let v_type = value.get_val_type();
         match unsafe{
             advapi32::RegSetValueExW(
                 self.hkey,
                 c_name.as_ptr(),
                 0,
-                v_type,
-                c_value.as_ptr() as *const winapi::BYTE,
-                (c_value.len()*2) as u32
+                value.vtype,
+                value.bytes.as_ptr() as *const winapi::BYTE,
+                (value.bytes.len()*2) as u32
             ) as winapi::DWORD
         } {
             0 => Ok(()),

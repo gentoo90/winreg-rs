@@ -42,21 +42,21 @@ pub use winapi::{REG_NONE,
                  REG_RESOURCE_REQUIREMENTS_LIST,
                  REG_QWORD,
                  REG_QWORD_LITTLE_ENDIAN};
-use super::{RegError,RegResult};
+use super::{RegError,RegResult,RegValue};
 
 /// A trait for types that can be loaded from registry values.
 pub trait FromReg {
-    fn convert_from_bytes(buf: Vec<u16>, buf_type: winapi::DWORD) -> RegResult<Self>;
+    fn convert_from_bytes(val: &RegValue) -> RegResult<Self>;
 }
 
 impl FromReg for String {
-    fn convert_from_bytes(buf: Vec<u16>, buf_type: winapi::DWORD) -> RegResult<String> {
-        match buf_type {
+    fn convert_from_bytes(val: &RegValue) -> RegResult<String> {
+        match val.vtype {
             REG_SZ | REG_EXPAND_SZ | REG_MULTI_SZ => {
-                match String::from_utf16(&buf) {
+                match String::from_utf16(&val.bytes) {
                     Ok(mut s) => {
                         s.pop(); // remove trailing \0
-                        if buf_type == REG_MULTI_SZ {
+                        if val.vtype == REG_MULTI_SZ {
                             return Ok(s.replace("\u{0}", "\n"))
                         }
                         Ok(s)
@@ -70,12 +70,12 @@ impl FromReg for String {
 }
 
 impl FromReg for u32 {
-    fn convert_from_bytes(buf: Vec<u16>, buf_type: winapi::DWORD) -> RegResult<u32> {
-        match buf_type {
+    fn convert_from_bytes(val: &RegValue) -> RegResult<u32> {
+        match val.vtype {
             REG_DWORD => {
                 Ok(
-                    ((buf[1] as u32) << 16) |
-                    (buf[0] as u32)
+                    ((val.bytes[1] as u32) << 16) |
+                    (val.bytes[0] as u32)
                 )
             },
             _ => Err(RegError{ err: winapi::ERROR_BAD_FILE_TYPE })
@@ -84,14 +84,14 @@ impl FromReg for u32 {
 }
 
 impl FromReg for u64 {
-    fn convert_from_bytes(buf: Vec<u16>, buf_type: winapi::DWORD) -> RegResult<u64> {
-        match buf_type {
+    fn convert_from_bytes(val: &RegValue) -> RegResult<u64> {
+        match val.vtype {
             REG_QWORD => {
                 Ok(
-                    ((buf[3] as u64) << 48) |
-                    ((buf[2] as u64) << 32) |
-                    ((buf[1] as u64) << 16) |
-                    (buf[0] as u64)
+                    ((val.bytes[3] as u64) << 48) |
+                    ((val.bytes[2] as u64) << 32) |
+                    ((val.bytes[1] as u64) << 16) |
+                    (val.bytes[0] as u64)
                 )
             },
             _ => Err(RegError{ err: winapi::ERROR_BAD_FILE_TYPE })
@@ -101,46 +101,49 @@ impl FromReg for u64 {
 
 /// A trait for types that can be written into registry values.
 pub trait ToReg {
-    fn get_val_type(&self) -> winapi::DWORD;
-    fn convert_to_bytes(&self) -> Vec<u16>;
+    fn convert_to_bytes(&self) -> RegValue;
 }
 
 impl ToReg for String {
-    fn get_val_type(&self) -> winapi::DWORD {REG_SZ}
-
-    fn convert_to_bytes(&self) -> Vec<u16> {
-        super::to_utf16(self)
+    fn convert_to_bytes(&self) -> RegValue {
+        RegValue{
+            bytes: super::to_utf16(self),
+            vtype: REG_SZ
+        }
     }
 }
 
 impl<'a> ToReg for &'a str {
-    fn get_val_type(&self) -> winapi::DWORD {REG_SZ}
-
-    fn convert_to_bytes(&self) -> Vec<u16> {
-        super::to_utf16(self)
+    fn convert_to_bytes(&self) -> RegValue {
+        RegValue{
+            bytes: super::to_utf16(self),
+            vtype: REG_SZ
+        }
     }
 }
 
 impl ToReg for u32 {
-    fn get_val_type(&self) -> winapi::DWORD {REG_DWORD}
-
-    fn convert_to_bytes(&self) -> Vec<u16> {
+    fn convert_to_bytes(&self) -> RegValue {
         let mut bytes: Vec<u16> = Vec::with_capacity(2);
         bytes.push((self & 0xFFFF) as u16);
         bytes.push(((self & 0xFFFF0000) >> 16) as u16);
-        bytes
+        RegValue{
+            bytes: bytes,
+            vtype: REG_DWORD
+        }
     }
 }
 
 impl ToReg for u64 {
-    fn get_val_type(&self) -> winapi::DWORD {REG_QWORD}
-
-    fn convert_to_bytes(&self) -> Vec<u16> {
+    fn convert_to_bytes(&self) -> RegValue {
         let mut bytes: Vec<u16> = Vec::with_capacity(4);
         bytes.push((self & 0xFFFF) as u16);
         bytes.push(((self & 0xFFFF_0000) >> 16) as u16);
         bytes.push(((self & 0xFFFF_0000_0000) >> 32) as u16);
         bytes.push(((self & 0xFFFF_0000_0000_0000) >> 48) as u16);
-        bytes
+        RegValue{
+            bytes: bytes,
+            vtype: REG_QWORD
+        }
     }
 }
