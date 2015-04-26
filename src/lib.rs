@@ -159,6 +159,10 @@ impl RegKey {
         EnumKeys{key: self, index: 0}
     }
 
+    pub fn enum_values<'a>(&'a self) -> EnumValues<'a> {
+        EnumValues{key: self, index: 0}
+    }
+
     /// Delete key. Cannot delete if it nas subkeys.
     /// Use `delete_subkey_all` for that.
     pub fn delete_subkey<P: AsRef<OsStr>>(&self, path: P) -> RegResult<()> {
@@ -302,6 +306,48 @@ impl<'key> Iterator for EnumKeys<'key> {
                     Ok(s) => Ok(s),
                     Err(_) => Err(RegError{ err: winapi::ERROR_INVALID_BLOCK })
                 })
+            },
+            winapi::ERROR_NO_MORE_ITEMS => None,
+            err => {
+                Some(Err(RegError{ err: err }))
+            }
+        }
+    }
+}
+
+pub struct EnumValues<'key> {
+    key: &'key RegKey,
+    index: winapi::DWORD,
+}
+
+impl<'key> Iterator for EnumValues<'key> {
+    type Item = RegResult<(String, RegValue)>;
+
+    fn next(&mut self) -> Option<RegResult<(String, RegValue)>> {
+        let mut name_len = 2048;
+        let mut name = [0 as winapi::WCHAR; 2048];
+
+        let mut buf_len: winapi::DWORD = 2048 as winapi::DWORD;
+        let mut buf_type: winapi::DWORD = 0;
+        let mut buf: Vec<u8> = Vec::with_capacity(buf_len as usize);
+        match unsafe {
+            advapi32::RegEnumValueW(
+                self.key.hkey,
+                self.index,
+                name.as_mut_ptr(),
+                &mut name_len,
+                ptr::null_mut(), // reserved
+                &mut buf_type,
+                buf.as_mut_ptr() as winapi::LPBYTE,
+                &mut buf_len,
+            ) as winapi::DWORD
+        } {
+            0 => {
+                self.index += 1;
+                let name = String::from_utf16(&name[..name_len as usize]).unwrap();
+                unsafe{ buf.set_len((buf_len >> 1) as usize); }
+                let value = RegValue{ bytes: buf, vtype: buf_type };
+                Some(Ok((name, value)))
             },
             winapi::ERROR_NO_MORE_ITEMS => None,
             err => {

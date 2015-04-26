@@ -15,4 +15,13 @@ fn main() {
     {
         println!("{}", i);
     }
+
+    let metrics = RegKey::predef(HKEY_CURRENT_USER)
+        .open_subkey("Control Panel\\Desktop\\WindowMetrics")
+        .unwrap();
+    for (name, value) in metrics.enum_values().map(|x| x.unwrap()) {
+        println!("{} = {:?}", name, value);
+    }
+    let lol = metrics.get_raw_value("MenuHeight");
+    println!("{:?}", lol);
 }
