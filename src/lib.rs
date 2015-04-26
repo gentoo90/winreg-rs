@@ -4,6 +4,7 @@
 // may not be copied, modified, or distributed
 // except according to those terms.
 //! Crate for accessing MS Windows registry
+#![feature(collections)]
 extern crate winapi;
 extern crate kernel32;
 extern crate advapi32;
@@ -49,7 +50,7 @@ pub struct RegKeyMetadata {
 }
 
 pub struct RegValue {
-    bytes: Vec<u16>,
+    bytes: Vec<u8>,
     vtype: winapi::DWORD,
 }
 
@@ -179,7 +180,7 @@ impl RegKey {
         let c_name = to_utf16(name);
         let mut buf_len: winapi::DWORD = 2048 as winapi::DWORD;
         let mut buf_type: winapi::DWORD = 0;
-        let mut buf: Vec<u16> = Vec::with_capacity(buf_len as usize);
+        let mut buf: Vec<u8> = Vec::with_capacity(buf_len as usize);
         match unsafe {
             advapi32::RegQueryValueExW(
                 self.hkey,
@@ -191,7 +192,7 @@ impl RegKey {
             ) as winapi::DWORD
         } {
             0 => {
-                unsafe{ buf.set_len((buf_len >> 1) as usize); }
+                unsafe{ buf.set_len(buf_len as usize); }
                 Ok(RegValue{ bytes: buf, vtype: buf_type })
             },
             err => Err(RegError{ err: err })
@@ -212,7 +213,7 @@ impl RegKey {
                 0,
                 value.vtype,
                 value.bytes.as_ptr() as *const winapi::BYTE,
-                (value.bytes.len()*2) as u32
+                value.bytes.len() as u32
             ) as winapi::DWORD
         } {
             0 => Ok(()),
@@ -289,6 +290,13 @@ impl<'key> Iterator for EnumKeys<'key> {
 
 fn to_utf16<P: AsRef<OsStr>>(s: P) -> Vec<u16> {
     s.as_ref().encode_wide().chain(Some(0).into_iter()).collect()
+}
+
+fn v16_to_v8(v: &Vec<u16>) -> Vec<u8> {
+    let res: Vec<u8> = unsafe {
+        Vec::from_raw_buf(v.as_ptr() as *const u8, v.len()*2)
+    };
+    res
 }
 
 // copycat of rust/src/libstd/sys/windows/os.rs::error_string

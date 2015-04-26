@@ -43,6 +43,7 @@ pub use winapi::{REG_NONE,
                  REG_QWORD,
                  REG_QWORD_LITTLE_ENDIAN};
 use super::{RegError,RegResult,RegValue};
+use super::{to_utf16,v16_to_v8};
 
 /// A trait for types that can be loaded from registry values.
 pub trait FromReg {
@@ -53,7 +54,11 @@ impl FromReg for String {
     fn convert_from_bytes(val: &RegValue) -> RegResult<String> {
         match val.vtype {
             REG_SZ | REG_EXPAND_SZ | REG_MULTI_SZ => {
-                match String::from_utf16(&val.bytes) {
+                let words = unsafe {
+                    let pwords = val.bytes.as_ptr() as *mut [u16; 2048 as usize];
+                    *pwords
+                };
+                match String::from_utf16(&words[..(val.bytes.len()/2)]) {
                     Ok(mut s) => {
                         s.pop(); // remove trailing \0
                         if val.vtype == REG_MULTI_SZ {
@@ -73,10 +78,7 @@ impl FromReg for u32 {
     fn convert_from_bytes(val: &RegValue) -> RegResult<u32> {
         match val.vtype {
             REG_DWORD => {
-                Ok(
-                    ((val.bytes[1] as u32) << 16) |
-                    (val.bytes[0] as u32)
-                )
+                Ok(unsafe{ *(val.bytes.as_ptr() as *const u32) })
             },
             _ => Err(RegError{ err: winapi::ERROR_BAD_FILE_TYPE })
         }
@@ -87,12 +89,7 @@ impl FromReg for u64 {
     fn convert_from_bytes(val: &RegValue) -> RegResult<u64> {
         match val.vtype {
             REG_QWORD => {
-                Ok(
-                    ((val.bytes[3] as u64) << 48) |
-                    ((val.bytes[2] as u64) << 32) |
-                    ((val.bytes[1] as u64) << 16) |
-                    (val.bytes[0] as u64)
-                )
+                Ok(unsafe{ *(val.bytes.as_ptr() as *const u64) })
             },
             _ => Err(RegError{ err: winapi::ERROR_BAD_FILE_TYPE })
         }
@@ -107,7 +104,7 @@ pub trait ToReg {
 impl ToReg for String {
     fn convert_to_bytes(&self) -> RegValue {
         RegValue{
-            bytes: super::to_utf16(self),
+            bytes: v16_to_v8(&to_utf16(self)),
             vtype: REG_SZ
         }
     }
@@ -116,7 +113,7 @@ impl ToReg for String {
 impl<'a> ToReg for &'a str {
     fn convert_to_bytes(&self) -> RegValue {
         RegValue{
-            bytes: super::to_utf16(self),
+            bytes: v16_to_v8(&to_utf16(self)),
             vtype: REG_SZ
         }
     }
@@ -124,9 +121,9 @@ impl<'a> ToReg for &'a str {
 
 impl ToReg for u32 {
     fn convert_to_bytes(&self) -> RegValue {
-        let mut bytes: Vec<u16> = Vec::with_capacity(2);
-        bytes.push((self & 0xFFFF) as u16);
-        bytes.push(((self & 0xFFFF0000) >> 16) as u16);
+        let bytes: Vec<u8> = unsafe {
+            Vec::from_raw_buf((self as *const u32) as *const u8, 4)
+        };
         RegValue{
             bytes: bytes,
             vtype: REG_DWORD
@@ -136,11 +133,9 @@ impl ToReg for u32 {
 
 impl ToReg for u64 {
     fn convert_to_bytes(&self) -> RegValue {
-        let mut bytes: Vec<u16> = Vec::with_capacity(4);
-        bytes.push((self & 0xFFFF) as u16);
-        bytes.push(((self & 0xFFFF_0000) >> 16) as u16);
-        bytes.push(((self & 0xFFFF_0000_0000) >> 32) as u16);
-        bytes.push(((self & 0xFFFF_0000_0000_0000) >> 48) as u16);
+        let bytes: Vec<u8> = unsafe {
+            Vec::from_raw_buf((self as *const u64) as *const u8, 8)
+        };
         RegValue{
             bytes: bytes,
             vtype: REG_QWORD
