@@ -59,7 +59,7 @@ impl FromReg for String {
                     *pwords
                 };
                 let mut s:String = String::from_utf16_lossy(&words[..(val.bytes.len()/2)]);
-                s.pop(); // remove trailing \0
+                while s.ends_with("\u{0}") {s.pop();}
                 if val.vtype == REG_MULTI_SZ {
                     return Ok(s.replace("\u{0}", "\n"))
                 }
