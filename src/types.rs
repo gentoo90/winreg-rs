@@ -58,16 +58,12 @@ impl FromReg for String {
                     let pwords = val.bytes.as_ptr() as *mut [u16; 2048 as usize];
                     *pwords
                 };
-                match String::from_utf16(&words[..(val.bytes.len()/2)]) {
-                    Ok(mut s) => {
-                        s.pop(); // remove trailing \0
-                        if val.vtype == REG_MULTI_SZ {
-                            return Ok(s.replace("\u{0}", "\n"))
-                        }
-                        Ok(s)
-                    },
-                    Err(_) => Err(RegError{ err: winapi::ERROR_INVALID_BLOCK })
+                let mut s:String = String::from_utf16_lossy(&words[..(val.bytes.len()/2)]);
+                s.pop(); // remove trailing \0
+                if val.vtype == REG_MULTI_SZ {
+                    return Ok(s.replace("\u{0}", "\n"))
                 }
+                Ok(s)
             },
             _ => Err(RegError{ err: winapi::ERROR_BAD_FILE_TYPE })
         }
