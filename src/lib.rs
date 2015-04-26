@@ -30,11 +30,6 @@ impl fmt::Debug for RegError {
 
 pub type RegResult<T> = std::result::Result<T, RegError>;
 
-#[derive(Debug)]
-pub struct RegKey {
-    hkey: winapi::HKEY,
-}
-
 #[derive(Debug,Default)]
 pub struct RegKeyMetadata {
     // Class: winapi::LPWSTR,
@@ -52,6 +47,31 @@ pub struct RegKeyMetadata {
 pub struct RegValue {
     bytes: Vec<u8>,
     vtype: winapi::DWORD,
+}
+
+impl fmt::Debug for RegValue {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        let f_val = match self.vtype {
+            winapi::REG_SZ | winapi::REG_EXPAND_SZ | winapi::REG_MULTI_SZ => {
+                format!("{:?}", String::convert_from_bytes(self).unwrap())
+            },
+            winapi::REG_DWORD => {
+                let dword_val = u32::convert_from_bytes(self).unwrap();
+                format!("{:?}", dword_val)
+            },
+            winapi::REG_QWORD => {
+                let dword_val = u64::convert_from_bytes(self).unwrap();
+                format!("{:?}", dword_val)
+            },
+            _ => format!("{:?}", self.bytes) //TODO: implement more types
+        };
+        write!(f, "RegValue({:?}: {})", self.vtype, f_val)
+    }
+}
+
+#[derive(Debug)]
+pub struct RegKey {
+    hkey: winapi::HKEY,
 }
 
 impl RegKey {
@@ -278,7 +298,10 @@ impl<'key> Iterator for EnumKeys<'key> {
         } {
             0 => {
                 self.index += 1;
-                Some(Ok(String::from_utf16(&name[..name_len as usize]).unwrap()))
+                Some(match String::from_utf16(&name[..name_len as usize]) {
+                    Ok(s) => Ok(s),
+                    Err(_) => Err(RegError{ err: winapi::ERROR_INVALID_BLOCK })
+                })
             },
             winapi::ERROR_NO_MORE_ITEMS => None,
             err => {
@@ -324,7 +347,7 @@ fn error_string(errnum: winapi::DWORD) -> String {
         let b = buf.iter().position(|&b| b == 0).unwrap_or(buf.len());
         let msg = String::from_utf16(&buf[..b]);
         match msg {
-            Ok(msg) => msg,
+            Ok(msg) => msg.trim_right().to_string(),
             Err(..) => format!("OS Error {} (FormatMessageW() returned \
                                 invalid UTF-16)", errnum),
         }
