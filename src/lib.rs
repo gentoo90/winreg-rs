@@ -357,7 +357,7 @@ impl<'key> Iterator for EnumValues<'key> {
             0 => {
                 self.index += 1;
                 let name = String::from_utf16(&name[..name_len as usize]).unwrap();
-                unsafe{ buf.set_len((buf_len >> 1) as usize); }
+                unsafe{ buf.set_len(buf_len as usize); }
                 // minimal check before transmute to RegType
                 if buf_type > winapi::REG_QWORD {
                     return Some(Err(RegError{
@@ -505,7 +505,7 @@ mod test {
     #[test]
     fn test_enum_keys() {
         with_key!(key, "EnumKeys" => {
-            let mut keys1 = vec!("qwerty", "asdf", "test", "1", "2", "3", "5", "8");
+            let mut keys1 = vec!("qwerty", "asdf", "1", "2", "3", "5", "8", "йцукен");
             keys1.sort();
             for i in &keys1 {
                 key.create_subkey(i).unwrap();
@@ -518,14 +518,21 @@ mod test {
     #[test]
     fn test_enum_values() {
         with_key!(key, "EnumValues" => {
-            let mut vals1 = vec!("qwerty", "asdf", "test", "1", "2", "3", "5", "8");
+            let mut vals1 = vec!("qwerty", "asdf", "1", "2", "3", "5", "8", "йцукен");
             vals1.sort();
             for i in &vals1 {
                 key.set_value(i,i).unwrap();
             }
-            let vals2: Vec<_> = key.enum_values()
-                .map(|x| {let (name, _) = x.unwrap(); name}).collect();
+            let mut vals2: Vec<String> = Vec::with_capacity(vals1.len());
+            let mut vals3: Vec<String> = Vec::with_capacity(vals1.len());
+            for (name, val) in key.enum_values()
+                .map(|x| x.unwrap())
+            {
+                vals2.push(name);
+                vals3.push(String::convert_from_bytes(&val).unwrap());
+            }
             assert_eq!(vals1, vals2);
+            assert_eq!(vals1, vals3);
         });
     }
 }

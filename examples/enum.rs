@@ -16,10 +16,10 @@ fn main() {
         println!("{}", i);
     }
 
-    let metrics = RegKey::predef(HKEY_CURRENT_USER)
-        .open_subkey("Control Panel\\Desktop\\WindowMetrics")
+    let system = RegKey::predef(HKEY_LOCAL_MACHINE)
+        .open_subkey_with_flags("HARDWARE\\DESCRIPTION\\System", KEY_READ)
         .unwrap();
-    for (name, value) in metrics.enum_values().map(|x| x.unwrap()) {
+    for (name, value) in system.enum_values().map(|x| x.unwrap()) {
         println!("{} = {:?}", name, value);
     }
 }
