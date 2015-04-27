@@ -14,6 +14,7 @@ use std::default::Default;
 use std::ffi::OsStr;
 use std::os::windows::ffi::OsStrExt;
 use std::mem::transmute;
+use winapi::winerror;
 use enums::*;
 use types::{FromReg, ToReg};
 
@@ -205,8 +206,8 @@ impl RegKey {
 
     pub fn get_raw_value<P: AsRef<OsStr>>(&self, name: P) -> RegResult<RegValue> {
         let c_name = to_utf16(name);
-        let mut buf_len: winapi::DWORD = 2048 as winapi::DWORD;
-        let mut buf_type: winapi::DWORD = REG_NONE as winapi::DWORD;
+        let mut buf_len: winapi::DWORD = 2048;
+        let mut buf_type: winapi::DWORD = 0;
         let mut buf: Vec<u8> = Vec::with_capacity(buf_len as usize);
         match unsafe {
             advapi32::RegQueryValueExW(
@@ -220,7 +221,12 @@ impl RegKey {
         } {
             0 => {
                 unsafe{ buf.set_len(buf_len as usize); }
-                //FIXME: dirty hack
+                // minimal check before transmute to RegType
+                if buf_type > winapi::REG_QWORD {
+                    return Err(RegError{
+                        err: winerror::ERROR_BAD_FILE_TYPE
+                    });
+                }
                 let t: RegType = unsafe{ transmute(buf_type as u8) };
                 Ok(RegValue{ bytes: buf, vtype: t })
             },
@@ -310,10 +316,10 @@ impl<'key> Iterator for EnumKeys<'key> {
                 self.index += 1;
                 Some(match String::from_utf16(&name[..name_len as usize]) {
                     Ok(s) => Ok(s),
-                    Err(_) => Err(RegError{ err: winapi::ERROR_INVALID_BLOCK })
+                    Err(_) => Err(RegError{ err: winerror::ERROR_INVALID_BLOCK })
                 })
             },
-            winapi::ERROR_NO_MORE_ITEMS => None,
+            winerror::ERROR_NO_MORE_ITEMS => None,
             err => {
                 Some(Err(RegError{ err: err }))
             }
@@ -333,7 +339,7 @@ impl<'key> Iterator for EnumValues<'key> {
         let mut name_len = 2048;
         let mut name = [0 as winapi::WCHAR; 2048];
 
-        let mut buf_len: winapi::DWORD = 2048 as winapi::DWORD;
+        let mut buf_len: winapi::DWORD = 2048;
         let mut buf_type: winapi::DWORD = 0;
         let mut buf: Vec<u8> = Vec::with_capacity(buf_len as usize);
         match unsafe {
@@ -352,12 +358,17 @@ impl<'key> Iterator for EnumValues<'key> {
                 self.index += 1;
                 let name = String::from_utf16(&name[..name_len as usize]).unwrap();
                 unsafe{ buf.set_len((buf_len >> 1) as usize); }
-                //FIXME: dirty hack
+                // minimal check before transmute to RegType
+                if buf_type > winapi::REG_QWORD {
+                    return Some(Err(RegError{
+                        err: winerror::ERROR_BAD_FILE_TYPE
+                    }));
+                }
                 let t: RegType = unsafe{ transmute(buf_type as u8) };
                 let value = RegValue{ bytes: buf, vtype: t };
                 Some(Ok((name, value)))
             },
-            winapi::ERROR_NO_MORE_ITEMS => None,
+            winerror::ERROR_NO_MORE_ITEMS => None,
             err => {
                 Some(Err(RegError{ err: err }))
             }

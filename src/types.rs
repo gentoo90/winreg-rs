@@ -6,6 +6,7 @@
 //! Traits for loading/saving Registry values
 extern crate winapi;
 use std::slice;
+use winapi::winerror;
 pub use winapi::{HKEY_CLASSES_ROOT,
                  HKEY_CURRENT_USER,
                  HKEY_LOCAL_MACHINE,
@@ -53,7 +54,7 @@ impl FromReg for String {
                 }
                 Ok(s)
             },
-            _ => Err(RegError{ err: winapi::ERROR_BAD_FILE_TYPE })
+            _ => Err(RegError{ err: winerror::ERROR_BAD_FILE_TYPE })
         }
     }
 }
@@ -64,7 +65,7 @@ impl FromReg for u32 {
             REG_DWORD => {
                 Ok(unsafe{ *(val.bytes.as_ptr() as *const u32) })
             },
-            _ => Err(RegError{ err: winapi::ERROR_BAD_FILE_TYPE })
+            _ => Err(RegError{ err: winerror::ERROR_BAD_FILE_TYPE })
         }
     }
 }
@@ -75,7 +76,7 @@ impl FromReg for u64 {
             REG_QWORD => {
                 Ok(unsafe{ *(val.bytes.as_ptr() as *const u64) })
             },
-            _ => Err(RegError{ err: winapi::ERROR_BAD_FILE_TYPE })
+            _ => Err(RegError{ err: winerror::ERROR_BAD_FILE_TYPE })
         }
     }
 }
