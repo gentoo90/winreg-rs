@@ -4,11 +4,11 @@
 // may not be copied, modified, or distributed
 // except according to those terms.
 //! Crate for accessing MS Windows registry
-#![feature(collections)]
 extern crate winapi;
 extern crate kernel32;
 extern crate advapi32;
 use std::ptr;
+use std::slice;
 use std::fmt;
 use std::default::Default;
 use std::ffi::OsStr;
@@ -363,7 +363,7 @@ fn to_utf16<P: AsRef<OsStr>>(s: P) -> Vec<u16> {
 
 fn v16_to_v8(v: &Vec<u16>) -> Vec<u8> {
     let res: Vec<u8> = unsafe {
-        Vec::from_raw_buf(v.as_ptr() as *const u8, v.len()*2)
+        slice::from_raw_parts(v.as_ptr() as *const u8, v.len()*2).to_vec()
     };
     res
 }

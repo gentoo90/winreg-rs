@@ -5,6 +5,7 @@
 // except according to those terms.
 //! Traits for loading/saving Registry values
 extern crate winapi;
+use std::slice;
 pub use winapi::{HKEY_CLASSES_ROOT,
                  HKEY_CURRENT_USER,
                  HKEY_LOCAL_MACHINE,
@@ -118,7 +119,7 @@ impl<'a> ToReg for &'a str {
 impl ToReg for u32 {
     fn convert_to_bytes(&self) -> RegValue {
         let bytes: Vec<u8> = unsafe {
-            Vec::from_raw_buf((self as *const u32) as *const u8, 4)
+            slice::from_raw_parts((self as *const u32) as *const u8, 4).to_vec()
         };
         RegValue{
             bytes: bytes,
@@ -130,7 +131,7 @@ impl ToReg for u32 {
 impl ToReg for u64 {
     fn convert_to_bytes(&self) -> RegValue {
         let bytes: Vec<u8> = unsafe {
-            Vec::from_raw_buf((self as *const u64) as *const u8, 8)
+            slice::from_raw_parts((self as *const u64) as *const u8, 8).to_vec()
         };
         RegValue{
             bytes: bytes,
