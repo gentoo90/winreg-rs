@@ -29,21 +29,8 @@ pub use winapi::{KEY_QUERY_VALUE,
                  KEY_WRITE,
                  KEY_EXECUTE,
                  KEY_ALL_ACCESS};
-pub use winapi::{REG_NONE,
-                 REG_SZ,
-                 REG_EXPAND_SZ,
-                 REG_BINARY,
-                 REG_DWORD,
-                 REG_DWORD_LITTLE_ENDIAN,
-                 REG_DWORD_BIG_ENDIAN,
-                 REG_LINK,
-                 REG_MULTI_SZ,
-                 REG_RESOURCE_LIST,
-                 REG_FULL_RESOURCE_DESCRIPTOR,
-                 REG_RESOURCE_REQUIREMENTS_LIST,
-                 REG_QWORD,
-                 REG_QWORD_LITTLE_ENDIAN};
 use super::{RegError,RegResult,RegValue};
+use enums::*;
 use super::{to_utf16,v16_to_v8};
 
 /// A trait for types that can be loaded from registry values.

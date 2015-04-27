@@ -13,8 +13,11 @@ use std::fmt;
 use std::default::Default;
 use std::ffi::OsStr;
 use std::os::windows::ffi::OsStrExt;
+use std::mem::transmute;
+use enums::*;
 use types::{FromReg, ToReg};
 
+pub mod enums;
 pub mod types;
 
 pub struct RegError {
@@ -46,20 +49,20 @@ pub struct RegKeyMetadata {
 
 pub struct RegValue {
     bytes: Vec<u8>,
-    vtype: winapi::DWORD,
+    vtype: RegType,
 }
 
 impl fmt::Debug for RegValue {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         let f_val = match self.vtype {
-            winapi::REG_SZ | winapi::REG_EXPAND_SZ | winapi::REG_MULTI_SZ => {
+            REG_SZ | REG_EXPAND_SZ | REG_MULTI_SZ => {
                 format!("{:?}", String::convert_from_bytes(self).unwrap())
             },
-            winapi::REG_DWORD => {
+            REG_DWORD => {
                 let dword_val = u32::convert_from_bytes(self).unwrap();
                 format!("{:?}", dword_val)
             },
-            winapi::REG_QWORD => {
+            REG_QWORD => {
                 let dword_val = u64::convert_from_bytes(self).unwrap();
                 format!("{:?}", dword_val)
             },
@@ -203,7 +206,7 @@ impl RegKey {
     pub fn get_raw_value<P: AsRef<OsStr>>(&self, name: P) -> RegResult<RegValue> {
         let c_name = to_utf16(name);
         let mut buf_len: winapi::DWORD = 2048 as winapi::DWORD;
-        let mut buf_type: winapi::DWORD = 0;
+        let mut buf_type: winapi::DWORD = REG_NONE as winapi::DWORD;
         let mut buf: Vec<u8> = Vec::with_capacity(buf_len as usize);
         match unsafe {
             advapi32::RegQueryValueExW(
@@ -217,7 +220,9 @@ impl RegKey {
         } {
             0 => {
                 unsafe{ buf.set_len(buf_len as usize); }
-                Ok(RegValue{ bytes: buf, vtype: buf_type })
+                //FIXME: dirty hack
+                let t: RegType = unsafe{ transmute(buf_type as u8) };
+                Ok(RegValue{ bytes: buf, vtype: t })
             },
             err => Err(RegError{ err: err })
         }
@@ -230,12 +235,13 @@ impl RegKey {
 
     pub fn set_raw_value<P: AsRef<OsStr>>(&self, name: P, value: &RegValue) -> RegResult<()> {
         let c_name = to_utf16(name);
+        let t = value.vtype.clone() as winapi::DWORD;
         match unsafe{
             advapi32::RegSetValueExW(
                 self.hkey,
                 c_name.as_ptr(),
                 0,
-                value.vtype,
+                t,
                 value.bytes.as_ptr() as *const winapi::BYTE,
                 value.bytes.len() as u32
             ) as winapi::DWORD
@@ -346,7 +352,9 @@ impl<'key> Iterator for EnumValues<'key> {
                 self.index += 1;
                 let name = String::from_utf16(&name[..name_len as usize]).unwrap();
                 unsafe{ buf.set_len((buf_len >> 1) as usize); }
-                let value = RegValue{ bytes: buf, vtype: buf_type };
+                //FIXME: dirty hack
+                let t: RegType = unsafe{ transmute(buf_type as u8) };
+                let value = RegValue{ bytes: buf, vtype: t };
                 Some(Ok((name, value)))
             },
             winapi::ERROR_NO_MORE_ITEMS => None,

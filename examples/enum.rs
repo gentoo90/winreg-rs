@@ -22,6 +22,4 @@ fn main() {
     for (name, value) in metrics.enum_values().map(|x| x.unwrap()) {
         println!("{} = {:?}", name, value);
     }
-    let lol = metrics.get_raw_value("MenuHeight");
-    println!("{:?}", lol);
 }
