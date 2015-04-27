@@ -415,82 +415,98 @@ mod test {
         assert!(hklm.open_subkey_with_flags("i\\just\\hope\\nobody\\created\\that\\key", KEY_READ).is_err());
     }
 
-    fn create_test_key(path: &str) -> RegKey {
-        let mut full_path = "Software\\WinRegRsTest".to_string();
-        full_path.push_str(path);
-        RegKey::predef(HKEY_CURRENT_USER)
-        .create_subkey(full_path).unwrap()
-    }
-
-    fn delete_test_key(path: &str) {
-        let mut full_path = "Software\\WinRegRsTest".to_string();
-        full_path.push_str(path);
-        RegKey::predef(HKEY_CURRENT_USER)
-        .delete_subkey(full_path).unwrap();
-    }
-
-    #[test]
-    fn test_create_delete_subkey() {
-        let path = "CreateDeleteSubkey";
-        create_test_key(path);
-        delete_test_key(path);
+    macro_rules! with_key {
+        ($k:ident, $path:expr => $b:block) => {{
+            let mut path = "Software\\WinRegRsTest".to_string();
+            path.push_str($path);
+            let $k = RegKey::predef(HKEY_CURRENT_USER)
+                .create_subkey(&path).unwrap();
+            $b
+            RegKey::predef(HKEY_CURRENT_USER)
+            .delete_subkey_all(path).unwrap();
+        }}
     }
 
     #[test]
-    fn test_delete_subkey_all() {
-        let path = "DeleteSubkeyAll";
-        let key = create_test_key(path);
-        key.create_subkey_with_flags("with\\sub\\keys", KEY_READ).unwrap();
+    #[allow(unused_variables)]
+    fn test_create_delete_all_subkey() {
+        with_key!(key, "CreateDeleteAllSubkey" => {});
+    }
+
+    #[test]
+    fn test_delete_subkey() {
+        let path = "Software\\WinRegRsTestDeleteSubkey";
+        RegKey::predef(HKEY_CURRENT_USER).create_subkey(path).unwrap();
         assert!(RegKey::predef(HKEY_CURRENT_USER)
-            .delete_subkey_all("Software\\WinRegRsTestDeleteSubkeyAll").is_ok());
+            .delete_subkey(path).is_ok());
     }
 
     #[test]
     fn test_string_value() {
-        let path = "StringValue";
-        let key = create_test_key(path);
-        let name = "RustStringVal";
-        let val1 = "Test123 \n$%^&|+-*/\\()".to_string();
-
-        key.set_value(name, &val1).unwrap();
-        let val2: String = key.get_value(name).unwrap();
-        assert_eq!(val1, val2);
-        delete_test_key(path);
+        with_key!(key, "StringValue" => {
+            let name = "RustStringVal";
+            let val1 = "Test123 \n$%^&|+-*/\\()".to_string();
+            key.set_value(name, &val1).unwrap();
+            let val2: String = key.get_value(name).unwrap();
+            assert_eq!(val1, val2);
+        });
     }
 
     #[test]
     fn test_u32_value() {
-        let path = "U32Value";
-        let key = create_test_key(path);
-        let name = "RustU32Val";
-        let val1 = 1234567890u32;
-
-        key.set_value(name, &val1).unwrap();
-        let val2: u32 = key.get_value(name).unwrap();
-        assert_eq!(val1, val2);
-        delete_test_key(path);
+        with_key!(key, "U32Value" => {
+            let name = "RustU32Val";
+            let val1 = 1234567890u32;
+            key.set_value(name, &val1).unwrap();
+            let val2: u32 = key.get_value(name).unwrap();
+            assert_eq!(val1, val2);
+        });
     }
 
     #[test]
     fn test_u64_value() {
-        let path = "U32Value";
-        let key = create_test_key(path);
-        let name = "RustU32Val";
-        let val1 = 1234567891011121314u64;
-
-        key.set_value(name, &val1).unwrap();
-        let val2: u64 = key.get_value(name).unwrap();
-        assert_eq!(val1, val2);
-        delete_test_key(path);
+        with_key!(key, "U64Value" => {
+            let name = "RustU64Val";
+            let val1 = 1234567891011121314u64;
+            key.set_value(name, &val1).unwrap();
+            let val2: u64 = key.get_value(name).unwrap();
+            assert_eq!(val1, val2);
+        });
     }
 
     #[test]
     fn test_delete_value() {
-        let path = "StringValue";
-        let key = create_test_key(path);
-        let name = "WinregRsTestVal";
-        key.set_value(name, &"Qwerty123").unwrap();
-        assert!(key.delete_value(name).is_ok());
-        delete_test_key(path);
+        with_key!(key, "DeleteValue" => {
+            let name = "WinregRsTestVal";
+            key.set_value(name, &"Qwerty123").unwrap();
+            assert!(key.delete_value(name).is_ok());
+        });
+    }
+
+    #[test]
+    fn test_enum_keys() {
+        with_key!(key, "EnumKeys" => {
+            let mut keys1 = vec!("qwerty", "asdf", "test", "1", "2", "3", "5", "8");
+            keys1.sort();
+            for i in &keys1 {
+                key.create_subkey(i).unwrap();
+            }
+            let keys2: Vec<_> = key.enum_keys().map(|x| x.unwrap()).collect();
+            assert_eq!(keys1, keys2);
+        });
+    }
+
+    #[test]
+    fn test_enum_values() {
+        with_key!(key, "EnumValues" => {
+            let mut vals1 = vec!("qwerty", "asdf", "test", "1", "2", "3", "5", "8");
+            vals1.sort();
+            for i in &vals1 {
+                key.set_value(i,i).unwrap();
+            }
+            let vals2: Vec<_> = key.enum_values()
+                .map(|x| {let (name, _) = x.unwrap(); name}).collect();
+            assert_eq!(vals1, vals2);
+        });
     }
 }
