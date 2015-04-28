@@ -15,14 +15,15 @@ use std::ffi::OsStr;
 use std::os::windows::ffi::OsStrExt;
 use std::mem::transmute;
 use winapi::winerror;
+use winapi::{HKEY,DWORD,WCHAR};
 use enums::*;
-use types::{FromReg, ToReg};
+use types::{FromRegValue, ToRegValue};
 
 pub mod enums;
 pub mod types;
 
 pub struct RegError {
-    err: winapi::DWORD,
+    pub err: DWORD,
 }
 
 impl fmt::Debug for RegError {
@@ -37,17 +38,18 @@ pub type RegResult<T> = std::result::Result<T, RegError>;
 #[derive(Debug,Default)]
 pub struct RegKeyMetadata {
     // Class: winapi::LPWSTR,
-    // ClassLen: winapi::DWORD,
-    sub_keys: winapi::DWORD,
-    max_sub_key_len: winapi::DWORD,
-    max_class_len: winapi::DWORD,
-    values: winapi::DWORD,
-    max_value_name_len: winapi::DWORD,
-    max_value_len: winapi::DWORD,
-    // SecurityDescriptor: winapi::DWORD,
+    // ClassLen: DWORD,
+    sub_keys: DWORD,
+    max_sub_key_len: DWORD,
+    max_class_len: DWORD,
+    values: DWORD,
+    max_value_name_len: DWORD,
+    max_value_len: DWORD,
+    // SecurityDescriptor: DWORD,
     // LastWriteTime: winapi::PFILETIME,
 }
 
+/// Raw registry value
 pub struct RegValue {
     bytes: Vec<u8>,
     vtype: RegType,
@@ -57,14 +59,14 @@ impl fmt::Debug for RegValue {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         let f_val = match self.vtype {
             REG_SZ | REG_EXPAND_SZ | REG_MULTI_SZ => {
-                format!("{:?}", String::convert_from_bytes(self).unwrap())
+                format!("{:?}", String::from_reg_value(self).unwrap())
             },
             REG_DWORD => {
-                let dword_val = u32::convert_from_bytes(self).unwrap();
+                let dword_val = u32::from_reg_value(self).unwrap();
                 format!("{:?}", dword_val)
             },
             REG_QWORD => {
-                let dword_val = u64::convert_from_bytes(self).unwrap();
+                let dword_val = u64::from_reg_value(self).unwrap();
                 format!("{:?}", dword_val)
             },
             _ => format!("{:?}", self.bytes) //TODO: implement more types
@@ -73,25 +75,63 @@ impl fmt::Debug for RegValue {
     }
 }
 
+/// Handle of opened registry key
 #[derive(Debug)]
 pub struct RegKey {
-    hkey: winapi::HKEY,
+    hkey: HKEY,
 }
 
 impl RegKey {
-    pub fn predef(hkey: winapi::HKEY) -> RegKey {
+    /// Open one of predefined keys:
+    ///
+    /// ```ignore
+    /// HKEY_CLASSES_ROOT
+    /// HKEY_CURRENT_USER
+    /// HKEY_LOCAL_MACHINE
+    /// HKEY_USERS
+    /// HKEY_PERFORMANCE_DATA
+    /// HKEY_PERFORMANCE_TEXT
+    /// HKEY_PERFORMANCE_NLSTEXT
+    /// HKEY_CURRENT_CONFIG
+    /// HKEY_DYN_DATA
+    /// HKEY_CURRENT_USER_LOCAL_SETTINGS
+    /// ```
+    ///
+    /// # Example
+    ///
+    /// ```ignore
+    /// let hklm = RegKey::predef(HKEY_LOCAL_MACHINE);
+    /// ```
+    pub fn predef(hkey: HKEY) -> RegKey {
         RegKey{ hkey: hkey }
     }
 
     /// Open subkey with `KEY_ALL_ACCESS` permissions.
+    /// Will open another handle to itself if `path` is an empty string.
     /// To open with different permissions use `open_subkey_with_flags`.
+    ///
+    /// # Example
+    ///
+    /// ```ignore
+    /// let soft = RegKey::predef(HKEY_CURRENT_USER)
+    ///     .open_subkey("Software").unwrap();
+    /// ```
     pub fn open_subkey<P: AsRef<OsStr>>(&self, path: P) -> RegResult<RegKey> {
         self.open_subkey_with_flags(path, winapi::KEY_ALL_ACCESS)
     }
 
+    /// Open subkey with desired permissions.
+    /// Will open another handle to itself if `path` is an empty string.
+    ///
+    /// # Example
+    ///
+    /// ```ignore
+    /// let hklm = RegKey::predef(HKEY_LOCAL_MACHINE);
+    /// hklm.open_subkey_with_flags("SOFTWARE\\Microsoft", KEY_READ).unwrap();
+    /// ```
     pub fn open_subkey_with_flags<P: AsRef<OsStr>>(&self, path: P, perms: winapi::REGSAM) -> RegResult<RegKey> {
         let c_path = to_utf16(path);
-        let mut new_hkey: winapi::HKEY = ptr::null_mut();
+        let mut new_hkey: HKEY = ptr::null_mut();
         match unsafe {
             advapi32::RegOpenKeyExW(
                 self.hkey,
@@ -99,7 +139,7 @@ impl RegKey {
                 0,
                 perms,
                 &mut new_hkey,
-            ) as winapi::DWORD
+            ) as DWORD
         } {
             0 => Ok(RegKey{ hkey: new_hkey }),
             err => Err(RegError{ err: err })
@@ -109,15 +149,23 @@ impl RegKey {
     /// Create subkey (and all missing parent keys)
     /// and open it with `KEY_ALL_ACCESS` permissions.
     /// Will just open key if it already exists.
+    /// Will open another handle to itself if `path` is an empty string.
     /// To create with different permissions use `create_subkey_with_flags`.
+    ///
+    /// # Example
+    ///
+    /// ```ignore
+    /// let hkcu = RegKey::predef(HKEY_CURRENT_USER);
+    /// let settings = hkcu.create_subkey("Software\\MyProduct\\Settings").unwrap();
+    /// ```
     pub fn create_subkey<P: AsRef<OsStr>>(&self, path: P) -> RegResult<RegKey> {
         self.create_subkey_with_flags(path, winapi::KEY_ALL_ACCESS)
     }
 
     pub fn create_subkey_with_flags<P: AsRef<OsStr>>(&self, path: P, perms: winapi::REGSAM) -> RegResult<RegKey> {
         let c_path = to_utf16(path);
-        let mut new_hkey: winapi::HKEY = ptr::null_mut();
-        let mut disp: winapi::DWORD = 0;
+        let mut new_hkey: HKEY = ptr::null_mut();
+        let mut disp: DWORD = 0;
         match unsafe {
             advapi32::RegCreateKeyExW(
                 self.hkey,
@@ -129,7 +177,7 @@ impl RegKey {
                 ptr::null_mut(),
                 &mut new_hkey,
                 &mut disp // TODO: return this somehow
-            ) as winapi::DWORD
+            ) as DWORD
         } {
             0 => Ok(RegKey{ hkey: new_hkey }),
             err => Err(RegError{ err: err })
@@ -142,7 +190,7 @@ impl RegKey {
             advapi32::RegQueryInfoKeyW(
                 self.hkey,
                 ptr::null_mut(), // Class: winapi::LPWSTR,
-                ptr::null_mut(), // ClassLen: winapi::DWORD,
+                ptr::null_mut(), // ClassLen: DWORD,
                 ptr::null_mut(), // Reserved
                 &mut info.sub_keys,
                 &mut info.max_sub_key_len,
@@ -150,46 +198,87 @@ impl RegKey {
                 &mut info.values,
                 &mut info.max_value_name_len,
                 &mut info.max_value_len,
-                ptr::null_mut(), // lpcbSecurityDescriptor: LPDWORD,
-                ptr::null_mut(), // lpftLastWriteTime: PFILETIME,
-            ) as winapi::DWORD
+                ptr::null_mut(), // lpcbSecurityDescriptor: winapi::LPDWORD,
+                ptr::null_mut(), // lpftLastWriteTime: winapi::PFILETIME,
+            ) as DWORD
         } {
             0 => Ok(info),
             err => Err(RegError{ err: err })
         }
     }
 
+    /// Return an iterator over subkeys names.
+    ///
+    /// # Example
+    ///
+    /// ```ignore
+    /// println!("File extensions, registered in this system:");
+    /// for i in RegKey::predef(HKEY_CLASSES_ROOT)
+    ///     .enum_keys().map(|x| x.unwrap())
+    ///     .filter(|x| x.starts_with("."))
+    /// {
+    ///     println!("{}", i);
+    /// }
+    /// ```
     pub fn enum_keys<'a>(&'a self) -> EnumKeys<'a> {
         EnumKeys{key: self, index: 0}
     }
 
+    /// Return an iterator over values.
+    ///
+    /// # Example
+    ///
+    /// ```ignore
+    /// let system = RegKey::predef(HKEY_LOCAL_MACHINE)
+    ///     .open_subkey_with_flags("HARDWARE\\DESCRIPTION\\System", KEY_READ)
+    ///     .unwrap();
+    /// for (name, value) in system.enum_values().map(|x| x.unwrap()) {
+    ///     println!("{} = {:?}", name, value);
+    /// }
+    /// ```
     pub fn enum_values<'a>(&'a self) -> EnumValues<'a> {
         EnumValues{key: self, index: 0}
     }
 
-    /// Delete key. Cannot delete if it nas subkeys.
+    /// Delete key. Cannot delete if it has subkeys.
+    /// Will delete itself if `path` is an empty string.
     /// Use `delete_subkey_all` for that.
+    ///
+    /// # Example
+    ///
+    /// ```ignore
+    /// RegKey::predef(HKEY_CURRENT_USER)
+    ///     .delete_subkey(r"Software\MyProduct\History").unwrap();
+    /// ```
     pub fn delete_subkey<P: AsRef<OsStr>>(&self, path: P) -> RegResult<()> {
         let c_path = to_utf16(path);
         match unsafe {
             advapi32::RegDeleteKeyW(
                 self.hkey,
                 c_path.as_ptr(),
-            ) as winapi::DWORD
+            ) as DWORD
         } {
             0 => Ok(()),
             err => Err(RegError{ err: err })
         }
     }
 
-    /// Recursively delete key with all its subkeys and values.
+    /// Recursively delete subkey with all its subkeys and values.
+    /// Will delete itself if `path` is an empty string.
+    ///
+    /// # Example
+    ///
+    /// ```ignore
+    /// RegKey::predef(HKEY_CURRENT_USER)
+    ///     .delete_subkey_all("Software\\MyProduct").unwrap();
+    /// ```
     pub fn delete_subkey_all<P: AsRef<OsStr>>(&self, path: P) -> RegResult<()> {
         let c_path = to_utf16(path);
         match unsafe{
             advapi32::RegDeleteTreeW(
                 self.hkey,
                 c_path.as_ptr(),
-            ) as winapi::DWORD
+            ) as DWORD
         } {
             0 => Ok(()),
             err => Err(RegError{ err: err })
@@ -197,17 +286,17 @@ impl RegKey {
     }
 
     /// Get the `Default` value if `name` is an empty string
-    pub fn get_value<T: FromReg, P: AsRef<OsStr>>(&self, name: P) -> RegResult<T> {
+    pub fn get_value<T: FromRegValue, P: AsRef<OsStr>>(&self, name: P) -> RegResult<T> {
         match self.get_raw_value(name) {
-            Ok(ref val) => FromReg::convert_from_bytes(val),
+            Ok(ref val) => FromRegValue::from_reg_value(val),
             Err(err) => Err(err)
         }
     }
 
     pub fn get_raw_value<P: AsRef<OsStr>>(&self, name: P) -> RegResult<RegValue> {
         let c_name = to_utf16(name);
-        let mut buf_len: winapi::DWORD = 2048;
-        let mut buf_type: winapi::DWORD = 0;
+        let mut buf_len: DWORD = 2048;
+        let mut buf_type: DWORD = 0;
         let mut buf: Vec<u8> = Vec::with_capacity(buf_len as usize);
         match unsafe {
             advapi32::RegQueryValueExW(
@@ -217,7 +306,7 @@ impl RegKey {
                 &mut buf_type,
                 buf.as_mut_ptr() as winapi::LPBYTE,
                 &mut buf_len
-            ) as winapi::DWORD
+            ) as DWORD
         } {
             0 => {
                 unsafe{ buf.set_len(buf_len as usize); }
@@ -234,14 +323,14 @@ impl RegKey {
         }
     }
 
-    /// Set the `Default` value if `name` is an empty string
-    pub fn set_value<T: ToReg, P: AsRef<OsStr>>(&self, name: P, value: &T) -> RegResult<()> {
-        self.set_raw_value(name, &value.convert_to_bytes())
+    /// Will set the `Default` value if `name` is an empty string.
+    pub fn set_value<T: ToRegValue, P: AsRef<OsStr>>(&self, name: P, value: &T) -> RegResult<()> {
+        self.set_raw_value(name, &value.to_reg_value())
     }
 
     pub fn set_raw_value<P: AsRef<OsStr>>(&self, name: P, value: &RegValue) -> RegResult<()> {
         let c_name = to_utf16(name);
-        let t = value.vtype.clone() as winapi::DWORD;
+        let t = value.vtype.clone() as DWORD;
         match unsafe{
             advapi32::RegSetValueExW(
                 self.hkey,
@@ -250,21 +339,21 @@ impl RegKey {
                 t,
                 value.bytes.as_ptr() as *const winapi::BYTE,
                 value.bytes.len() as u32
-            ) as winapi::DWORD
+            ) as DWORD
         } {
             0 => Ok(()),
             err => Err(RegError{ err: err })
         }
     }
 
-    /// Delete the `Default` value if `name` is an empty string
+    /// Will delete the `Default` value if `name` is an empty string.
     pub fn delete_value<P: AsRef<OsStr>>(&self, name: P) -> RegResult<()> {
         let c_name = to_utf16(name);
         match unsafe {
             advapi32::RegDeleteValueW(
                 self.hkey,
                 c_name.as_ptr(),
-            ) as winapi::DWORD
+            ) as DWORD
         } {
             0 => Ok(()),
             err => Err(RegError{ err: err })
@@ -275,7 +364,7 @@ impl RegKey {
         // don't try to close predefined keys
         if self.hkey >= winapi::HKEY_CLASSES_ROOT { return Ok(()) };
         match unsafe {
-            advapi32::RegCloseKey(self.hkey) as winapi::DWORD
+            advapi32::RegCloseKey(self.hkey) as DWORD
         } {
             0 => Ok(()),
             err => Err(RegError{ err: err })
@@ -289,9 +378,10 @@ impl Drop for RegKey {
     }
 }
 
+/// Iterator over subkeys names
 pub struct EnumKeys<'key> {
     key: &'key RegKey,
-    index: winapi::DWORD,
+    index: DWORD,
 }
 
 impl<'key> Iterator for EnumKeys<'key> {
@@ -299,7 +389,7 @@ impl<'key> Iterator for EnumKeys<'key> {
 
     fn next(&mut self) -> Option<RegResult<String>> {
         let mut name_len = 2048;
-        let mut name = [0 as winapi::WCHAR; 2048];
+        let mut name = [0 as WCHAR; 2048];
         match unsafe {
             advapi32::RegEnumKeyExW(
                 self.key.hkey,
@@ -310,7 +400,7 @@ impl<'key> Iterator for EnumKeys<'key> {
                 ptr::null_mut(), // lpClass: LPWSTR,
                 ptr::null_mut(), // lpcClass: LPDWORD,
                 ptr::null_mut(), // lpftLastWriteTime: PFILETIME,
-            ) as winapi::DWORD
+            ) as DWORD
         } {
             0 => {
                 self.index += 1;
@@ -327,9 +417,10 @@ impl<'key> Iterator for EnumKeys<'key> {
     }
 }
 
+/// Iterator over values
 pub struct EnumValues<'key> {
     key: &'key RegKey,
-    index: winapi::DWORD,
+    index: DWORD,
 }
 
 impl<'key> Iterator for EnumValues<'key> {
@@ -337,10 +428,10 @@ impl<'key> Iterator for EnumValues<'key> {
 
     fn next(&mut self) -> Option<RegResult<(String, RegValue)>> {
         let mut name_len = 2048;
-        let mut name = [0 as winapi::WCHAR; 2048];
+        let mut name = [0 as WCHAR; 2048];
 
-        let mut buf_len: winapi::DWORD = 2048;
-        let mut buf_type: winapi::DWORD = 0;
+        let mut buf_len: DWORD = 2048;
+        let mut buf_type: DWORD = 0;
         let mut buf: Vec<u8> = Vec::with_capacity(buf_len as usize);
         match unsafe {
             advapi32::RegEnumValueW(
@@ -352,7 +443,7 @@ impl<'key> Iterator for EnumValues<'key> {
                 &mut buf_type,
                 buf.as_mut_ptr() as winapi::LPBYTE,
                 &mut buf_len,
-            ) as winapi::DWORD
+            ) as DWORD
         } {
             0 => {
                 self.index += 1;
@@ -391,16 +482,16 @@ fn v16_to_v8(v: &Vec<u16>) -> Vec<u8> {
 // `use std::sys::os::error_string` leads to
 // error: function `error_string` is private.
 // Get a detailed string description for the given error number
-fn error_string(errnum: winapi::DWORD) -> String {
-    let mut buf = [0 as winapi::WCHAR; 2048];
+fn error_string(errnum: DWORD) -> String {
+    let mut buf = [0 as WCHAR; 2048];
     unsafe {
         let res = kernel32::FormatMessageW(winapi::FORMAT_MESSAGE_FROM_SYSTEM |
                                  winapi::FORMAT_MESSAGE_IGNORE_INSERTS,
                                  ptr::null_mut(),
-                                 errnum as winapi::DWORD,
+                                 errnum as DWORD,
                                  0,
                                  buf.as_mut_ptr(),
-                                 buf.len() as winapi::DWORD,
+                                 buf.len() as DWORD,
                                  ptr::null_mut());
         if res == 0 {
             // Sometimes FormatMessageW can fail e.g. system doesn't like langId,
@@ -423,6 +514,7 @@ fn error_string(errnum: winapi::DWORD) -> String {
 #[cfg(test)]
 mod test {
     use super::*;
+    use super::enums::*;
     use super::types::*;
 
     #[test]
@@ -529,7 +621,7 @@ mod test {
                 .map(|x| x.unwrap())
             {
                 vals2.push(name);
-                vals3.push(String::convert_from_bytes(&val).unwrap());
+                vals3.push(String::from_reg_value(&val).unwrap());
             }
             assert_eq!(vals1, vals2);
             assert_eq!(vals1, vals3);

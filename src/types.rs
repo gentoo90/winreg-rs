@@ -7,40 +7,17 @@
 extern crate winapi;
 use std::slice;
 use winapi::winerror;
-pub use winapi::{HKEY_CLASSES_ROOT,
-                 HKEY_CURRENT_USER,
-                 HKEY_LOCAL_MACHINE,
-                 HKEY_USERS,
-                 HKEY_PERFORMANCE_DATA,
-                 HKEY_PERFORMANCE_TEXT,
-                 HKEY_PERFORMANCE_NLSTEXT,
-                 HKEY_CURRENT_CONFIG,
-                 HKEY_DYN_DATA,
-                 HKEY_CURRENT_USER_LOCAL_SETTINGS};
-pub use winapi::{KEY_QUERY_VALUE,
-                 KEY_SET_VALUE,
-                 KEY_CREATE_SUB_KEY,
-                 KEY_ENUMERATE_SUB_KEYS,
-                 KEY_NOTIFY,
-                 KEY_CREATE_LINK,
-                 KEY_WOW64_32KEY,
-                 KEY_WOW64_64KEY,
-                 KEY_WOW64_RES,
-                 KEY_READ,
-                 KEY_WRITE,
-                 KEY_EXECUTE,
-                 KEY_ALL_ACCESS};
 use super::{RegError,RegResult,RegValue};
 use enums::*;
 use super::{to_utf16,v16_to_v8};
 
 /// A trait for types that can be loaded from registry values.
-pub trait FromReg {
-    fn convert_from_bytes(val: &RegValue) -> RegResult<Self>;
+pub trait FromRegValue {
+    fn from_reg_value(val: &RegValue) -> RegResult<Self>;
 }
 
-impl FromReg for String {
-    fn convert_from_bytes(val: &RegValue) -> RegResult<String> {
+impl FromRegValue for String {
+    fn from_reg_value(val: &RegValue) -> RegResult<String> {
         match val.vtype {
             REG_SZ | REG_EXPAND_SZ | REG_MULTI_SZ => {
                 let words = unsafe {
@@ -59,8 +36,8 @@ impl FromReg for String {
     }
 }
 
-impl FromReg for u32 {
-    fn convert_from_bytes(val: &RegValue) -> RegResult<u32> {
+impl FromRegValue for u32 {
+    fn from_reg_value(val: &RegValue) -> RegResult<u32> {
         match val.vtype {
             REG_DWORD => {
                 Ok(unsafe{ *(val.bytes.as_ptr() as *const u32) })
@@ -70,8 +47,8 @@ impl FromReg for u32 {
     }
 }
 
-impl FromReg for u64 {
-    fn convert_from_bytes(val: &RegValue) -> RegResult<u64> {
+impl FromRegValue for u64 {
+    fn from_reg_value(val: &RegValue) -> RegResult<u64> {
         match val.vtype {
             REG_QWORD => {
                 Ok(unsafe{ *(val.bytes.as_ptr() as *const u64) })
@@ -82,12 +59,12 @@ impl FromReg for u64 {
 }
 
 /// A trait for types that can be written into registry values.
-pub trait ToReg {
-    fn convert_to_bytes(&self) -> RegValue;
+pub trait ToRegValue {
+    fn to_reg_value(&self) -> RegValue;
 }
 
-impl ToReg for String {
-    fn convert_to_bytes(&self) -> RegValue {
+impl ToRegValue for String {
+    fn to_reg_value(&self) -> RegValue {
         RegValue{
             bytes: v16_to_v8(&to_utf16(self)),
             vtype: REG_SZ
@@ -95,8 +72,8 @@ impl ToReg for String {
     }
 }
 
-impl<'a> ToReg for &'a str {
-    fn convert_to_bytes(&self) -> RegValue {
+impl<'a> ToRegValue for &'a str {
+    fn to_reg_value(&self) -> RegValue {
         RegValue{
             bytes: v16_to_v8(&to_utf16(self)),
             vtype: REG_SZ
@@ -104,8 +81,8 @@ impl<'a> ToReg for &'a str {
     }
 }
 
-impl ToReg for u32 {
-    fn convert_to_bytes(&self) -> RegValue {
+impl ToRegValue for u32 {
+    fn to_reg_value(&self) -> RegValue {
         let bytes: Vec<u8> = unsafe {
             slice::from_raw_parts((self as *const u32) as *const u8, 4).to_vec()
         };
@@ -116,8 +93,8 @@ impl ToReg for u32 {
     }
 }
 
-impl ToReg for u64 {
-    fn convert_to_bytes(&self) -> RegValue {
+impl ToRegValue for u64 {
+    fn to_reg_value(&self) -> RegValue {
         let bytes: Vec<u8> = unsafe {
             slice::from_raw_parts((self as *const u64) as *const u8, 8).to_vec()
         };

@@ -5,7 +5,7 @@
 // except according to those terms.
 extern crate winreg;
 use winreg::RegKey;
-use winreg::types::*;
+use winreg::enums::*;
 
 fn main() {
     println!("File extensions, registered in system:");

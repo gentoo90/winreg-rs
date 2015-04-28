@@ -6,7 +6,7 @@
 extern crate winreg;
 use std::path::Path;
 use winreg::RegKey;
-use winreg::types::*;
+use winreg::enums::*;
 
 fn main() {
     println!("Reading some system info...");

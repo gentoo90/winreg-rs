@@ -1,20 +1,24 @@
-winreg
+winreg [![Crates.io](https://img.shields.io/crates/v/winreg.svg)](https://crates.io/crates/winreg)
 ======
 
 Rust bindings to MS Windows Registry API. Work in progress.
 
 Currently it can:
 * open registry key
-* create registry key
-* delete registry key
-* delete registry key recursively
+* create key
+* query key metadata
+* delete key
+* delete key recursively
 * read `String` from `REG_SZ`, `REG_EXPAND_SZ` or `REG_MULTI_SZ` value
 * read `u32` from `REG_DWORD` value
 * read `u64` from `REG_QWORD` value
+* read raw value of any type to `RegValue` structure
 * write `String` and `&str` into `REG_SZ` value
 * write `u32` into `REG_DWORD` value
 * write `u64` into `REG_QWORD` value
+* write raw value of any type from `RegValue` structure
 * iterate through subkey names
+* iterate through values
 
 ## Usage
 
@@ -23,7 +27,7 @@ Basic usage:
 extern crate winreg;
 use std::path::Path;
 use winreg::RegKey;
-use winreg::types::*;
+use winreg::enums::*;
 
 fn main() {
     println!("Reading some system info...");
@@ -33,6 +37,8 @@ fn main() {
     let pf: String = cur_ver.get_value("ProgramFilesDir").unwrap();
     let dp: String = cur_ver.get_value("DevicePath").unwrap();
     println!("ProgramFiles = {}\nDevicePath = {}", pf, dp);
+    let info = cur_ver.query_info().unwrap();
+    println!("info = {:?}", info);
 
     println!("And now lets write something...");
     let hkcu = RegKey::predef(HKEY_CURRENT_USER);
@@ -64,7 +70,7 @@ Iterators:
 ```rust
 extern crate winreg;
 use winreg::RegKey;
-use winreg::types::*;
+use winreg::enums::*;
 
 fn main() {
     println!("File extensions, registered in system:");
@@ -73,6 +79,13 @@ fn main() {
         .filter(|x| x.starts_with("."))
     {
         println!("{}", i);
+    }
+
+    let system = RegKey::predef(HKEY_LOCAL_MACHINE)
+        .open_subkey_with_flags("HARDWARE\\DESCRIPTION\\System", KEY_READ)
+        .unwrap();
+    for (name, value) in system.enum_values().map(|x| x.unwrap()) {
+        println!("{} = {:?}", name, value);
     }
 }
 ```
