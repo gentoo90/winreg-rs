@@ -53,8 +53,8 @@ pub struct RegKeyMetadata {
 
 /// Raw registry value
 pub struct RegValue {
-    bytes: Vec<u8>,
-    vtype: RegType,
+    pub bytes: Vec<u8>,
+    pub vtype: RegType,
 }
 
 impl fmt::Debug for RegValue {
@@ -86,22 +86,22 @@ pub struct RegKey {
 impl RegKey {
     /// Open one of predefined keys:
     ///
-    /// ```ignore
-    /// HKEY_CLASSES_ROOT
-    /// HKEY_CURRENT_USER
-    /// HKEY_LOCAL_MACHINE
-    /// HKEY_USERS
-    /// HKEY_PERFORMANCE_DATA
-    /// HKEY_PERFORMANCE_TEXT
-    /// HKEY_PERFORMANCE_NLSTEXT
-    /// HKEY_CURRENT_CONFIG
-    /// HKEY_DYN_DATA
-    /// HKEY_CURRENT_USER_LOCAL_SETTINGS
-    /// ```
+    /// * `HKEY_CLASSES_ROOT`
+    /// * `HKEY_CURRENT_USER`
+    /// * `HKEY_LOCAL_MACHINE`
+    /// * `HKEY_USERS`
+    /// * `HKEY_PERFORMANCE_DATA`
+    /// * `HKEY_PERFORMANCE_TEXT`
+    /// * `HKEY_PERFORMANCE_NLSTEXT`
+    /// * `HKEY_CURRENT_CONFIG`
+    /// * `HKEY_DYN_DATA`
+    /// * `HKEY_CURRENT_USER_LOCAL_SETTINGS`
     ///
-    /// # Example
+    /// # Examples
     ///
-    /// ```ignore
+    /// ```no_run
+    /// # use winreg::RegKey;
+    /// # use winreg::enums::*;
     /// let hklm = RegKey::predef(HKEY_LOCAL_MACHINE);
     /// ```
     pub fn predef(hkey: HKEY) -> RegKey {
@@ -112,9 +112,11 @@ impl RegKey {
     /// Will open another handle to itself if `path` is an empty string.
     /// To open with different permissions use `open_subkey_with_flags`.
     ///
-    /// # Example
+    /// # Examples
     ///
-    /// ```ignore
+    /// ```no_run
+    /// # use winreg::RegKey;
+    /// # use winreg::enums::*;
     /// let soft = RegKey::predef(HKEY_CURRENT_USER)
     ///     .open_subkey("Software").unwrap();
     /// ```
@@ -125,9 +127,11 @@ impl RegKey {
     /// Open subkey with desired permissions.
     /// Will open another handle to itself if `path` is an empty string.
     ///
-    /// # Example
+    /// # Examples
     ///
-    /// ```ignore
+    /// ```no_run
+    /// # use winreg::RegKey;
+    /// # use winreg::enums::*;
     /// let hklm = RegKey::predef(HKEY_LOCAL_MACHINE);
     /// hklm.open_subkey_with_flags("SOFTWARE\\Microsoft", KEY_READ).unwrap();
     /// ```
@@ -154,9 +158,11 @@ impl RegKey {
     /// Will open another handle to itself if `path` is an empty string.
     /// To create with different permissions use `create_subkey_with_flags`.
     ///
-    /// # Example
+    /// # Examples
     ///
-    /// ```ignore
+    /// ```no_run
+    /// # use winreg::RegKey;
+    /// # use winreg::enums::*;
     /// let hkcu = RegKey::predef(HKEY_CURRENT_USER);
     /// let settings = hkcu.create_subkey("Software\\MyProduct\\Settings").unwrap();
     /// ```
@@ -211,9 +217,11 @@ impl RegKey {
 
     /// Return an iterator over subkeys names.
     ///
-    /// # Example
+    /// # Examples
     ///
-    /// ```ignore
+    /// ```no_run
+    /// # use winreg::RegKey;
+    /// # use winreg::enums::*;
     /// println!("File extensions, registered in this system:");
     /// for i in RegKey::predef(HKEY_CLASSES_ROOT)
     ///     .enum_keys().map(|x| x.unwrap())
@@ -228,9 +236,11 @@ impl RegKey {
 
     /// Return an iterator over values.
     ///
-    /// # Example
+    /// # Examples
     ///
-    /// ```ignore
+    /// ```no_run
+    /// # use winreg::RegKey;
+    /// # use winreg::enums::*;
     /// let system = RegKey::predef(HKEY_LOCAL_MACHINE)
     ///     .open_subkey_with_flags("HARDWARE\\DESCRIPTION\\System", KEY_READ)
     ///     .unwrap();
@@ -246,9 +256,11 @@ impl RegKey {
     /// Will delete itself if `path` is an empty string.
     /// Use `delete_subkey_all` for that.
     ///
-    /// # Example
+    /// # Examples
     ///
-    /// ```ignore
+    /// ```no_run
+    /// # use winreg::RegKey;
+    /// # use winreg::enums::*;
     /// RegKey::predef(HKEY_CURRENT_USER)
     ///     .delete_subkey(r"Software\MyProduct\History").unwrap();
     /// ```
@@ -268,9 +280,11 @@ impl RegKey {
     /// Recursively delete subkey with all its subkeys and values.
     /// Will delete itself if `path` is an empty string.
     ///
-    /// # Example
+    /// # Examples
     ///
-    /// ```ignore
+    /// ```no_run
+    /// # use winreg::RegKey;
+    /// # use winreg::enums::*;
     /// RegKey::predef(HKEY_CURRENT_USER)
     ///     .delete_subkey_all("Software\\MyProduct").unwrap();
     /// ```
@@ -287,7 +301,20 @@ impl RegKey {
         }
     }
 
-    /// Get the `Default` value if `name` is an empty string
+    /// Get a value from registry and seamlessly convert it to the specified rust type
+    /// with `FromRegValue` implemented (currently `String`, `u32` and `u64`).
+    /// Will get the `Default` value if `name` is an empty string.
+    ///
+    /// # Examples
+    ///
+    /// ```no_run
+    /// # use winreg::RegKey;
+    /// # use winreg::enums::*;
+    /// # let hkcu = RegKey::predef(HKEY_CURRENT_USER);
+    /// let settings = hkcu.open_subkey("Software\\MyProduct\\Settings").unwrap();
+    /// let server: String = settings.get_value("server").unwrap();
+    /// let port: u32 = settings.get_value("port").unwrap();
+    /// ```
     pub fn get_value<T: FromRegValue, P: AsRef<OsStr>>(&self, name: P) -> RegResult<T> {
         match self.get_raw_value(name) {
             Ok(ref val) => FromRegValue::from_reg_value(val),
@@ -295,6 +322,19 @@ impl RegKey {
         }
     }
 
+    /// Get raw bytes from registry value.
+    /// Will get the `Default` value if `name` is an empty string.
+    ///
+    /// # Examples
+    ///
+    /// ```no_run
+    /// # use winreg::RegKey;
+    /// # use winreg::enums::*;
+    /// # let hkcu = RegKey::predef(HKEY_CURRENT_USER);
+    /// let settings = hkcu.open_subkey("Software\\MyProduct\\Settings").unwrap();
+    /// let data = settings.get_raw_value("data").unwrap();
+    /// println!("Bytes: {:?}", data.bytes)
+    /// ```
     pub fn get_raw_value<P: AsRef<OsStr>>(&self, name: P) -> RegResult<RegValue> {
         let c_name = to_utf16(name);
         let mut buf_len: DWORD = 2048;
@@ -325,11 +365,39 @@ impl RegKey {
         }
     }
 
+    /// Seamlessly convert a value from a rust type and write it to the registry value
+    /// with `ToRegValue` trait implemented (currently `String`, `&str`, `u32` and `u64`).
     /// Will set the `Default` value if `name` is an empty string.
+    ///
+    /// # Examples
+    ///
+    /// ```no_run
+    /// # use winreg::RegKey;
+    /// # use winreg::enums::*;
+    /// # let hkcu = RegKey::predef(HKEY_CURRENT_USER);
+    /// let settings = hkcu.create_subkey("Software\\MyProduct\\Settings").unwrap();
+    /// settings.set_value("server", &"www.example.com").unwrap();
+    /// settings.set_value("port", &8080u32).unwrap();
+    /// ```
     pub fn set_value<T: ToRegValue, P: AsRef<OsStr>>(&self, name: P, value: &T) -> RegResult<()> {
         self.set_raw_value(name, &value.to_reg_value())
     }
 
+    /// Write raw bytes from `RegValue` struct to a registry value.
+    /// Will set the `Default` value if `name` is an empty string.
+    ///
+    /// # Examples
+    ///
+    /// ```no_run
+    /// use winreg::{RegKey, RegValue};
+    /// use winreg::enums::*;
+    /// let hkcu = RegKey::predef(HKEY_CURRENT_USER);
+    /// let settings = hkcu.open_subkey("Software\\MyProduct\\Settings").unwrap();
+    /// let bytes: Vec<u8> = vec![1, 2, 3, 5, 8, 13, 21, 34, 55, 89];
+    /// let data = RegValue{ vtype: REG_BINARY, bytes: bytes};
+    /// settings.set_raw_value("data", &data).unwrap();
+    /// println!("Bytes: {:?}", data.bytes)
+    /// ```
     pub fn set_raw_value<P: AsRef<OsStr>>(&self, name: P, value: &RegValue) -> RegResult<()> {
         let c_name = to_utf16(name);
         let t = value.vtype.clone() as DWORD;
@@ -348,7 +416,18 @@ impl RegKey {
         }
     }
 
+    /// Delete specified value from registry.
     /// Will delete the `Default` value if `name` is an empty string.
+    ///
+    /// # Examples
+    ///
+    /// ```no_run
+    /// # use winreg::RegKey;
+    /// # use winreg::enums::*;
+    /// # let hkcu = RegKey::predef(HKEY_CURRENT_USER);
+    /// let settings = hkcu.open_subkey("Software\\MyProduct\\Settings").unwrap();
+    /// settings.delete_value("data").unwrap();
+    /// ```
     pub fn delete_value<P: AsRef<OsStr>>(&self, name: P) -> RegResult<()> {
         let c_name = to_utf16(name);
         match unsafe {
@@ -364,7 +443,7 @@ impl RegKey {
 
     /// Save `Encodable` type to a registry key.
     ///
-    /// # Example
+    /// # Examples
     ///
     /// ```no_run
     /// extern crate rustc_serialize;
@@ -410,7 +489,7 @@ impl RegKey {
 
     /// Load `Decodable` type from a registry key.
     ///
-    /// # Example
+    /// # Examples
     ///
     /// ```no_run
     /// extern crate rustc_serialize;
