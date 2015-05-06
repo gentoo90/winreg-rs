@@ -7,6 +7,7 @@
 extern crate winapi;
 extern crate kernel32;
 extern crate advapi32;
+extern crate rustc_serialize;
 use std::ptr;
 use std::slice;
 use std::fmt;
@@ -21,6 +22,7 @@ use types::{FromRegValue, ToRegValue};
 
 pub mod enums;
 pub mod types;
+pub mod serialization;
 
 pub struct RegError {
     pub err: DWORD,
@@ -360,6 +362,93 @@ impl RegKey {
         }
     }
 
+    /// Save `Encodable` type to a registry key.
+    ///
+    /// # Example
+    ///
+    /// ```no_run
+    /// extern crate rustc_serialize;
+    /// extern crate winreg;
+    /// # fn main() {
+    /// use winreg::RegKey;
+    /// use winreg::enums::*;
+    /// use rustc_serialize::Encodable;
+    ///
+    /// #[derive(RustcEncodable)]
+    /// struct Rectangle{
+    ///     x: u32,
+    ///     y: u32,
+    ///     w: u32,
+    ///     h: u32,
+    /// }
+    ///
+    /// #[derive(RustcEncodable)]
+    /// struct Settings{
+    ///     current_dir: String,
+    ///     window_pos: Rectangle,
+    ///     show_in_tray: bool,
+    /// }
+    ///
+    /// let s: Settings = Settings{
+    ///     current_dir: "C:\\".to_string(),
+    ///     window_pos: Rectangle{ x:200, y: 100, w: 800, h: 500 },
+    ///     show_in_tray: false,
+    /// };
+    /// let s_key = RegKey::predef(HKEY_CURRENT_USER)
+    ///     .open_subkey("Software\\MyProduct\\Settings").unwrap();
+    /// s_key.encode(&s).unwrap();
+    /// # }
+    /// ```
+    pub fn encode<T: rustc_serialize::Encodable>(&self, value: &T)
+        -> serialization::EncodeResult<()>
+    {
+        let mut encoder = try!(
+            serialization::Encoder::from_key(&self)
+        );
+        value.encode(&mut encoder)
+    }
+
+    /// Load `Decodable` type from a registry key.
+    ///
+    /// # Example
+    ///
+    /// ```no_run
+    /// extern crate rustc_serialize;
+    /// extern crate winreg;
+    /// # fn main() {
+    /// use winreg::RegKey;
+    /// use winreg::enums::*;
+    /// use rustc_serialize::Decodable;
+    ///
+    /// #[derive(RustcDecodable)]
+    /// struct Rectangle{
+    ///     x: u32,
+    ///     y: u32,
+    ///     w: u32,
+    ///     h: u32,
+    /// }
+    ///
+    /// #[derive(RustcDecodable)]
+    /// struct Settings{
+    ///     current_dir: String,
+    ///     window_pos: Rectangle,
+    ///     show_in_tray: bool,
+    /// }
+    ///
+    /// let s_key = RegKey::predef(HKEY_CURRENT_USER)
+    ///     .open_subkey("Software\\MyProduct\\Settings").unwrap();
+    /// let s: Settings = s_key.decode().unwrap();
+    /// # }
+    /// ```
+    pub fn decode<T: rustc_serialize::Decodable>(&self)
+        -> serialization::DecodeResult<T>
+    {
+        let mut decoder = try!(
+            serialization::Decoder::from_key(&self)
+        );
+        T::decode(&mut decoder)
+    }
+
     fn close_(&mut self) -> RegResult<()> {
         // don't try to close predefined keys
         if self.hkey >= winapi::HKEY_CLASSES_ROOT { return Ok(()) };
@@ -516,6 +605,7 @@ mod test {
     use super::*;
     use super::enums::*;
     use super::types::*;
+    use rustc_serialize::{Encodable,Decodable};
 
     #[test]
     fn test_open_subkey_with_flags_query_info() {
@@ -625,6 +715,60 @@ mod test {
             }
             assert_eq!(vals1, vals2);
             assert_eq!(vals1, vals3);
+        });
+    }
+
+    #[test]
+    fn test_serialization() {
+        #[derive(Debug,RustcEncodable,RustcDecodable,PartialEq)]
+        struct Rectangle{
+            x: u32,
+            y: u32,
+            w: u32,
+            h: u32,
+        }
+
+        #[derive(Debug,RustcEncodable,RustcDecodable,PartialEq)]
+        struct Test {
+            t_bool: bool,
+            t_u8: u8,
+            t_u16: u16,
+            t_u32: u32,
+            t_u64: u64,
+            t_usize: usize,
+            t_struct: Rectangle,
+            t_string: String,
+            t_i8: i8,
+            t_i16: i16,
+            t_i32: i32,
+            t_i64: i64,
+            t_isize: isize,
+            // t_f64: f64,
+            // t_f32: f32,
+        }
+
+        let v1 = Test{
+            t_bool: false,
+            t_u8: 127,
+            t_u16: 32768,
+            t_u32: 123456789,
+            t_u64: 123456789101112,
+            t_usize: 123456789101112,
+            t_struct: Rectangle{ x: 55, y: 77, w: 500, h: 300 },
+            t_string: "Test123 \n$%^&|+-*/\\()".to_string(),
+            t_i8: -123,
+            t_i16: -2049,
+            t_i32: 20100,
+            t_i64: -12345678910,
+            t_isize: -1234567890,
+            // t_f64: -0.01,
+            // t_f32: 3.14,
+        };
+
+        with_key!(key, "Serialization" => {
+            key.encode(&v1).unwrap();
+            let v2: Test = key.decode().unwrap();
+            assert_eq!(v1, v2);
         });
     }
 }

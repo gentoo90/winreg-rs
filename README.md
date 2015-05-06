@@ -3,26 +3,22 @@ winreg [![Crates.io](https://img.shields.io/crates/v/winreg.svg)](https://crates
 
 Rust bindings to MS Windows Registry API. Work in progress.
 
-Currently it can:
-* open registry key
-* create key
-* query key metadata
-* delete key
-* delete key recursively
-* read `String` from `REG_SZ`, `REG_EXPAND_SZ` or `REG_MULTI_SZ` value
-* read `u32` from `REG_DWORD` value
-* read `u64` from `REG_QWORD` value
-* read raw value of any type to `RegValue` structure
-* write `String` and `&str` into `REG_SZ` value
-* write `u32` into `REG_DWORD` value
-* write `u64` into `REG_QWORD` value
-* write raw value of any type from `RegValue` structure
-* iterate through subkey names
-* iterate through values
+Current features:
+* Basic registry operations:
+    * open/create/delete keys
+    * read and write values
+    * seamless conversion between `REG_*` types and rust primitives
+        * `String` <= `REG_SZ`, `REG_EXPAND_SZ` or `REG_MULTI_SZ`
+        * `String` and `&str` => `REG_SZ`
+        * `u32` <=> `REG_DWORD`
+        * `u64` <=> `REG_QWORD`
+* Iteration through key names and through values
+* Serialization of rust types into/from registry (only primitives and structures for now)
 
 ## Usage
 
-Basic usage:
+### Basic usage
+
 ```rust
 extern crate winreg;
 use std::path::Path;
@@ -66,7 +62,8 @@ fn main() {
 }
 ```
 
-Iterators:
+### Iterators
+
 ```rust
 extern crate winreg;
 use winreg::RegKey;
@@ -87,5 +84,75 @@ fn main() {
     for (name, value) in system.enum_values().map(|x| x.unwrap()) {
         println!("{} = {:?}", name, value);
     }
+}
+```
+
+### Serialization
+
+```rust
+extern crate rustc_serialize;
+extern crate winreg;
+use winreg::enums::*;
+
+#[derive(Debug,RustcEncodable,RustcDecodable,PartialEq)]
+struct Rectangle{
+    x: u32,
+    y: u32,
+    w: u32,
+    h: u32,
+}
+
+#[derive(Debug,RustcEncodable,RustcDecodable,PartialEq)]
+struct Test {
+    t_bool: bool,
+    t_u8: u8,
+    t_u16: u16,
+    t_u32: u32,
+    t_u64: u64,
+    t_usize: usize,
+    t_struct: Rectangle,
+    t_string: String,
+    t_i8: i8,
+    t_i16: i16,
+    t_i32: i32,
+    t_i64: i64,
+    t_isize: isize,
+    t_f64: f64,
+    t_f32: f32,
+}
+
+fn main() {
+    let hkcu = winreg::RegKey::predef(HKEY_CURRENT_USER);
+    let key = hkcu.create_subkey("Software\\RustEncode").unwrap();
+    let v1 = Test{
+        t_bool: false,
+        t_u8: 127,
+        t_u16: 32768,
+        t_u32: 123456789,
+        t_u64: 123456789101112,
+        t_usize: 123456789101112,
+        t_struct: Rectangle{
+            x: 55,
+            y: 77,
+            w: 500,
+            h: 300,
+        },
+        t_string: "test 123!".to_string(),
+        t_i8: -123,
+        t_i16: -2049,
+        t_i32: 20100,
+        t_i64: -12345678910,
+        t_isize: -1234567890,
+        t_f64: -0.01,
+        t_f32: 3.14,
+    };
+
+    key.encode(&v1).unwrap();
+
+    let v2: Test = key.decode().unwrap();
+    println!("Decoded {:?}", v2);
+
+    // This shows `false` because f32 and f64 encoding/decoding is NOT precise
+    println!("Equal to encoded: {:?}", v1 == v2);
 }
 ```

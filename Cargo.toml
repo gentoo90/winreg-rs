@@ -12,3 +12,4 @@ keywords = ["Windows", "WinSDK", "Registry"]
 winapi = "0.1.17"
 kernel32-sys = "0.1.0"
 advapi32-sys = "0.1.0"
+rustc-serialize = "0.3.14"
