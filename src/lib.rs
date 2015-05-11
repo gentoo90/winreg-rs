@@ -7,6 +7,7 @@
 extern crate winapi;
 extern crate kernel32;
 extern crate advapi32;
+extern crate ktmw32;
 extern crate rustc_serialize;
 use std::ptr;
 use std::slice;
@@ -19,10 +20,12 @@ use winapi::winerror;
 use winapi::{HKEY,DWORD,WCHAR};
 use enums::*;
 use types::{FromRegValue, ToRegValue};
+use transaction::Transaction;
 
 pub mod enums;
 pub mod types;
 pub mod serialization;
+pub mod transaction;
 
 pub struct RegError {
     pub err: DWORD,
@@ -152,6 +155,31 @@ impl RegKey {
         }
     }
 
+    pub fn open_subkey_transacted<P: AsRef<OsStr>>(&self, path: P, t: &Transaction) -> RegResult<RegKey> {
+        self.open_subkey_transacted_with_flags(path, t, winapi::KEY_ALL_ACCESS)
+    }
+
+    pub fn open_subkey_transacted_with_flags<P: AsRef<OsStr>>(&self, path: P, t: &Transaction, perms: winapi::REGSAM)
+        -> RegResult<RegKey>
+    {
+        let c_path = to_utf16(path);
+        let mut new_hkey: HKEY = ptr::null_mut();
+        match unsafe {
+            advapi32::RegOpenKeyTransactedW(
+                self.hkey,
+                c_path.as_ptr(),
+                0,
+                perms,
+                &mut new_hkey,
+                t.handle,
+                ptr::null_mut(),
+            ) as DWORD
+        } {
+            0 => Ok(RegKey{ hkey: new_hkey }),
+            err => Err(RegError{ err: err })
+        }
+    }
+
     /// Create subkey (and all missing parent keys)
     /// and open it with `KEY_ALL_ACCESS` permissions.
     /// Will just open key if it already exists.
@@ -185,6 +213,36 @@ impl RegKey {
                 ptr::null_mut(),
                 &mut new_hkey,
                 &mut disp // TODO: return this somehow
+            ) as DWORD
+        } {
+            0 => Ok(RegKey{ hkey: new_hkey }),
+            err => Err(RegError{ err: err })
+        }
+    }
+
+    pub fn create_subkey_transacted<P: AsRef<OsStr>>(&self, path: P, t: &Transaction) -> RegResult<RegKey> {
+        self.create_subkey_transacted_with_flags(path, t, winapi::KEY_ALL_ACCESS)
+    }
+
+    pub fn create_subkey_transacted_with_flags<P: AsRef<OsStr>>(&self, path: P, t: &Transaction, perms: winapi::REGSAM)
+        -> RegResult<RegKey>
+    {
+        let c_path = to_utf16(path);
+        let mut new_hkey: HKEY = ptr::null_mut();
+        let mut disp: DWORD = 0;
+        match unsafe {
+            advapi32::RegCreateKeyTransactedW(
+                self.hkey,
+                c_path.as_ptr(),
+                0,
+                ptr::null_mut(),
+                winapi::REG_OPTION_NON_VOLATILE,
+                perms,
+                ptr::null_mut(),
+                &mut new_hkey,
+                &mut disp, // TODO: return this somehow
+                t.handle,
+                ptr::null_mut(),
             ) as DWORD
         } {
             0 => Ok(RegKey{ hkey: new_hkey }),
@@ -270,6 +328,23 @@ impl RegKey {
             advapi32::RegDeleteKeyW(
                 self.hkey,
                 c_path.as_ptr(),
+            ) as DWORD
+        } {
+            0 => Ok(()),
+            err => Err(RegError{ err: err })
+        }
+    }
+
+    pub fn delete_subkey_transacted<P: AsRef<OsStr>>(&self, path: P, t: &Transaction) -> RegResult<()> {
+        let c_path = to_utf16(path);
+        match unsafe {
+            advapi32::RegDeleteKeyTransactedW(
+                self.hkey,
+                c_path.as_ptr(),
+                0,
+                0,
+                t.handle,
+                ptr::null_mut(),
             ) as DWORD
         } {
             0 => Ok(()),
