@@ -17,6 +17,12 @@ pub enum EncoderError{
     NoFieldName,
 }
 
+impl From<RegError> for EncoderError {
+    fn from(err: RegError) -> EncoderError {
+        EncoderError::RegError(err)
+    }
+}
+
 pub type EncodeResult<T> = Result<T, EncoderError>;
 
 #[derive(Debug)]
@@ -29,9 +35,8 @@ const ENCODER_SAM: winapi::DWORD = KEY_CREATE_SUB_KEY|KEY_SET_VALUE;
 
 impl Encoder {
     pub fn from_key(key: &RegKey) -> EncodeResult<Encoder> {
-        key.open_subkey_with_flags("", ENCODER_SAM)
-            .map(|k| Encoder::new(k))
-            .map_err(|e| EncoderError::RegError(e))
+        let new_key = try!(key.open_subkey_with_flags("", ENCODER_SAM));
+        Ok(Encoder::new(new_key))
     }
 
     fn new(key: RegKey) -> Encoder {
@@ -47,8 +52,7 @@ macro_rules! emit_value{
         match mem::replace(&mut $s.f_name, None) {
             Some(ref s) => {
                 print!("v = {:?}", $v);
-                $s.key.set_value(s, &$v)
-                    .map_err(|e| EncoderError::RegError(e))
+                Ok(try!($s.key.set_value(s, &$v)))
             },
             None => Err(EncoderError::NoFieldName)
         }
@@ -283,6 +287,12 @@ pub enum DecoderError{
     NoFieldName,
 }
 
+impl From<RegError> for DecoderError {
+    fn from(err: RegError) -> DecoderError {
+        DecoderError::RegError(err)
+    }
+}
+
 pub type DecodeResult<T> = Result<T, DecoderError>;
 
 #[derive(Debug)]
@@ -295,9 +305,8 @@ const DECODER_SAM: winapi::DWORD = KEY_QUERY_VALUE;
 
 impl Decoder {
     pub fn from_key(key: &RegKey) -> DecodeResult<Decoder> {
-        key.open_subkey_with_flags("", DECODER_SAM)
-            .map(|k| Decoder::new(k))
-            .map_err(|e| DecoderError::RegError(e))
+        let new_key = try!(key.open_subkey_with_flags("", DECODER_SAM));
+        Decoder::new(new_key)
     }
 
     fn new(key: RegKey) -> Decoder {
@@ -311,10 +320,7 @@ impl Decoder {
 macro_rules! read_value{
     ($s:ident) => (
         match mem::replace(&mut $s.f_name, None) {
-            Some(ref s) => {
-                $s.key.get_value(s)
-                    .map_err(|e| DecoderError::RegError(e))
-            },
+            Some(ref s) => Ok(try!($s.key.get_value(s))),
             None => Err(DecoderError::NoFieldName)
         }
     )
