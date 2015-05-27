@@ -179,7 +179,7 @@ impl RegKey {
                 self.hkey,
                 c_path.as_ptr(),
                 0,
-                ptr::null(),
+                ptr::null_mut(),
                 winapi::REG_OPTION_NON_VOLATILE,
                 perms,
                 ptr::null_mut(),
