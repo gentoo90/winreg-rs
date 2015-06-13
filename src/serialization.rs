@@ -6,6 +6,7 @@
 //! Registry keys parsing and serialization
 use super::{RegKey,RegError};
 use super::enums::*;
+use super::transaction::Transaction;
 use rustc_serialize;
 use std::mem;
 use winapi;
@@ -19,9 +20,16 @@ pub enum EncoderError{
 
 pub type EncodeResult<T> = Result<T, EncoderError>;
 
+impl From<RegError> for EncoderError {
+    fn from(err: RegError) -> EncoderError {
+        EncoderError::RegError(err)
+    }
+}
+
 #[derive(Debug)]
 pub struct Encoder {
-    key: RegKey,
+    keys: Vec<RegKey>,
+    tr: Transaction,
     f_name: Option<String>,
 }
 
@@ -29,16 +37,24 @@ const ENCODER_SAM: winapi::DWORD = KEY_CREATE_SUB_KEY|KEY_SET_VALUE;
 
 impl Encoder {
     pub fn from_key(key: &RegKey) -> EncodeResult<Encoder> {
-        key.open_subkey_with_flags("", ENCODER_SAM)
-            .map(|k| Encoder::new(k))
-            .map_err(|e| EncoderError::RegError(e))
+        let tr = try!(Transaction::new());
+        key.open_subkey_transacted_with_flags("", &tr, ENCODER_SAM)
+            .map(|k| Encoder::new(k, tr))
+            .map_err(EncoderError::RegError)
     }
 
-    fn new(key: RegKey) -> Encoder {
+    fn new(key: RegKey, tr: Transaction) -> Encoder {
+        let mut keys = Vec::with_capacity(5);
+        keys.push(key);
         Encoder{
-            key: key,
+            keys: keys,
+            tr: tr,
             f_name: None,
         }
+    }
+
+    pub fn commit(&mut self) -> EncodeResult<()> {
+        self.tr.commit().map_err(EncoderError::RegError)
     }
 }
 
@@ -47,8 +63,8 @@ macro_rules! emit_value{
         match mem::replace(&mut $s.f_name, None) {
             Some(ref s) => {
                 print!("v = {:?}", $v);
-                $s.key.set_value(s, &$v)
-                    .map_err(|e| EncoderError::RegError(e))
+                $s.keys[$s.keys.len()-1].set_value(s, &$v)
+                    .map_err(EncoderError::RegError)
             },
             None => Err(EncoderError::NoFieldName)
         }
@@ -169,10 +185,12 @@ impl rustc_serialize::Encoder for Encoder {
                 f(self)
             },
             Some(ref s) => { // nested structure
-                match self.key.create_subkey_with_flags(&s, ENCODER_SAM) {
+                match self.keys[self.keys.len()-1].create_subkey_transacted_with_flags(&s, &self.tr, ENCODER_SAM) {
                     Ok(subkey) => {
-                        let mut nested = Encoder::new(subkey);
-                        f(&mut nested)
+                        self.keys.push(subkey);
+                        let res = f(self);
+                        self.keys.pop();
+                        res
                     },
                     Err(err) => return Err(EncoderError::RegError(err))
                 }
@@ -296,8 +314,8 @@ const DECODER_SAM: winapi::DWORD = KEY_QUERY_VALUE;
 impl Decoder {
     pub fn from_key(key: &RegKey) -> DecodeResult<Decoder> {
         key.open_subkey_with_flags("", DECODER_SAM)
-            .map(|k| Decoder::new(k))
-            .map_err(|e| DecoderError::RegError(e))
+            .map(Decoder::new)
+            .map_err(DecoderError::RegError)
     }
 
     fn new(key: RegKey) -> Decoder {
@@ -313,7 +331,7 @@ macro_rules! read_value{
         match mem::replace(&mut $s.f_name, None) {
             Some(ref s) => {
                 $s.key.get_value(s)
-                    .map_err(|e| DecoderError::RegError(e))
+                    .map_err(DecoderError::RegError)
             },
             None => Err(DecoderError::NoFieldName)
         }

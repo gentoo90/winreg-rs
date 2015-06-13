@@ -559,7 +559,8 @@ impl RegKey {
         let mut encoder = try!(
             serialization::Encoder::from_key(&self)
         );
-        value.encode(&mut encoder)
+        try!(value.encode(&mut encoder));
+        encoder.commit()
     }
 
     /// Load `Decodable` type from a registry key.

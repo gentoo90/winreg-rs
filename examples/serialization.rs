@@ -8,11 +8,21 @@ extern crate winreg;
 use winreg::enums::*;
 
 #[derive(Debug,RustcEncodable,RustcDecodable,PartialEq)]
-struct Rectangle{
+struct Coords {
     x: u32,
     y: u32,
+}
+
+#[derive(Debug,RustcEncodable,RustcDecodable,PartialEq)]
+struct Size {
     w: u32,
     h: u32,
+}
+
+#[derive(Debug,RustcEncodable,RustcDecodable,PartialEq)]
+struct Rectangle {
+    coords: Coords,
+    size: Size,
 }
 
 #[derive(Debug,RustcEncodable,RustcDecodable,PartialEq)]
@@ -32,6 +42,7 @@ struct Test {
     t_isize: isize,
     t_f64: f64,
     t_f32: f32,
+    // t_char: char,
 }
 
 fn main() {
@@ -45,10 +56,8 @@ fn main() {
         t_u64: 123456789101112,
         t_usize: 123456789101112,
         t_struct: Rectangle{
-            x: 55,
-            y: 77,
-            w: 500,
-            h: 300,
+            coords: Coords{ x: 55, y: 77 },
+            size: Size{ w: 500, h: 300 },
         },
         t_string: "test 123!".to_string(),
         t_i8: -123,
@@ -58,6 +67,7 @@ fn main() {
         t_isize: -1234567890,
         t_f64: -0.01,
         t_f32: 3.14,
+        // t_char: 'a',
     };
 
     key.encode(&v1).unwrap();
