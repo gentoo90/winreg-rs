@@ -13,7 +13,8 @@ Current features:
         * `u32` <=> `REG_DWORD`
         * `u64` <=> `REG_QWORD`
 * Iteration through key names and through values
-* Serialization of rust types into/from registry (only primitives and structures for now)
+* Transactions
+* Transacted serialization of rust types into/from registry (only primitives and structures for now)
 
 ## Usage
 
