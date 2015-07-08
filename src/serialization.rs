@@ -4,25 +4,26 @@
 // may not be copied, modified, or distributed
 // except according to those terms.
 //! Registry keys parsing and serialization
-use super::{RegKey,RegError};
+use super::{RegKey};
 use super::enums::*;
 use super::transaction::Transaction;
 use rustc_serialize;
 use std::mem;
+use std::io;
 use winapi;
 
 #[derive(Debug)]
 pub enum EncoderError{
     EncodeNotImplemented(String),
-    RegError(RegError),
+    IoError(io::Error),
     NoFieldName,
 }
 
 pub type EncodeResult<T> = Result<T, EncoderError>;
 
-impl From<RegError> for EncoderError {
-    fn from(err: RegError) -> EncoderError {
-        EncoderError::RegError(err)
+impl From<io::Error> for EncoderError {
+    fn from(err: io::Error) -> EncoderError {
+        EncoderError::IoError(err)
     }
 }
 
@@ -40,7 +41,7 @@ impl Encoder {
         let tr = try!(Transaction::new());
         key.open_subkey_transacted_with_flags("", &tr, ENCODER_SAM)
             .map(|k| Encoder::new(k, tr))
-            .map_err(EncoderError::RegError)
+            .map_err(EncoderError::IoError)
     }
 
     fn new(key: RegKey, tr: Transaction) -> Encoder {
@@ -54,7 +55,7 @@ impl Encoder {
     }
 
     pub fn commit(&mut self) -> EncodeResult<()> {
-        self.tr.commit().map_err(EncoderError::RegError)
+        self.tr.commit().map_err(EncoderError::IoError)
     }
 }
 
@@ -64,7 +65,7 @@ macro_rules! emit_value{
             Some(ref s) => {
                 print!("v = {:?}", $v);
                 $s.keys[$s.keys.len()-1].set_value(s, &$v)
-                    .map_err(EncoderError::RegError)
+                    .map_err(EncoderError::IoError)
             },
             None => Err(EncoderError::NoFieldName)
         }
@@ -192,7 +193,7 @@ impl rustc_serialize::Encoder for Encoder {
                         self.keys.pop();
                         res
                     },
-                    Err(err) => return Err(EncoderError::RegError(err))
+                    Err(err) => return Err(EncoderError::IoError(err))
                 }
             }
         };
@@ -296,7 +297,7 @@ impl rustc_serialize::Encoder for Encoder {
 #[derive(Debug)]
 pub enum DecoderError{
     DecodeNotImplemented(String),
-    RegError(RegError),
+    IoError(io::Error),
     ParseError(String),
     NoFieldName,
 }
@@ -315,7 +316,7 @@ impl Decoder {
     pub fn from_key(key: &RegKey) -> DecodeResult<Decoder> {
         key.open_subkey_with_flags("", DECODER_SAM)
             .map(Decoder::new)
-            .map_err(DecoderError::RegError)
+            .map_err(DecoderError::IoError)
     }
 
     fn new(key: RegKey) -> Decoder {
@@ -331,7 +332,7 @@ macro_rules! read_value{
         match mem::replace(&mut $s.f_name, None) {
             Some(ref s) => {
                 $s.key.get_value(s)
-                    .map_err(DecoderError::RegError)
+                    .map_err(DecoderError::IoError)
             },
             None => Err(DecoderError::NoFieldName)
         }
@@ -461,7 +462,7 @@ impl rustc_serialize::Decoder for Decoder {
                         let mut nested = Decoder::new(subkey);
                         f(&mut nested)
                     },
-                    Err(err) => return Err(DecoderError::RegError(err))
+                    Err(err) => return Err(DecoderError::IoError(err))
                 }
             }
         }

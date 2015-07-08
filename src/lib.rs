@@ -16,29 +16,23 @@ use std::default::Default;
 use std::ffi::OsStr;
 use std::os::windows::ffi::OsStrExt;
 use std::mem::transmute;
+use std::io;
 use winapi::winerror;
 use winapi::{HKEY,DWORD,WCHAR};
 use enums::*;
 use types::{FromRegValue, ToRegValue};
 use transaction::Transaction;
 
+macro_rules! werr {
+    ($e:expr) => (
+        Err(io::Error::from_raw_os_error($e as i32))
+    )
+}
+
 pub mod enums;
 pub mod types;
 pub mod serialization;
 pub mod transaction;
-
-pub struct RegError {
-    pub err: DWORD,
-}
-
-impl fmt::Debug for RegError {
-    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-        write!(f, "RegError {{ err: {:?}, message: {:?} }}",
-                   self.err, error_string(self.err))
-    }
-}
-
-pub type RegResult<T> = std::result::Result<T, RegError>;
 
 #[derive(Debug,Default)]
 pub struct RegKeyMetadata {
@@ -123,7 +117,7 @@ impl RegKey {
     /// let soft = RegKey::predef(HKEY_CURRENT_USER)
     ///     .open_subkey("Software").unwrap();
     /// ```
-    pub fn open_subkey<P: AsRef<OsStr>>(&self, path: P) -> RegResult<RegKey> {
+    pub fn open_subkey<P: AsRef<OsStr>>(&self, path: P) -> io::Result<RegKey> {
         self.open_subkey_with_flags(path, winapi::KEY_ALL_ACCESS)
     }
 
@@ -138,7 +132,7 @@ impl RegKey {
     /// let hklm = RegKey::predef(HKEY_LOCAL_MACHINE);
     /// hklm.open_subkey_with_flags("SOFTWARE\\Microsoft", KEY_READ).unwrap();
     /// ```
-    pub fn open_subkey_with_flags<P: AsRef<OsStr>>(&self, path: P, perms: winapi::REGSAM) -> RegResult<RegKey> {
+    pub fn open_subkey_with_flags<P: AsRef<OsStr>>(&self, path: P, perms: winapi::REGSAM) -> io::Result<RegKey> {
         let c_path = to_utf16(path);
         let mut new_hkey: HKEY = ptr::null_mut();
         match unsafe {
@@ -151,16 +145,16 @@ impl RegKey {
             ) as DWORD
         } {
             0 => Ok(RegKey{ hkey: new_hkey }),
-            err => Err(RegError{ err: err })
+            err => werr!(err)
         }
     }
 
-    pub fn open_subkey_transacted<P: AsRef<OsStr>>(&self, path: P, t: &Transaction) -> RegResult<RegKey> {
+    pub fn open_subkey_transacted<P: AsRef<OsStr>>(&self, path: P, t: &Transaction) -> io::Result<RegKey> {
         self.open_subkey_transacted_with_flags(path, t, winapi::KEY_ALL_ACCESS)
     }
 
     pub fn open_subkey_transacted_with_flags<P: AsRef<OsStr>>(&self, path: P, t: &Transaction, perms: winapi::REGSAM)
-        -> RegResult<RegKey>
+        -> io::Result<RegKey>
     {
         let c_path = to_utf16(path);
         let mut new_hkey: HKEY = ptr::null_mut();
@@ -176,7 +170,7 @@ impl RegKey {
             ) as DWORD
         } {
             0 => Ok(RegKey{ hkey: new_hkey }),
-            err => Err(RegError{ err: err })
+            err => werr!(err)
         }
     }
 
@@ -194,11 +188,11 @@ impl RegKey {
     /// let hkcu = RegKey::predef(HKEY_CURRENT_USER);
     /// let settings = hkcu.create_subkey("Software\\MyProduct\\Settings").unwrap();
     /// ```
-    pub fn create_subkey<P: AsRef<OsStr>>(&self, path: P) -> RegResult<RegKey> {
+    pub fn create_subkey<P: AsRef<OsStr>>(&self, path: P) -> io::Result<RegKey> {
         self.create_subkey_with_flags(path, winapi::KEY_ALL_ACCESS)
     }
 
-    pub fn create_subkey_with_flags<P: AsRef<OsStr>>(&self, path: P, perms: winapi::REGSAM) -> RegResult<RegKey> {
+    pub fn create_subkey_with_flags<P: AsRef<OsStr>>(&self, path: P, perms: winapi::REGSAM) -> io::Result<RegKey> {
         let c_path = to_utf16(path);
         let mut new_hkey: HKEY = ptr::null_mut();
         let mut disp: DWORD = 0;
@@ -216,16 +210,16 @@ impl RegKey {
             ) as DWORD
         } {
             0 => Ok(RegKey{ hkey: new_hkey }),
-            err => Err(RegError{ err: err })
+            err => werr!(err)
         }
     }
 
-    pub fn create_subkey_transacted<P: AsRef<OsStr>>(&self, path: P, t: &Transaction) -> RegResult<RegKey> {
+    pub fn create_subkey_transacted<P: AsRef<OsStr>>(&self, path: P, t: &Transaction) -> io::Result<RegKey> {
         self.create_subkey_transacted_with_flags(path, t, winapi::KEY_ALL_ACCESS)
     }
 
     pub fn create_subkey_transacted_with_flags<P: AsRef<OsStr>>(&self, path: P, t: &Transaction, perms: winapi::REGSAM)
-        -> RegResult<RegKey>
+        -> io::Result<RegKey>
     {
         let c_path = to_utf16(path);
         let mut new_hkey: HKEY = ptr::null_mut();
@@ -246,11 +240,11 @@ impl RegKey {
             ) as DWORD
         } {
             0 => Ok(RegKey{ hkey: new_hkey }),
-            err => Err(RegError{ err: err })
+            err => werr!(err)
         }
     }
 
-    pub fn query_info(&self) -> RegResult<RegKeyMetadata> {
+    pub fn query_info(&self) -> io::Result<RegKeyMetadata> {
         let mut info: RegKeyMetadata = Default::default();
         match unsafe {
             advapi32::RegQueryInfoKeyW(
@@ -269,7 +263,7 @@ impl RegKey {
             ) as DWORD
         } {
             0 => Ok(info),
-            err => Err(RegError{ err: err })
+            err => werr!(err)
         }
     }
 
@@ -322,7 +316,7 @@ impl RegKey {
     /// RegKey::predef(HKEY_CURRENT_USER)
     ///     .delete_subkey(r"Software\MyProduct\History").unwrap();
     /// ```
-    pub fn delete_subkey<P: AsRef<OsStr>>(&self, path: P) -> RegResult<()> {
+    pub fn delete_subkey<P: AsRef<OsStr>>(&self, path: P) -> io::Result<()> {
         let c_path = to_utf16(path);
         match unsafe {
             advapi32::RegDeleteKeyW(
@@ -331,11 +325,11 @@ impl RegKey {
             ) as DWORD
         } {
             0 => Ok(()),
-            err => Err(RegError{ err: err })
+            err => werr!(err)
         }
     }
 
-    pub fn delete_subkey_transacted<P: AsRef<OsStr>>(&self, path: P, t: &Transaction) -> RegResult<()> {
+    pub fn delete_subkey_transacted<P: AsRef<OsStr>>(&self, path: P, t: &Transaction) -> io::Result<()> {
         let c_path = to_utf16(path);
         match unsafe {
             advapi32::RegDeleteKeyTransactedW(
@@ -348,7 +342,7 @@ impl RegKey {
             ) as DWORD
         } {
             0 => Ok(()),
-            err => Err(RegError{ err: err })
+            err => werr!(err)
         }
     }
 
@@ -363,7 +357,7 @@ impl RegKey {
     /// RegKey::predef(HKEY_CURRENT_USER)
     ///     .delete_subkey_all("Software\\MyProduct").unwrap();
     /// ```
-    pub fn delete_subkey_all<P: AsRef<OsStr>>(&self, path: P) -> RegResult<()> {
+    pub fn delete_subkey_all<P: AsRef<OsStr>>(&self, path: P) -> io::Result<()> {
         let c_path = to_utf16(path);
         match unsafe{
             advapi32::RegDeleteTreeW(
@@ -372,7 +366,7 @@ impl RegKey {
             ) as DWORD
         } {
             0 => Ok(()),
-            err => Err(RegError{ err: err })
+            err => werr!(err)
         }
     }
 
@@ -390,7 +384,7 @@ impl RegKey {
     /// let server: String = settings.get_value("server").unwrap();
     /// let port: u32 = settings.get_value("port").unwrap();
     /// ```
-    pub fn get_value<T: FromRegValue, P: AsRef<OsStr>>(&self, name: P) -> RegResult<T> {
+    pub fn get_value<T: FromRegValue, N: AsRef<OsStr>>(&self, name: N) -> io::Result<T> {
         match self.get_raw_value(name) {
             Ok(ref val) => FromRegValue::from_reg_value(val),
             Err(err) => Err(err)
@@ -410,7 +404,7 @@ impl RegKey {
     /// let data = settings.get_raw_value("data").unwrap();
     /// println!("Bytes: {:?}", data.bytes)
     /// ```
-    pub fn get_raw_value<P: AsRef<OsStr>>(&self, name: P) -> RegResult<RegValue> {
+    pub fn get_raw_value<N: AsRef<OsStr>>(&self, name: N) -> io::Result<RegValue> {
         let c_name = to_utf16(name);
         let mut buf_len: DWORD = 2048;
         let mut buf_type: DWORD = 0;
@@ -429,14 +423,12 @@ impl RegKey {
                 unsafe{ buf.set_len(buf_len as usize); }
                 // minimal check before transmute to RegType
                 if buf_type > winapi::REG_QWORD {
-                    return Err(RegError{
-                        err: winerror::ERROR_BAD_FILE_TYPE
-                    });
+                    return werr!(winerror::ERROR_BAD_FILE_TYPE);
                 }
                 let t: RegType = unsafe{ transmute(buf_type as u8) };
                 Ok(RegValue{ bytes: buf, vtype: t })
             },
-            err => Err(RegError{ err: err })
+            err => werr!(err)
         }
     }
 
@@ -454,7 +446,7 @@ impl RegKey {
     /// settings.set_value("server", &"www.example.com").unwrap();
     /// settings.set_value("port", &8080u32).unwrap();
     /// ```
-    pub fn set_value<T: ToRegValue, P: AsRef<OsStr>>(&self, name: P, value: &T) -> RegResult<()> {
+    pub fn set_value<T: ToRegValue, N: AsRef<OsStr>>(&self, name: N, value: &T) -> io::Result<()> {
         self.set_raw_value(name, &value.to_reg_value())
     }
 
@@ -473,7 +465,7 @@ impl RegKey {
     /// settings.set_raw_value("data", &data).unwrap();
     /// println!("Bytes: {:?}", data.bytes)
     /// ```
-    pub fn set_raw_value<P: AsRef<OsStr>>(&self, name: P, value: &RegValue) -> RegResult<()> {
+    pub fn set_raw_value<N: AsRef<OsStr>>(&self, name: N, value: &RegValue) -> io::Result<()> {
         let c_name = to_utf16(name);
         let t = value.vtype.clone() as DWORD;
         match unsafe{
@@ -487,7 +479,7 @@ impl RegKey {
             ) as DWORD
         } {
             0 => Ok(()),
-            err => Err(RegError{ err: err })
+            err => werr!(err)
         }
     }
 
@@ -503,7 +495,7 @@ impl RegKey {
     /// let settings = hkcu.open_subkey("Software\\MyProduct\\Settings").unwrap();
     /// settings.delete_value("data").unwrap();
     /// ```
-    pub fn delete_value<P: AsRef<OsStr>>(&self, name: P) -> RegResult<()> {
+    pub fn delete_value<N: AsRef<OsStr>>(&self, name: N) -> io::Result<()> {
         let c_name = to_utf16(name);
         match unsafe {
             advapi32::RegDeleteValueW(
@@ -512,7 +504,7 @@ impl RegKey {
             ) as DWORD
         } {
             0 => Ok(()),
-            err => Err(RegError{ err: err })
+            err => werr!(err)
         }
     }
 
@@ -604,14 +596,14 @@ impl RegKey {
         T::decode(&mut decoder)
     }
 
-    fn close_(&mut self) -> RegResult<()> {
+    fn close_(&mut self) -> io::Result<()> {
         // don't try to close predefined keys
         if self.hkey >= winapi::HKEY_CLASSES_ROOT { return Ok(()) };
         match unsafe {
             advapi32::RegCloseKey(self.hkey) as DWORD
         } {
             0 => Ok(()),
-            err => Err(RegError{ err: err })
+            err => werr!(err)
         }
     }
 }
@@ -629,9 +621,9 @@ pub struct EnumKeys<'key> {
 }
 
 impl<'key> Iterator for EnumKeys<'key> {
-    type Item = RegResult<String>;
+    type Item = io::Result<String>;
 
-    fn next(&mut self) -> Option<RegResult<String>> {
+    fn next(&mut self) -> Option<io::Result<String>> {
         let mut name_len = 2048;
         let mut name = [0 as WCHAR; 2048];
         match unsafe {
@@ -650,12 +642,12 @@ impl<'key> Iterator for EnumKeys<'key> {
                 self.index += 1;
                 Some(match String::from_utf16(&name[..name_len as usize]) {
                     Ok(s) => Ok(s),
-                    Err(_) => Err(RegError{ err: winerror::ERROR_INVALID_BLOCK })
+                    Err(_) => werr!(winerror::ERROR_INVALID_BLOCK)
                 })
             },
             winerror::ERROR_NO_MORE_ITEMS => None,
             err => {
-                Some(Err(RegError{ err: err }))
+                Some(werr!(err))
             }
         }
     }
@@ -668,9 +660,9 @@ pub struct EnumValues<'key> {
 }
 
 impl<'key> Iterator for EnumValues<'key> {
-    type Item = RegResult<(String, RegValue)>;
+    type Item = io::Result<(String, RegValue)>;
 
-    fn next(&mut self) -> Option<RegResult<(String, RegValue)>> {
+    fn next(&mut self) -> Option<io::Result<(String, RegValue)>> {
         let mut name_len = 2048;
         let mut name = [0 as WCHAR; 2048];
 
@@ -695,9 +687,7 @@ impl<'key> Iterator for EnumValues<'key> {
                 unsafe{ buf.set_len(buf_len as usize); }
                 // minimal check before transmute to RegType
                 if buf_type > winapi::REG_QWORD {
-                    return Some(Err(RegError{
-                        err: winerror::ERROR_BAD_FILE_TYPE
-                    }));
+                    return Some(werr!(winerror::ERROR_BAD_FILE_TYPE));
                 }
                 let t: RegType = unsafe{ transmute(buf_type as u8) };
                 let value = RegValue{ bytes: buf, vtype: t };
@@ -705,7 +695,7 @@ impl<'key> Iterator for EnumValues<'key> {
             },
             winerror::ERROR_NO_MORE_ITEMS => None,
             err => {
-                Some(Err(RegError{ err: err }))
+                Some(werr!(err))
             }
         }
     }
@@ -720,38 +710,6 @@ fn v16_to_v8(v: &Vec<u16>) -> Vec<u8> {
         slice::from_raw_parts(v.as_ptr() as *const u8, v.len()*2).to_vec()
     };
     res
-}
-
-// copycat of rust/src/libstd/sys/windows/os.rs::error_string
-// `use std::sys::os::error_string` leads to
-// error: function `error_string` is private.
-// Get a detailed string description for the given error number
-fn error_string(errnum: DWORD) -> String {
-    let mut buf = [0 as WCHAR; 2048];
-    unsafe {
-        let res = kernel32::FormatMessageW(winapi::FORMAT_MESSAGE_FROM_SYSTEM |
-                                 winapi::FORMAT_MESSAGE_IGNORE_INSERTS,
-                                 ptr::null_mut(),
-                                 errnum as DWORD,
-                                 0,
-                                 buf.as_mut_ptr(),
-                                 buf.len() as DWORD,
-                                 ptr::null_mut());
-        if res == 0 {
-            // Sometimes FormatMessageW can fail e.g. system doesn't like langId,
-            // let fm_err = errno();
-            return format!("OS Error {} (FormatMessageW() returned error)",
-                           errnum);
-        }
-
-        let b = buf.iter().position(|&b| b == 0).unwrap_or(buf.len());
-        let msg = String::from_utf16(&buf[..b]);
-        match msg {
-            Ok(msg) => msg.trim_right().to_string(),
-            Err(..) => format!("OS Error {} (FormatMessageW() returned \
-                                invalid UTF-16)", errnum),
-        }
-    }
 }
 
 

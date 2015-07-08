@@ -6,18 +6,19 @@
 //! Traits for loading/saving Registry values
 extern crate winapi;
 use std::slice;
+use std::io;
 use winapi::winerror;
-use super::{RegError,RegResult,RegValue};
+use super::{RegValue};
 use enums::*;
 use super::{to_utf16,v16_to_v8};
 
 /// A trait for types that can be loaded from registry values.
 pub trait FromRegValue {
-    fn from_reg_value(val: &RegValue) -> RegResult<Self>;
+    fn from_reg_value(val: &RegValue) -> io::Result<Self>;
 }
 
 impl FromRegValue for String {
-    fn from_reg_value(val: &RegValue) -> RegResult<String> {
+    fn from_reg_value(val: &RegValue) -> io::Result<String> {
         match val.vtype {
             REG_SZ | REG_EXPAND_SZ | REG_MULTI_SZ => {
                 let words = unsafe {
@@ -31,29 +32,29 @@ impl FromRegValue for String {
                 }
                 Ok(s)
             },
-            _ => Err(RegError{ err: winerror::ERROR_BAD_FILE_TYPE })
+            _ => werr!(winerror::ERROR_BAD_FILE_TYPE)
         }
     }
 }
 
 impl FromRegValue for u32 {
-    fn from_reg_value(val: &RegValue) -> RegResult<u32> {
+    fn from_reg_value(val: &RegValue) -> io::Result<u32> {
         match val.vtype {
             REG_DWORD => {
                 Ok(unsafe{ *(val.bytes.as_ptr() as *const u32) })
             },
-            _ => Err(RegError{ err: winerror::ERROR_BAD_FILE_TYPE })
+            _ => werr!(winerror::ERROR_BAD_FILE_TYPE)
         }
     }
 }
 
 impl FromRegValue for u64 {
-    fn from_reg_value(val: &RegValue) -> RegResult<u64> {
+    fn from_reg_value(val: &RegValue) -> io::Result<u64> {
         match val.vtype {
             REG_QWORD => {
                 Ok(unsafe{ *(val.bytes.as_ptr() as *const u64) })
             },
-            _ => Err(RegError{ err: winerror::ERROR_BAD_FILE_TYPE })
+            _ => werr!(winerror::ERROR_BAD_FILE_TYPE)
         }
     }
 }

@@ -4,7 +4,7 @@
 // may not be copied, modified, or distributed
 // except according to those terms.
 use std::ptr;
-use super::{RegError,RegResult};
+use std::io;
 use winapi;
 use kernel32;
 use ktmw32;
@@ -16,7 +16,7 @@ pub struct Transaction {
 
 impl Transaction {
     //TODO: add arguments
-    pub fn new() -> RegResult<Transaction> {
+    pub fn new() -> io::Result<Transaction> {
         unsafe {
             let handle = ktmw32::CreateTransaction(
                 ptr::null_mut(),
@@ -28,34 +28,34 @@ impl Transaction {
                 ptr::null_mut(),
             );
             if handle == winapi::INVALID_HANDLE_VALUE {
-                return Err(RegError{ err: kernel32::GetLastError() })
+                return Err(io::Error::last_os_error())
             };
             Ok(Transaction{ handle: handle })
         }
     }
 
-    pub fn commit(&self) -> RegResult<()> {
+    pub fn commit(&self) -> io::Result<()> {
         unsafe {
             match ktmw32::CommitTransaction(self.handle) {
-                0 => Err(RegError{ err: kernel32::GetLastError() }),
+                0 => Err(io::Error::last_os_error()),
                 _ => Ok(())
             }
         }
     }
 
-    pub fn rollback(&self) -> RegResult<()> {
+    pub fn rollback(&self) -> io::Result<()> {
         unsafe {
             match ktmw32::RollbackTransaction(self.handle) {
-                0 => Err(RegError{ err: kernel32::GetLastError() }),
+                0 => Err(io::Error::last_os_error()),
                 _ => Ok(())
             }
         }
     }
 
-    fn close_(&mut self) -> RegResult<()> {
+    fn close_(&mut self) -> io::Result<()> {
         unsafe {
             match kernel32::CloseHandle(self.handle) {
-                0 => Err(RegError{ err: kernel32::GetLastError() }),
+                0 => Err(io::Error::last_os_error()),
                 _ => Ok(())
             }
         }
