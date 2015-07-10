@@ -72,11 +72,17 @@ macro_rules! emit_value{
     )
 }
 
+macro_rules! no_impl {
+    ($e:expr) => (
+        Err(EncoderError::EncodeNotImplemented($e.to_string()))
+    )
+}
+
 impl rustc_serialize::Encoder for Encoder {
     type Error = EncoderError;
 
     fn emit_nil(&mut self) -> EncodeResult<()> {
-        Err(EncoderError::EncodeNotImplemented("nil".to_string()))
+        no_impl!("nil")
     }
 
     fn emit_usize(&mut self, v: usize) -> EncodeResult<()> {
@@ -135,7 +141,7 @@ impl rustc_serialize::Encoder for Encoder {
     }
 
     fn emit_char(&mut self, _v: char) -> EncodeResult<()> {
-        Err(EncoderError::EncodeNotImplemented("char".to_string()))
+        no_impl!("char")
     }
 
     fn emit_str(&mut self, v: &str) -> EncodeResult<()> {
@@ -145,35 +151,35 @@ impl rustc_serialize::Encoder for Encoder {
     fn emit_enum<F>(&mut self, _name: &str, _f: F) -> EncodeResult<()> where
         F: FnOnce(&mut Self) -> EncodeResult<()>,
     {
-        Err(EncoderError::EncodeNotImplemented("enum".to_string()))
+        no_impl!("enum")
     }
 
     fn emit_enum_variant<F>(&mut self, _name: &str, _id: usize, _cnt: usize, _f: F)
         -> EncodeResult<()> where
         F: FnOnce(&mut Self) -> EncodeResult<()>,
     {
-        Err(EncoderError::EncodeNotImplemented("enum_variant".to_string()))
+        no_impl!("enum_variant")
     }
 
     fn emit_enum_variant_arg<F>(&mut self, _: usize, _f: F)
         -> EncodeResult<()> where
         F: FnOnce(&mut Self) -> EncodeResult<()>,
     {
-        Err(EncoderError::EncodeNotImplemented("enum_variant_arg".to_string()))
+        no_impl!("enum_variant_arg")
     }
 
     fn emit_enum_struct_variant<F>(&mut self, _name: &str, _id: usize, _cnt: usize, _f: F)
         -> EncodeResult<()> where
         F: FnOnce(&mut Self) -> EncodeResult<()>,
     {
-        Err(EncoderError::EncodeNotImplemented("enum_struct_variant".to_string()))
+        no_impl!("enum_struct_variant")
     }
 
     fn emit_enum_struct_variant_field<F>(&mut self, _name: &str, _: usize, _f: F)
         -> EncodeResult<()> where
         F: FnOnce(&mut Self) -> EncodeResult<()>,
     {
-        Err(EncoderError::EncodeNotImplemented("enum_struct_variant_field".to_string()))
+        no_impl!("enum_struct_variant_field")
     }
 
     fn emit_struct<F>(&mut self, name: &str, len: usize, f: F)
@@ -215,80 +221,80 @@ impl rustc_serialize::Encoder for Encoder {
     fn emit_tuple<F>(&mut self, _: usize, _f: F) -> EncodeResult<()> where
         F: FnOnce(&mut Self) -> EncodeResult<()>
     {
-        Err(EncoderError::EncodeNotImplemented("tuple".to_string()))
+        no_impl!("tuple")
     }
 
     fn emit_tuple_arg<F>(&mut self, _: usize, _f: F) -> EncodeResult<()> where
         F: FnOnce(&mut Self) -> EncodeResult<()>
     {
-        Err(EncoderError::EncodeNotImplemented("tuple_arg".to_string()))
+        no_impl!("tuple_arg")
     }
 
     fn emit_tuple_struct<F>(&mut self, _: &str, _: usize, _f: F)
         -> EncodeResult<()> where
         F: FnOnce(&mut Self) -> EncodeResult<()>
     {
-        Err(EncoderError::EncodeNotImplemented("tuple_struct".to_string()))
+        no_impl!("tuple_struct")
     }
 
     fn emit_tuple_struct_arg<F>(&mut self, _: usize, _f: F)
         -> EncodeResult<()> where
         F: FnOnce(&mut Self) -> EncodeResult<()>
     {
-        Err(EncoderError::EncodeNotImplemented("tuple_struct_arg".to_string()))
+        no_impl!("tuple_struct_arg")
     }
 
     fn emit_option<F>(&mut self, _f: F)
         -> EncodeResult<()> where
         F: FnOnce(&mut Self) -> EncodeResult<()>
     {
-        Err(EncoderError::EncodeNotImplemented("Option".to_string()))
+        no_impl!("Option")
     }
 
     fn emit_option_none(&mut self) -> EncodeResult<()> {
-        Err(EncoderError::EncodeNotImplemented("Option::None".to_string()))
+        no_impl!("Option::None")
     }
 
     fn emit_option_some<F>(&mut self, _f: F)
         -> EncodeResult<()> where
         F: FnOnce(&mut Self) -> EncodeResult<()>,
     {
-        Err(EncoderError::EncodeNotImplemented("Option::Some".to_string()))
+        no_impl!("Option::Some")
     }
 
     fn emit_seq<F>(&mut self, _: usize, _f: F)
         -> EncodeResult<()> where
         F: FnOnce(&mut Self) -> EncodeResult<()>,
     {
-        Err(EncoderError::EncodeNotImplemented("seq".to_string()))
+        no_impl!("seq")
     }
 
     fn emit_seq_elt<F>(&mut self, _: usize, _f: F)
         -> EncodeResult<()> where
         F: FnOnce(&mut Self) -> EncodeResult<()>,
     {
-        Err(EncoderError::EncodeNotImplemented("seq_elt".to_string()))
+        no_impl!("seq_elt")
     }
 
     fn emit_map<F>(&mut self, _: usize, _f: F)
         -> EncodeResult<()> where
         F: FnOnce(&mut Self) -> EncodeResult<()>,
     {
-        Err(EncoderError::EncodeNotImplemented("map".to_string()))
+        no_impl!("map")
     }
 
     fn emit_map_elt_key<F>(&mut self, _: usize, _f: F)
         -> EncodeResult<()> where
         F: FnOnce(&mut Self) -> EncodeResult<()>,
     {
-        Err(EncoderError::EncodeNotImplemented("map_elt_key".to_string()))
+        no_impl!("map_elt_key")
     }
 
     fn emit_map_elt_val<F>(&mut self, _idx: usize, _f: F)
         -> EncodeResult<()> where
         F: FnOnce(&mut Self) -> EncodeResult<()>,
     {
-        Err(EncoderError::EncodeNotImplemented("map_elt_val".to_string()))
+        no_impl!("map_elt_val")
     }
 }
 
@@ -346,11 +352,16 @@ macro_rules! parse_string{
     })
 }
 
-// #[allow(unused_variables)]
+macro_rules! no_impl {
+    ($e:expr) => (
+        Err(DecoderError::DecodeNotImplemented($e.to_string()))
+    )
+}
+
 impl rustc_serialize::Decoder for Decoder {
     type Error = DecoderError;
     fn read_nil(&mut self) -> DecodeResult<()> {
-        Err(DecoderError::DecodeNotImplemented("nil".to_string()))
+        no_impl!("nil")
     }
 
     fn read_usize(&mut self) -> DecodeResult<usize> {
@@ -406,7 +417,7 @@ impl rustc_serialize::Decoder for Decoder {
     }
 
     fn read_char(&mut self) -> DecodeResult<char> {
-        Err(DecoderError::DecodeNotImplemented("char".to_string()))
+        no_impl!("char")
     }
 
     fn read_str(&mut self) -> DecodeResult<String> {
@@ -417,35 +428,35 @@ impl rustc_serialize::Decoder for Decoder {
         -> DecodeResult<T> where
         F: FnOnce(&mut Self) -> DecodeResult<T>
     {
-        Err(DecoderError::DecodeNotImplemented("enum".to_string()))
+        no_impl!("enum")
     }
 
     fn read_enum_variant<T, F>(&mut self, _names: &[&str], _f: F)
         -> DecodeResult<T> where
         F: FnMut(&mut Self, usize) -> DecodeResult<T>
     {
-        Err(DecoderError::DecodeNotImplemented("enum_variant".to_string()))
+        no_impl!("enum_variant")
     }
 
     fn read_enum_variant_arg<T, F>(&mut self, _a_idx: usize, _f: F)
         -> DecodeResult<T> where
         F: FnOnce(&mut Self) -> DecodeResult<T>
     {
-        Err(DecoderError::DecodeNotImplemented("enum_variant_arg".to_string()))
+        no_impl!("enum_variant_arg")
     }
 
     fn read_enum_struct_variant<T, F>(&mut self, _names: &[&str], _f: F)
         -> DecodeResult<T> where
         F: FnMut(&mut Self, usize) -> DecodeResult<T>
     {
-        Err(DecoderError::DecodeNotImplemented("enum_struct_variant".to_string()))
+        no_impl!("enum_struct_variant")
     }
 
     fn read_enum_struct_variant_field<T, F>(&mut self, _f_name: &str, _f_idx: usize, _f: F)
         -> DecodeResult<T> where
         F: FnOnce(&mut Self) -> DecodeResult<T>
     {
-        Err(DecoderError::DecodeNotImplemented("enum_struct_variant_field".to_string()))
+        no_impl!("enum_struct_variant_field")
     }
 
     fn read_struct<T, F>(&mut self, _s_name: &str, _len: usize, f: F)
@@ -483,70 +494,70 @@ impl rustc_serialize::Decoder for Decoder {
         -> DecodeResult<T> where
         F: FnOnce(&mut Self) -> DecodeResult<T>
     {
-        Err(DecoderError::DecodeNotImplemented("tuple".to_string()))
+        no_impl!("tuple")
     }
 
     fn read_tuple_arg<T, F>(&mut self, _a_idx: usize, _f: F)
         -> DecodeResult<T> where
         F: FnOnce(&mut Self) -> DecodeResult<T>
     {
-        Err(DecoderError::DecodeNotImplemented("tuple_arg".to_string()))
+        no_impl!("tuple_arg")
     }
 
     fn read_tuple_struct<T, F>(&mut self, _s_name: &str, _len: usize, _f: F)
         -> DecodeResult<T> where
         F: FnOnce(&mut Self) -> DecodeResult<T>
     {
-        Err(DecoderError::DecodeNotImplemented("tuple_struct".to_string()))
+        no_impl!("tuple_struct")
     }
 
     fn read_tuple_struct_arg<T, F>(&mut self, _a_idx: usize, _f: F)
         -> DecodeResult<T> where
         F: FnOnce(&mut Self) -> DecodeResult<T>
     {
-        Err(DecoderError::DecodeNotImplemented("tuple_struct_arg".to_string()))
+        no_impl!("tuple_struct_arg")
     }
 
     fn read_option<T, F>(&mut self, _f: F)
         -> DecodeResult<T> where
         F: FnMut(&mut Self, bool) -> DecodeResult<T>
     {
-        Err(DecoderError::DecodeNotImplemented("option".to_string()))
+        no_impl!("option")
     }
 
     fn read_seq<T, F>(&mut self, _f: F)
         -> DecodeResult<T> where
         F: FnOnce(&mut Self, usize) -> DecodeResult<T>
     {
-        Err(DecoderError::DecodeNotImplemented("seq".to_string()))
+        no_impl!("seq")
     }
 
     fn read_seq_elt<T, F>(&mut self, _idx: usize, _f: F)
         -> DecodeResult<T> where
         F: FnOnce(&mut Self) -> DecodeResult<T>
     {
-        Err(DecoderError::DecodeNotImplemented("seq_elt".to_string()))
+        no_impl!("seq_elt")
     }
 
     fn read_map<T, F>(&mut self, _f: F)
         -> DecodeResult<T> where
         F: FnOnce(&mut Self, usize) -> DecodeResult<T>
     {
-        Err(DecoderError::DecodeNotImplemented("map".to_string()))
+        no_impl!("map")
     }
 
     fn read_map_elt_key<T, F>(&mut self, _idx: usize, _f: F)
         -> DecodeResult<T> where
         F: FnOnce(&mut Self) -> DecodeResult<T>
     {
-        Err(DecoderError::DecodeNotImplemented("map_elt_key".to_string()))
+        no_impl!("map_elt_key")
     }
 
     fn read_map_elt_val<T, F>(&mut self, _idx: usize, _f: F)
         -> DecodeResult<T> where
         F: FnOnce(&mut Self) -> DecodeResult<T>
     {
-        Err(DecoderError::DecodeNotImplemented("map_elt_val".to_string()))
+        no_impl!("map_elt_val")
     }
 
     fn error(&mut self, err: &str) -> Self::Error {
