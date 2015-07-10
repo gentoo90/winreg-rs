@@ -16,8 +16,19 @@ fn main() {
     key.set_value("TestQWORD", &1234567891011121314u64).unwrap();
     key.set_value("TestDWORD", &1234567890u32).unwrap();
 
-    println!("Press Enter:");
+    println!("Commit transaction? [y/N]:");
     let mut input = String::new();
     io::stdin().read_line(&mut input).unwrap();
-    t.commit().unwrap();
+    input = input.trim_right().to_string();
+    if input == "y" || input == "Y" {
+        t.commit().unwrap();
+        println!("Transaction commited.");
+    }
+    else {
+        // this is optional, if transaction wasn't commited,
+        // it will be rolled back on disposal
+        t.rollback().unwrap();
+
+        println!("Transaction wasn't commited, it will be rolled back.");
+    }
 }
