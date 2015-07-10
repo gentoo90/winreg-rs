@@ -11,6 +11,8 @@ use rustc_serialize;
 use std::mem;
 use std::io;
 use winapi;
+use self::EncoderState::{Start, NextKey/*, NextMapKey */};
+
 
 #[derive(Debug)]
 pub enum EncoderError{
@@ -28,10 +30,17 @@ impl From<io::Error> for EncoderError {
 }
 
 #[derive(Debug)]
+enum EncoderState {
+    Start,
+    NextKey(String),
+    // NextMapKey,
+}
+
+#[derive(Debug)]
 pub struct Encoder {
     keys: Vec<RegKey>,
     tr: Transaction,
-    f_name: Option<String>,
+    state: EncoderState,
 }
 
 const ENCODER_SAM: winapi::DWORD = KEY_CREATE_SUB_KEY|KEY_SET_VALUE;
@@ -50,7 +59,7 @@ impl Encoder {
         Encoder{
             keys: keys,
             tr: tr,
-            f_name: None,
+            state: Start,
         }
     }
 
@@ -61,13 +70,12 @@ impl Encoder {
 
 macro_rules! emit_value{
     ($s:ident, $v:ident) => (
-        match mem::replace(&mut $s.f_name, None) {
-            Some(ref s) => {
-                print!("v = {:?}", $v);
+        match mem::replace(&mut $s.state, Start) {
+            NextKey(ref s) => {
                 $s.keys[$s.keys.len()-1].set_value(s, &$v)
                     .map_err(EncoderError::IoError)
             },
-            None => Err(EncoderError::NoFieldName)
+            Start => Err(EncoderError::NoFieldName)
         }
     )
 }
@@ -182,16 +190,15 @@ impl rustc_serialize::Encoder for Encoder {
         no_impl!("enum_struct_variant_field")
     }
 
-    fn emit_struct<F>(&mut self, name: &str, len: usize, f: F)
+    fn emit_struct<F>(&mut self, _name: &str, _len: usize, f: F)
         -> EncodeResult<()> where
         F: FnOnce(&mut Self) -> EncodeResult<()>,
     {
-        println!("struct {}({}) {{", name, len);
-        let res = match mem::replace(&mut self.f_name, None) {
-            None => { // root structure
+        let res = match mem::replace(&mut self.state, Start) {
+            Start => { // root structure
                 f(self)
             },
-            Some(ref s) => { // nested structure
+            NextKey(ref s) => { // nested structure
                 match self.keys[self.keys.len()-1].create_subkey_transacted_with_flags(&s, &self.tr, ENCODER_SAM) {
                     Ok(subkey) => {
                         self.keys.push(subkey);
@@ -203,18 +210,15 @@ impl rustc_serialize::Encoder for Encoder {
                 }
             }
         };
-        println!("}}");
         res
     }
 
-    fn emit_struct_field<F>(&mut self, f_name: &str, f_idx: usize, f: F)
+    fn emit_struct_field<F>(&mut self, f_name: &str, _f_idx: usize, f: F)
         -> EncodeResult<()> where
         F: FnOnce(&mut Self) -> EncodeResult<()>
     {
-        print!("    {}({}): ", f_name, f_idx);
-        self.f_name = Some(f_name.to_string());
+        self.state = NextKey(f_name.to_string());
         let res = f(self);
-        println!(",");
         res
     }
 
@@ -479,14 +483,12 @@ impl rustc_serialize::Decoder for Decoder {
         }
     }
 
-    fn read_struct_field<T, F>(&mut self, f_name: &str, f_idx: usize, f: F)
+    fn read_struct_field<T, F>(&mut self, f_name: &str, _f_idx: usize, f: F)
         -> DecodeResult<T> where
         F: FnOnce(&mut Self) -> DecodeResult<T>
     {
-        print!("    {}({}): ", f_name, f_idx);
         self.f_name = Some(f_name.to_string());
         let res = f(self);
-        println!(",");
         res
     }
 
