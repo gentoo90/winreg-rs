@@ -5,6 +5,7 @@
 // except according to those terms.
 extern crate winreg;
 use std::path::Path;
+use std::io;
 use winreg::RegKey;
 use winreg::enums::*;
 
@@ -41,5 +42,10 @@ fn main() {
     hkcu.delete_subkey_all(&path).unwrap();
 
     println!("Trying to open nonexisting key...");
-    println!("{:?}", hkcu.open_subkey(&path).unwrap_err());
+    let key2 = hkcu.open_subkey(&path)
+    .unwrap_or_else(|e| match e.kind() {
+        io::ErrorKind::NotFound => panic!("Key doesn't exist"),
+        io::ErrorKind::PermissionDenied => panic!("Access denied"),
+        _ => panic!("{:?}", e)
+    });
 }
