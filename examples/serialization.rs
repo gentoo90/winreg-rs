@@ -5,6 +5,7 @@
 // except according to those terms.
 extern crate rustc_serialize;
 extern crate winreg;
+use std::collections::HashMap;
 use winreg::enums::*;
 
 #[derive(Debug,RustcEncodable,RustcDecodable,PartialEq)]
@@ -70,7 +71,12 @@ fn main() {
         // t_char: 'a',
     };
 
-    key.encode(&v1).unwrap();
+    let mut d: HashMap<String, String> = HashMap::new();
+    d.insert("Test".to_string(), "t_string".to_string());
+    d.insert("Coords".to_string(), "x".to_string());
+    d.insert("Size".to_string(), "w".to_string());
+
+    key.encode_with_defaults(&v1, d).unwrap();
 
     let v2: Test = key.decode().unwrap();
     println!("Decoded {:?}", v2);

@@ -10,6 +10,7 @@ use super::transaction::Transaction;
 use rustc_serialize;
 use std::mem;
 use std::io;
+use std::collections::HashMap;
 use winapi;
 use self::EncoderState::{Start, NextKey/*, NextMapKey */};
 
@@ -38,27 +39,29 @@ enum EncoderState {
 
 #[derive(Debug)]
 pub struct Encoder {
-    keys: Vec<RegKey>,
+    keys: Vec<(RegKey, Option<String>)>, // key and struct name
     tr: Transaction,
+    defaults_map: Option<HashMap<String, String>>,
     state: EncoderState,
 }
 
 const ENCODER_SAM: winapi::DWORD = KEY_CREATE_SUB_KEY|KEY_SET_VALUE;
 
 impl Encoder {
-    pub fn from_key(key: &RegKey) -> EncodeResult<Encoder> {
+    pub fn from_key(key: &RegKey, defaults_map: Option<HashMap<String, String>>) -> EncodeResult<Encoder> {
         let tr = try!(Transaction::new());
         key.open_subkey_transacted_with_flags("", &tr, ENCODER_SAM)
-            .map(|k| Encoder::new(k, tr))
+            .map(|k| Encoder::new(k, defaults_map, tr))
             .map_err(EncoderError::IoError)
     }
 
-    fn new(key: RegKey, tr: Transaction) -> Encoder {
+    fn new(key: RegKey, defaults_map: Option<HashMap<String, String>>, tr: Transaction) -> Encoder {
         let mut keys = Vec::with_capacity(5);
-        keys.push(key);
+        keys.push(( key, None ));
         Encoder{
             keys: keys,
             tr: tr,
+            defaults_map: defaults_map,
             state: Start,
         }
     }
@@ -66,13 +69,28 @@ impl Encoder {
     pub fn commit(&mut self) -> EncodeResult<()> {
         self.tr.commit().map_err(EncoderError::IoError)
     }
+
+    fn get_val_name<'a>(&mut self, f_name: &'a str) -> &'a str {
+        match (&self.defaults_map, &self.keys[self.keys.len()-1].1) {
+            (&Some(ref map), &Some(ref s_name)) => {
+                match map.get(s_name) {
+                    Some(default) if *default == f_name => {
+                        "" // write into (Default) value
+                    },
+                    _ => f_name
+                }
+            },
+            _ => f_name
+        }
+    }
 }
 
 macro_rules! emit_value{
     ($s:ident, $v:ident) => (
         match mem::replace(&mut $s.state, Start) {
             NextKey(ref s) => {
-                $s.keys[$s.keys.len()-1].set_value(s, &$v)
+                let s = $s.get_val_name(s);
+                $s.keys[$s.keys.len()-1].0.set_value(s, &$v)
                     .map_err(EncoderError::IoError)
             },
             Start => Err(EncoderError::NoFieldName)
@@ -190,18 +208,21 @@ impl rustc_serialize::Encoder for Encoder {
         no_impl!("enum_struct_variant_field")
     }
 
-    fn emit_struct<F>(&mut self, _name: &str, _len: usize, f: F)
+    fn emit_struct<F>(&mut self, name: &str, _len: usize, f: F)
         -> EncodeResult<()> where
         F: FnOnce(&mut Self) -> EncodeResult<()>,
     {
-        let res = match mem::replace(&mut self.state, Start) {
+        let name = name.to_string();
+        let idx = { self.keys.len()-1 };
+        match mem::replace(&mut self.state, Start) {
             Start => { // root structure
+                self.keys[idx].1 = Some(name);
                 f(self)
             },
             NextKey(ref s) => { // nested structure
-                match self.keys[self.keys.len()-1].create_subkey_transacted_with_flags(&s, &self.tr, ENCODER_SAM) {
+                match self.keys[idx].0.create_subkey_transacted_with_flags(&s, &self.tr, ENCODER_SAM) {
                     Ok(subkey) => {
-                        self.keys.push(subkey);
+                        self.keys.push(( subkey, Some(name) ));
                         let res = f(self);
                         self.keys.pop();
                         res
@@ -209,8 +230,7 @@ impl rustc_serialize::Encoder for Encoder {
                     Err(err) => return Err(EncoderError::IoError(err))
                 }
             }
-        };
-        res
+        }
     }
 
     fn emit_struct_field<F>(&mut self, f_name: &str, _f_idx: usize, f: F)
@@ -218,8 +238,8 @@ impl rustc_serialize::Encoder for Encoder {
         F: FnOnce(&mut Self) -> EncodeResult<()>
     {
         self.state = NextKey(f_name.to_string());
-        let res = f(self);
-        res
+
+        f(self)
     }
 
     fn emit_tuple<F>(&mut self, _: usize, _f: F) -> EncodeResult<()> where

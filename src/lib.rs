@@ -17,6 +17,7 @@ use std::ffi::OsStr;
 use std::os::windows::ffi::OsStrExt;
 use std::mem::transmute;
 use std::io;
+use std::collections::HashMap;
 use winapi::winerror;
 use winapi::{HKEY,DWORD,WCHAR};
 use enums::*;
@@ -549,7 +550,17 @@ impl RegKey {
         -> serialization::EncodeResult<()>
     {
         let mut encoder = try!(
-            serialization::Encoder::from_key(&self)
+            serialization::Encoder::from_key(&self, None)
+        );
+        try!(value.encode(&mut encoder));
+        encoder.commit()
+    }
+
+    pub fn encode_with_defaults<T: rustc_serialize::Encodable>(&self, value: &T, defaults: HashMap<String, String>)
+        -> serialization::EncodeResult<()>
+    {
+        let mut encoder = try!(
+            serialization::Encoder::from_key(&self, Some(defaults))
         );
         try!(value.encode(&mut encoder));
         encoder.commit()
