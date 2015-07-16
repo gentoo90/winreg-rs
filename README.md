@@ -200,6 +200,10 @@ fn main() {
 
 ## Changelog
 
+### 0.3.1
+
+* Fix: bump `winapi` version to fix build
+
 ### 0.3.0
 
 * Add transactions support and make serialization transacted
