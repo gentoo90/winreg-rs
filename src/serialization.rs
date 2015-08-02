@@ -12,13 +12,14 @@ use std::mem;
 use std::io;
 use std::collections::HashMap;
 use winapi;
-use self::EncoderState::{Start, NextKey/*, NextMapKey */};
+use self::EncoderState::{Start, NextKey, NextMapKey};
 
 
 #[derive(Debug)]
 pub enum EncoderError{
     EncodeNotImplemented(String),
     IoError(io::Error),
+    KeyTypeNotSupported,
     NoFieldName,
 }
 
@@ -34,7 +35,7 @@ impl From<io::Error> for EncoderError {
 enum EncoderState {
     Start,
     NextKey(String),
-    // NextMapKey,
+    NextMapKey,
 }
 
 #[derive(Debug)]
@@ -93,6 +94,7 @@ macro_rules! emit_value{
                 $s.keys[$s.keys.len()-1].0.set_value(s, &$v)
                     .map_err(EncoderError::IoError)
             },
+            NextMapKey => Err(EncoderError::KeyTypeNotSupported),
             Start => Err(EncoderError::NoFieldName)
         }
     )
@@ -137,7 +139,7 @@ impl rustc_serialize::Encoder for Encoder {
 
     fn emit_i64(&mut self, v: i64) -> EncodeResult<()> {
         let s = v.to_string();
-        emit_value!(self, s)
+        self.emit_str(&s)
     }
 
     fn emit_i32(&mut self, v: i32) -> EncodeResult<()> {
@@ -158,12 +160,12 @@ impl rustc_serialize::Encoder for Encoder {
 
     fn emit_f64(&mut self, v: f64) -> EncodeResult<()> {
         let s = v.to_string();
-        emit_value!(self, s)
+        self.emit_str(&s)
     }
 
     fn emit_f32(&mut self, v: f32) -> EncodeResult<()> {
         let s = v.to_string();
-        emit_value!(self, s)
+        self.emit_str(&s)
     }
 
     fn emit_char(&mut self, _v: char) -> EncodeResult<()> {
@@ -171,7 +173,18 @@ impl rustc_serialize::Encoder for Encoder {
     }
 
     fn emit_str(&mut self, v: &str) -> EncodeResult<()> {
-        emit_value!(self, v)
+        // emit_value!(self, v)
+        match mem::replace(&mut self.state, Start) {
+            NextMapKey => {
+                self.state = NextKey(v.to_string());
+                Ok(())
+            },
+            NextKey(ref s) => {
+                self.keys[self.keys.len()-1].0.set_value(s, &v)
+                    .map_err(EncoderError::IoError)
+            },
+            Start => Err(EncoderError::NoFieldName)
+        }
     }
 
     fn emit_enum<F>(&mut self, _name: &str, _f: F) -> EncodeResult<()> where
@@ -219,6 +232,7 @@ impl rustc_serialize::Encoder for Encoder {
                 self.keys[idx].1 = Some(name);
                 f(self)
             },
+            NextMapKey => Err(EncoderError::KeyTypeNotSupported),
             NextKey(ref s) => { // nested structure
                 match self.keys[idx].0.create_subkey_transacted_with_flags(&s, &self.tr, ENCODER_SAM) {
                     Ok(subkey) => {
@@ -300,25 +314,33 @@ impl rustc_serialize::Encoder for Encoder {
         no_impl!("seq_elt")
     }
 
-    fn emit_map<F>(&mut self, _: usize, _f: F)
+    fn emit_map<F>(&mut self, _: usize, f: F)
         -> EncodeResult<()> where
         F: FnOnce(&mut Self) -> EncodeResult<()>,
     {
-        no_impl!("map")
+        // println!("map{{");
+        // no_impl!("map")
+        f(self)
+        // println!("}}");
     }
 
-    fn emit_map_elt_key<F>(&mut self, _: usize, _f: F)
+    fn emit_map_elt_key<F>(&mut self, _: usize, f: F)
         -> EncodeResult<()> where
         F: FnOnce(&mut Self) -> EncodeResult<()>,
     {
-        no_impl!("map_elt_key")
+        // no_impl!("map_elt_key")
+        // println!("map_key{{");
+        self.state = NextMapKey;
+        f(self)
     }
 
-    fn emit_map_elt_val<F>(&mut self, _idx: usize, _f: F)
+    fn emit_map_elt_val<F>(&mut self, _idx: usize, f: F)
         -> EncodeResult<()> where
         F: FnOnce(&mut Self) -> EncodeResult<()>,
     {
-        no_impl!("map_elt_val")
+        // no_impl!("map_elt_val")
+        // println!("map_val{{");
+        f(self)
     }
 }
 
