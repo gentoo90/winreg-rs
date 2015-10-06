@@ -200,6 +200,10 @@ fn main() {
 
 ## Changelog
 
+### 0.3.2
+
+* Fix: `FromRegValue` trait now requires `Sized` (fixes build with rust 1.4)
+
 ### 0.3.1
 
 * Fix: bump `winapi` version to fix build
