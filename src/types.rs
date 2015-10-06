@@ -13,7 +13,7 @@ use enums::*;
 use super::{to_utf16,v16_to_v8};
 
 /// A trait for types that can be loaded from registry values.
-pub trait FromRegValue {
+pub trait FromRegValue : Sized {
     fn from_reg_value(val: &RegValue) -> io::Result<Self>;
 }
 
