@@ -409,26 +409,29 @@ impl RegKey {
         let mut buf_len: DWORD = 2048;
         let mut buf_type: DWORD = 0;
         let mut buf: Vec<u8> = Vec::with_capacity(buf_len as usize);
-        match unsafe {
-            advapi32::RegQueryValueExW(
-                self.hkey,
-                c_name.as_ptr() as *const u16,
-                ptr::null_mut(),
-                &mut buf_type,
-                buf.as_mut_ptr() as winapi::LPBYTE,
-                &mut buf_len
-            ) as DWORD
-        } {
-            0 => {
-                unsafe{ buf.set_len(buf_len as usize); }
-                // minimal check before transmute to RegType
-                if buf_type > winapi::REG_QWORD {
-                    return werr!(winerror::ERROR_BAD_FILE_TYPE);
-                }
-                let t: RegType = unsafe{ transmute(buf_type as u8) };
-                Ok(RegValue{ bytes: buf, vtype: t })
-            },
-            err => werr!(err)
+        loop {
+            match unsafe {
+                advapi32::RegQueryValueExW(
+                    self.hkey,
+                    c_name.as_ptr() as *const u16,
+                    ptr::null_mut(),
+                    &mut buf_type,
+                    buf.as_mut_ptr() as winapi::LPBYTE,
+                    &mut buf_len
+                ) as DWORD
+            } {
+                0 => {
+                    unsafe{ buf.set_len(buf_len as usize); }
+                    // minimal check before transmute to RegType
+                    if buf_type > winapi::REG_QWORD {
+                        return werr!(winerror::ERROR_BAD_FILE_TYPE);
+                    }
+                    let t: RegType = unsafe{ transmute(buf_type as u8) };
+                    return Ok(RegValue{ bytes: buf, vtype: t })
+                },
+                winerror::ERROR_MORE_DATA => { },
+                err => return werr!(err),
+            }
         }
     }
 
