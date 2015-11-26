@@ -18,7 +18,7 @@ use std::os::windows::ffi::OsStrExt;
 use std::mem::transmute;
 use std::io;
 use winapi::winerror;
-use winapi::{HKEY,DWORD,WCHAR};
+use winapi::{HKEY, DWORD, WCHAR};
 use enums::*;
 use types::{FromRegValue, ToRegValue};
 use transaction::Transaction;
@@ -49,6 +49,7 @@ pub struct RegKeyMetadata {
 }
 
 /// Raw registry value
+#[derive(PartialEq)]
 pub struct RegValue {
     pub bytes: Vec<u8>,
     pub vtype: RegType,
@@ -402,7 +403,7 @@ impl RegKey {
     /// # let hkcu = RegKey::predef(HKEY_CURRENT_USER);
     /// let settings = hkcu.open_subkey("Software\\MyProduct\\Settings").unwrap();
     /// let data = settings.get_raw_value("data").unwrap();
-    /// println!("Bytes: {:?}", data.bytes)
+    /// println!("Bytes: {:?}", data.bytes);
     /// ```
     pub fn get_raw_value<N: AsRef<OsStr>>(&self, name: N) -> io::Result<RegValue> {
         let c_name = to_utf16(name);
@@ -429,7 +430,9 @@ impl RegKey {
                     let t: RegType = unsafe{ transmute(buf_type as u8) };
                     return Ok(RegValue{ bytes: buf, vtype: t })
                 },
-                winerror::ERROR_MORE_DATA => { },
+                winerror::ERROR_MORE_DATA => {
+                    buf.reserve(buf_len as usize);
+                },
                 err => return werr!(err),
             }
         }
