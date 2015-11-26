@@ -407,7 +407,6 @@ impl RegKey {
     pub fn get_raw_value<N: AsRef<OsStr>>(&self, name: N) -> io::Result<RegValue> {
         let c_name = to_utf16(name);
         let mut buf_len: DWORD = 2048;
-        let byte_increment: DWORD = 2048;
         let mut buf_type: DWORD = 0;
         let mut buf: Vec<u8> = Vec::with_capacity(buf_len as usize);
         loop {
@@ -430,9 +429,7 @@ impl RegKey {
                     let t: RegType = unsafe{ transmute(buf_type as u8) };
                     return Ok(RegValue{ bytes: buf, vtype: t })
                 },
-                234 => { // ERROR_MORE_DATA = 234
-                    buf_len = buf_len + byte_increment;
-                },
+                winerror::ERROR_MORE_DATA => { },
                 err => return werr!(err),
             }
         }
