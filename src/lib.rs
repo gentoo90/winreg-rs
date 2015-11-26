@@ -675,33 +675,37 @@ impl<'key> Iterator for EnumValues<'key> {
         let mut buf_len: DWORD = 2048;
         let mut buf_type: DWORD = 0;
         let mut buf: Vec<u8> = Vec::with_capacity(buf_len as usize);
-        match unsafe {
-            advapi32::RegEnumValueW(
-                self.key.hkey,
-                self.index,
-                name.as_mut_ptr(),
-                &mut name_len,
-                ptr::null_mut(), // reserved
-                &mut buf_type,
-                buf.as_mut_ptr() as winapi::LPBYTE,
-                &mut buf_len,
-            ) as DWORD
-        } {
-            0 => {
-                self.index += 1;
-                let name = String::from_utf16(&name[..name_len as usize]).unwrap();
-                unsafe{ buf.set_len(buf_len as usize); }
-                // minimal check before transmute to RegType
-                if buf_type > winapi::REG_QWORD {
-                    return Some(werr!(winerror::ERROR_BAD_FILE_TYPE));
-                }
-                let t: RegType = unsafe{ transmute(buf_type as u8) };
-                let value = RegValue{ bytes: buf, vtype: t };
-                Some(Ok((name, value)))
-            },
-            winerror::ERROR_NO_MORE_ITEMS => None,
-            err => {
-                Some(werr!(err))
+        loop {
+            match unsafe {
+                advapi32::RegEnumValueW(
+                    self.key.hkey,
+                    self.index,
+                    name.as_mut_ptr(),
+                    &mut name_len,
+                    ptr::null_mut(), // reserved
+                    &mut buf_type,
+                    buf.as_mut_ptr() as winapi::LPBYTE,
+                    &mut buf_len,
+                ) as DWORD
+            } {
+                0 => {
+                    self.index += 1;
+                    let name = String::from_utf16(&name[..name_len as usize]).unwrap();
+                    unsafe{ buf.set_len(buf_len as usize); }
+                    // minimal check before transmute to RegType
+                    if buf_type > winapi::REG_QWORD {
+                        return Some(werr!(winerror::ERROR_BAD_FILE_TYPE));
+                    }
+                    let t: RegType = unsafe{ transmute(buf_type as u8) };
+                    let value = RegValue{ bytes: buf, vtype: t };
+                    return Some(Ok((name, value)))
+                },
+                winerror::ERROR_MORE_DATA => {
+                    name_len += 1; //for NULL char
+                    buf.reserve(buf_len as usize);
+                },
+                winerror::ERROR_NO_MORE_ITEMS => return None,
+                err => return Some(werr!(err))
             }
         }
     }
@@ -847,6 +851,28 @@ mod test {
             }
             assert_eq!(vals1, vals2);
             assert_eq!(vals1, vals3);
+        });
+    }
+
+    #[test]
+    fn test_enum_long_values() {
+        with_key!(key, "EnumLongValues" => {
+            let mut vals = HashMap::with_capacity(3);
+            vals.insert("val5000".to_string(),
+                RegValue { vtype: REG_BINARY, bytes: (0..5500).map(|_| rand::random::<u8>()).collect() });
+            vals.insert("val9000".to_string(),
+                RegValue { vtype: REG_BINARY, bytes: (0..9000).map(|_| rand::random::<u8>()).collect() });
+            vals.insert("val15000".to_string(),
+                RegValue { vtype: REG_BINARY, bytes: (0..15000).map(|_| rand::random::<u8>()).collect() });
+
+            for (name, val) in &vals {
+                key.set_raw_value(name, val).unwrap();
+            }
+            for (name, val) in key.enum_values()
+                .map(|x| x.unwrap())
+            {
+                assert_eq!(val.bytes, vals.get(&name).unwrap().bytes);
+            }
         });
     }
 
