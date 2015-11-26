@@ -721,9 +721,11 @@ fn v16_to_v8(v: &Vec<u16>) -> Vec<u8> {
 
 #[cfg(test)]
 mod test {
+    extern crate rand;
     use super::*;
     use super::enums::*;
     use super::types::*;
+    use std::collections::HashMap;
     use rustc_serialize::{Encodable,Decodable};
 
     #[test]
@@ -759,6 +761,17 @@ mod test {
         RegKey::predef(HKEY_CURRENT_USER).create_subkey(path).unwrap();
         assert!(RegKey::predef(HKEY_CURRENT_USER)
             .delete_subkey(path).is_ok());
+    }
+
+    #[test]
+    fn test_long_value() {
+        with_key!(key, "LongValue" => {
+            let name = "RustLongVal";
+            let val1 = RegValue { vtype: REG_BINARY, bytes: (0..6000).map(|_| rand::random::<u8>()).collect() };
+            key.set_raw_value(name, &val1).unwrap();
+            let val2 = key.get_raw_value(name).unwrap();
+            assert_eq!(val1, val2);
+        });
     }
 
     #[test]
