@@ -858,18 +858,15 @@ mod test {
     fn test_enum_long_values() {
         with_key!(key, "EnumLongValues" => {
             let mut vals = HashMap::with_capacity(3);
-            vals.insert("val5000".to_string(),
-                RegValue { vtype: REG_BINARY, bytes: (0..5500).map(|_| rand::random::<u8>()).collect() });
-            vals.insert("val9000".to_string(),
-                RegValue { vtype: REG_BINARY, bytes: (0..9000).map(|_| rand::random::<u8>()).collect() });
-            vals.insert("val15000".to_string(),
-                RegValue { vtype: REG_BINARY, bytes: (0..15000).map(|_| rand::random::<u8>()).collect() });
 
-            for (name, val) in &vals {
-                key.set_raw_value(name, val).unwrap();
+            for i in vec!(5500, 9500, 15000) {
+                let name: String = format!("val{}", i);
+                let val = RegValue { vtype: REG_BINARY, bytes: (0..i).map(|_| rand::random::<u8>()).collect() };
+                vals.insert(name, val);
             }
+
             for (name, val) in key.enum_values()
-                .map(|x| x.unwrap())
+                                  .map(|x| x.unwrap())
             {
                 assert_eq!(val.bytes, vals.get(&name).unwrap().bytes);
             }
