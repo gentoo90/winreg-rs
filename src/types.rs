@@ -3,6 +3,7 @@
 // http://opensource.org/licenses/MIT>. This file
 // may not be copied, modified, or distributed
 // except according to those terms.
+
 //! Traits for loading/saving Registry values
 use std::slice;
 use std::io;

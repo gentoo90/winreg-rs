@@ -3,7 +3,196 @@
 // http://opensource.org/licenses/MIT>. This file
 // may not be copied, modified, or distributed
 // except according to those terms.
+
 //! Crate for accessing MS Windows registry
+//!
+//!## Usage
+//!
+//!### Basic usage
+//!
+//!```toml,ignore
+//!# Cargo.toml
+//![dependencies]
+//!winreg = "0.3"
+//!```
+//!
+//!```no_run
+//!extern crate winreg;
+//!use std::path::Path;
+//!use std::io;
+//!use winreg::RegKey;
+//!use winreg::enums::*;
+//!
+//!fn main() {
+//!    println!("Reading some system info...");
+//!    let hklm = RegKey::predef(HKEY_LOCAL_MACHINE);
+//!    let cur_ver = hklm.open_subkey_with_flags("SOFTWARE\\Microsoft\\Windows\\CurrentVersion",
+//!        KEY_READ).unwrap();
+//!    let pf: String = cur_ver.get_value("ProgramFilesDir").unwrap();
+//!    let dp: String = cur_ver.get_value("DevicePath").unwrap();
+//!    println!("ProgramFiles = {}\nDevicePath = {}", pf, dp);
+//!    let info = cur_ver.query_info().unwrap();
+//!    println!("info = {:?}", info);
+//!
+//!    println!("And now lets write something...");
+//!    let hkcu = RegKey::predef(HKEY_CURRENT_USER);
+//!    let path = Path::new("Software").join("WinregRsExample1");
+//!    let key = hkcu.create_subkey(&path).unwrap();
+//!
+//!    key.set_value("TestSZ", &"written by Rust").unwrap();
+//!    let sz_val: String = key.get_value("TestSZ").unwrap();
+//!    key.delete_value("TestSZ").unwrap();
+//!    println!("TestSZ = {}", sz_val);
+//!
+//!    key.set_value("TestDWORD", &1234567890u32).unwrap();
+//!    let dword_val: u32 = key.get_value("TestDWORD").unwrap();
+//!    println!("TestDWORD = {}", dword_val);
+//!
+//!    key.set_value("TestQWORD", &1234567891011121314u64).unwrap();
+//!    let qword_val: u64 = key.get_value("TestQWORD").unwrap();
+//!    println!("TestQWORD = {}", qword_val);
+//!
+//!    key.create_subkey("sub\\key").unwrap();
+//!    hkcu.delete_subkey_all(&path).unwrap();
+//!
+//!    println!("Trying to open nonexisting key...");
+//!    let key2 = hkcu.open_subkey(&path)
+//!    .unwrap_or_else(|e| match e.kind() {
+//!        io::ErrorKind::NotFound => panic!("Key doesn't exist"),
+//!        io::ErrorKind::PermissionDenied => panic!("Access denied"),
+//!        _ => panic!("{:?}", e)
+//!    });
+//!}
+//!```
+//!
+//!### Iterators
+//!
+//!```no_run
+//!extern crate winreg;
+//!use winreg::RegKey;
+//!use winreg::enums::*;
+//!
+//!fn main() {
+//!    println!("File extensions, registered in system:");
+//!    for i in RegKey::predef(HKEY_CLASSES_ROOT)
+//!        .enum_keys().map(|x| x.unwrap())
+//!        .filter(|x| x.starts_with("."))
+//!    {
+//!        println!("{}", i);
+//!    }
+//!
+//!    let system = RegKey::predef(HKEY_LOCAL_MACHINE)
+//!        .open_subkey_with_flags("HARDWARE\\DESCRIPTION\\System", KEY_READ)
+//!        .unwrap();
+//!    for (name, value) in system.enum_values().map(|x| x.unwrap()) {
+//!        println!("{} = {:?}", name, value);
+//!    }
+//!}
+//!```
+//!
+//!### Transactions
+//!
+//!```no_run
+//!extern crate winreg;
+//!use std::io;
+//!use winreg::RegKey;
+//!use winreg::enums::*;
+//!use winreg::transaction::Transaction;
+//!
+//!fn main() {
+//!    let t = Transaction::new().unwrap();
+//!    let hkcu = RegKey::predef(HKEY_CURRENT_USER);
+//!    let key = hkcu.create_subkey_transacted("Software\\RustTransaction", &t).unwrap();
+//!    key.set_value("TestQWORD", &1234567891011121314u64).unwrap();
+//!    key.set_value("TestDWORD", &1234567890u32).unwrap();
+//!
+//!    println!("Commit transaction? [y/N]:");
+//!    let mut input = String::new();
+//!    io::stdin().read_line(&mut input).unwrap();
+//!    input = input.trim_right().to_string();
+//!    if input == "y" || input == "Y" {
+//!        t.commit().unwrap();
+//!        println!("Transaction commited.");
+//!    }
+//!    else {
+//!        // this is optional, if transaction wasn't commited,
+//!        // it will be rolled back on disposal
+//!        t.rollback().unwrap();
+//!
+//!        println!("Transaction wasn't commited, it will be rolled back.");
+//!    }
+//!}
+//!```
+//!
+//!### Serialization
+//!
+//!```no_run
+//!extern crate rustc_serialize;
+//!extern crate winreg;
+//!use winreg::enums::*;
+//!
+//!#[derive(Debug,RustcEncodable,RustcDecodable,PartialEq)]
+//!struct Rectangle{
+//!    x: u32,
+//!    y: u32,
+//!    w: u32,
+//!    h: u32,
+//!}
+//!
+//!#[derive(Debug,RustcEncodable,RustcDecodable,PartialEq)]
+//!struct Test {
+//!    t_bool: bool,
+//!    t_u8: u8,
+//!    t_u16: u16,
+//!    t_u32: u32,
+//!    t_u64: u64,
+//!    t_usize: usize,
+//!    t_struct: Rectangle,
+//!    t_string: String,
+//!    t_i8: i8,
+//!    t_i16: i16,
+//!    t_i32: i32,
+//!    t_i64: i64,
+//!    t_isize: isize,
+//!    t_f64: f64,
+//!    t_f32: f32,
+//!}
+//!
+//!fn main() {
+//!    let hkcu = winreg::RegKey::predef(HKEY_CURRENT_USER);
+//!    let key = hkcu.create_subkey("Software\\RustEncode").unwrap();
+//!    let v1 = Test{
+//!        t_bool: false,
+//!        t_u8: 127,
+//!        t_u16: 32768,
+//!        t_u32: 123456789,
+//!        t_u64: 123456789101112,
+//!        t_usize: 123456789101112,
+//!        t_struct: Rectangle{
+//!            x: 55,
+//!            y: 77,
+//!            w: 500,
+//!            h: 300,
+//!        },
+//!        t_string: "test 123!".to_string(),
+//!        t_i8: -123,
+//!        t_i16: -2049,
+//!        t_i32: 20100,
+//!        t_i64: -12345678910,
+//!        t_isize: -1234567890,
+//!        t_f64: -0.01,
+//!        t_f32: 3.14,
+//!    };
+//!
+//!    key.encode(&v1).unwrap();
+//!
+//!    let v2: Test = key.decode().unwrap();
+//!    println!("Decoded {:?}", v2);
+//!
+//!    // This shows `false` because f32 and f64 encoding/decoding is NOT precise
+//!    println!("Equal to encoded: {:?}", v1 == v2);
+//!}
+//!```
 extern crate winapi;
 extern crate kernel32;
 extern crate advapi32;
@@ -34,6 +223,7 @@ pub mod types;
 pub mod serialization;
 pub mod transaction;
 
+/// Metadata returned by `RegKey::query_info`
 #[derive(Debug,Default)]
 pub struct RegKeyMetadata {
     // Class: winapi::LPWSTR,

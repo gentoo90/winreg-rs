@@ -20,6 +20,12 @@ Current features:
 
 ### Basic usage
 
+```toml
+# Cargo.toml
+[dependencies]
+winreg = "0.3"
+```
+
 ```rust
 extern crate winreg;
 use std::path::Path;
@@ -199,6 +205,10 @@ fn main() {
 ```
 
 ## Changelog
+
+### 0.3.3
+
+* Fix: now able to read values longer than 2048 bytes
 
 ### 0.3.2
 
