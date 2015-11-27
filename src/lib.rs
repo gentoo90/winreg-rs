@@ -226,16 +226,16 @@ pub mod transaction;
 /// Metadata returned by `RegKey::query_info`
 #[derive(Debug,Default)]
 pub struct RegKeyMetadata {
-    // Class: winapi::LPWSTR,
-    // ClassLen: DWORD,
-    sub_keys: DWORD,
-    max_sub_key_len: DWORD,
-    max_class_len: DWORD,
-    values: DWORD,
-    max_value_name_len: DWORD,
-    max_value_len: DWORD,
-    // SecurityDescriptor: DWORD,
-    // LastWriteTime: winapi::PFILETIME,
+    // pub Class: winapi::LPWSTR,
+    // pub ClassLen: DWORD,
+    pub sub_keys: DWORD,
+    pub max_sub_key_len: DWORD,
+    pub max_class_len: DWORD,
+    pub values: DWORD,
+    pub max_value_name_len: DWORD,
+    pub max_value_len: DWORD,
+    // pub SecurityDescriptor: DWORD,
+    // pub LastWriteTime: winapi::PFILETIME,
 }
 
 /// Raw registry value
