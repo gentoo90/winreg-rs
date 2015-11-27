@@ -5,9 +5,9 @@
 // except according to those terms.
 use std::ptr;
 use std::io;
-use winapi;
-use kernel32;
-use ktmw32;
+use super::winapi;
+use super::kernel32;
+use super::ktmw32;
 
 #[derive(Debug)]
 pub struct Transaction {

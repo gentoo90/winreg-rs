@@ -3,7 +3,7 @@
 // http://opensource.org/licenses/MIT>. This file
 // may not be copied, modified, or distributed
 // except according to those terms.
-extern crate winapi;
+use super::winapi;
 pub use winapi::{HKEY_CLASSES_ROOT,
                  HKEY_CURRENT_USER,
                  HKEY_LOCAL_MACHINE,

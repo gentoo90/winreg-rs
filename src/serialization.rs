@@ -4,13 +4,13 @@
 // may not be copied, modified, or distributed
 // except according to those terms.
 //! Registry keys parsing and serialization
+use std::mem;
+use std::io;
 use super::{RegKey};
 use super::enums::*;
 use super::transaction::Transaction;
-use rustc_serialize;
-use std::mem;
-use std::io;
-use winapi;
+use super::rustc_serialize;
+use super::winapi;
 use self::EncoderState::{Start, NextKey/*, NextMapKey */};
 
 

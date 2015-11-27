@@ -4,12 +4,11 @@
 // may not be copied, modified, or distributed
 // except according to those terms.
 //! Traits for loading/saving Registry values
-extern crate winapi;
 use std::slice;
 use std::io;
-use winapi::winerror;
+use super::winapi::winerror;
 use super::{RegValue};
-use enums::*;
+use super::enums::*;
 use super::{to_utf16,v16_to_v8};
 
 /// A trait for types that can be loaded from registry values.
