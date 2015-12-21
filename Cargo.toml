@@ -15,6 +15,10 @@ kernel32-sys = "0.1.2"
 advapi32-sys = "0.1.1"
 ktmw32-sys = "0.1.0"
 rustc-serialize = "0.3.14"
+clippy = { version = "*", optional = true }
 
 [dev-dependencies]
 rand = "0.3"
+
+[features]
+default=[]

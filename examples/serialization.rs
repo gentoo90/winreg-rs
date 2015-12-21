@@ -59,7 +59,7 @@ fn main() {
             coords: Coords{ x: 55, y: 77 },
             size: Size{ w: 500, h: 300 },
         },
-        t_string: "test 123!".to_string(),
+        t_string: "test 123!".to_owned(),
         t_i8: -123,
         t_i16: -2049,
         t_i32: 20100,

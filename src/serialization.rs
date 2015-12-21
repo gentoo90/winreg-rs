@@ -83,7 +83,7 @@ macro_rules! emit_value{
 
 macro_rules! no_impl {
     ($e:expr) => (
-        Err(EncoderError::EncodeNotImplemented($e.to_string()))
+        Err(EncoderError::EncodeNotImplemented($e.to_owned()))
     )
 }
 
@@ -195,7 +195,7 @@ impl rustc_serialize::Encoder for Encoder {
         -> EncodeResult<()> where
         F: FnOnce(&mut Self) -> EncodeResult<()>,
     {
-        let res = match mem::replace(&mut self.state, Start) {
+        match mem::replace(&mut self.state, Start) {
             Start => { // root structure
                 f(self)
             },
@@ -207,20 +207,18 @@ impl rustc_serialize::Encoder for Encoder {
                         self.keys.pop();
                         res
                     },
-                    Err(err) => return Err(EncoderError::IoError(err))
+                    Err(err) => Err(EncoderError::IoError(err))
                 }
             }
-        };
-        res
+        }
     }
 
     fn emit_struct_field<F>(&mut self, f_name: &str, _f_idx: usize, f: F)
         -> EncodeResult<()> where
         F: FnOnce(&mut Self) -> EncodeResult<()>
     {
-        self.state = NextKey(f_name.to_string());
-        let res = f(self);
-        res
+        self.state = NextKey(f_name.to_owned());
+        f(self)
     }
 
     fn emit_tuple<F>(&mut self, _: usize, _f: F) -> EncodeResult<()> where
@@ -359,7 +357,7 @@ macro_rules! parse_string{
 
 macro_rules! no_impl {
     ($e:expr) => (
-        Err(DecoderError::DecodeNotImplemented($e.to_string()))
+        Err(DecoderError::DecodeNotImplemented($e.to_owned()))
     )
 }
 
@@ -478,7 +476,7 @@ impl rustc_serialize::Decoder for Decoder {
                         let mut nested = Decoder::new(subkey);
                         f(&mut nested)
                     },
-                    Err(err) => return Err(DecoderError::IoError(err))
+                    Err(err) => Err(DecoderError::IoError(err))
                 }
             }
         }
@@ -488,9 +486,8 @@ impl rustc_serialize::Decoder for Decoder {
         -> DecodeResult<T> where
         F: FnOnce(&mut Self) -> DecodeResult<T>
     {
-        self.f_name = Some(f_name.to_string());
-        let res = f(self);
-        res
+        self.f_name = Some(f_name.to_owned());
+        f(self)
     }
 
     fn read_tuple<T, F>(&mut self, _len: usize, _f: F)
@@ -564,6 +561,6 @@ impl rustc_serialize::Decoder for Decoder {
     }
 
     fn error(&mut self, err: &str) -> Self::Error {
-        DecoderError::ParseError(err.to_string())
+        DecoderError::ParseError(err.to_owned())
     }
 }

@@ -109,7 +109,7 @@
 //!    println!("Commit transaction? [y/N]:");
 //!    let mut input = String::new();
 //!    io::stdin().read_line(&mut input).unwrap();
-//!    input = input.trim_right().to_string();
+//!    input = input.trim_right().to_owned();
 //!    if input == "y" || input == "Y" {
 //!        t.commit().unwrap();
 //!        println!("Transaction commited.");
@@ -174,7 +174,7 @@
 //!            w: 500,
 //!            h: 300,
 //!        },
-//!        t_string: "test 123!".to_string(),
+//!        t_string: "test 123!".to_owned(),
 //!        t_i8: -123,
 //!        t_i16: -2049,
 //!        t_i32: 20100,
@@ -193,6 +193,8 @@
 //!    println!("Equal to encoded: {:?}", v1 == v2);
 //!}
 //!```
+#![cfg_attr(feature="clippy", feature(plugin))]
+#![cfg_attr(feature="clippy", plugin(clippy))]
 extern crate winapi;
 extern crate kernel32;
 extern crate advapi32;
@@ -473,7 +475,7 @@ impl RegKey {
     ///     println!("{}", i);
     /// }
     /// ```
-    pub fn enum_keys<'a>(&'a self) -> EnumKeys<'a> {
+    pub fn enum_keys(&self) -> EnumKeys {
         EnumKeys{key: self, index: 0}
     }
 
@@ -491,7 +493,7 @@ impl RegKey {
     ///     println!("{} = {:?}", name, value);
     /// }
     /// ```
-    pub fn enum_values<'a>(&'a self) -> EnumValues<'a> {
+    pub fn enum_values(&self) -> EnumValues {
         EnumValues{key: self, index: 0}
     }
 
@@ -732,7 +734,7 @@ impl RegKey {
     /// }
     ///
     /// let s: Settings = Settings{
-    ///     current_dir: "C:\\".to_string(),
+    ///     current_dir: "C:\\".to_owned(),
     ///     window_pos: Rectangle{ x:200, y: 100, w: 800, h: 500 },
     ///     show_in_tray: false,
     /// };
@@ -905,11 +907,10 @@ fn to_utf16<P: AsRef<OsStr>>(s: P) -> Vec<u16> {
     s.as_ref().encode_wide().chain(Some(0).into_iter()).collect()
 }
 
-fn v16_to_v8(v: &Vec<u16>) -> Vec<u8> {
-    let res: Vec<u8> = unsafe {
+fn v16_to_v8(v: &[u16]) -> Vec<u8> {
+    unsafe {
         slice::from_raw_parts(v.as_ptr() as *const u8, v.len()*2).to_vec()
-    };
-    res
+    }
 }
 
 
@@ -933,7 +934,7 @@ mod test {
 
     macro_rules! with_key {
         ($k:ident, $path:expr => $b:block) => {{
-            let mut path = "Software\\WinRegRsTest".to_string();
+            let mut path = "Software\\WinRegRsTest".to_owned();
             path.push_str($path);
             let $k = RegKey::predef(HKEY_CURRENT_USER)
                 .create_subkey(&path).unwrap();
@@ -972,7 +973,7 @@ mod test {
     fn test_string_value() {
         with_key!(key, "StringValue" => {
             let name = "RustStringVal";
-            let val1 = "Test123 \n$%^&|+-*/\\()".to_string();
+            let val1 = "Test123 \n$%^&|+-*/\\()".to_owned();
             key.set_value(name, &val1).unwrap();
             let val2: String = key.get_value(name).unwrap();
             assert_eq!(val1, val2);
@@ -1100,7 +1101,7 @@ mod test {
             t_u64: 123456789101112,
             t_usize: 123456789101112,
             t_struct: Rectangle{ x: 55, y: 77, w: 500, h: 300 },
-            t_string: "Test123 \n$%^&|+-*/\\()".to_string(),
+            t_string: "Test123 \n$%^&|+-*/\\()".to_owned(),
             t_i8: -123,
             t_i16: -2049,
             t_i32: 20100,

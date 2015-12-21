@@ -119,7 +119,7 @@ fn main() {
     println!("Commit transaction? [y/N]:");
     let mut input = String::new();
     io::stdin().read_line(&mut input).unwrap();
-    input = input.trim_right().to_string();
+    input = input.trim_right().to_owned();
     if input == "y" || input == "Y" {
         t.commit().unwrap();
         println!("Transaction commited.");
@@ -184,7 +184,7 @@ fn main() {
             w: 500,
             h: 300,
         },
-        t_string: "test 123!".to_string(),
+        t_string: "test 123!".to_owned(),
         t_i8: -123,
         t_i16: -2049,
         t_i32: 20100,
