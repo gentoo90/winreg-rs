@@ -400,7 +400,7 @@ impl RegKey {
                 ptr::null_mut(),
                 &mut new_hkey,
                 &mut disp // TODO: return this somehow
-            ) as DWORD
+            )
         } {
             0 => Ok(RegKey{ hkey: new_hkey }),
             err => werr!(err)
@@ -969,12 +969,6 @@ mod test {
             RegKey::predef(HKEY_CURRENT_USER)
             .delete_subkey_all(path).unwrap();
         }}
-    }
-
-    #[test]
-    #[allow(unused_variables)]
-    fn test_create_delete_all_subkey() {
-        with_key!(key, "CreateDeleteAllSubkey" => {});
     }
 
     #[test]
