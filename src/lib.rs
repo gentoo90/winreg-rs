@@ -437,6 +437,33 @@ impl RegKey {
         }
     }
 
+    /// Copy all the values and subkeys from `path` to `dest` key.
+    /// WIll copy the content of `self` if `path` is an empty string.
+    ///
+    /// # Examples
+    ///
+    /// ```no_run
+    /// # use winreg::RegKey;
+    /// # use winreg::enums::*;
+    /// let hkcu = RegKey::predef(HKEY_CURRENT_USER);
+    /// let src = hkcu.open_subkey_with_flags("Software\\MyProdust", KEY_READ).unwrap();
+    /// let dst = hkcu.create_subkey("Software\\MyProdust\\Section2").unwrap();
+    /// src.copy_tree("Section1", &dst).unwrap();
+    /// ```
+    pub fn copy_tree<P: AsRef<OsStr>>(&self, path: P, dest: &RegKey) -> io::Result<()> {
+        let c_path = to_utf16(path);
+        match unsafe {
+            advapi32::RegCopyTreeW(
+                self.hkey,
+                c_path.as_ptr(),
+                dest.hkey,
+            )
+        } {
+            0 => Ok(()),
+            err => werr!(err)
+        }
+    }
+
     pub fn query_info(&self) -> io::Result<RegKeyMetadata> {
         let mut info: RegKeyMetadata = Default::default();
         match unsafe {
@@ -956,6 +983,18 @@ mod test {
         RegKey::predef(HKEY_CURRENT_USER).create_subkey(path).unwrap();
         assert!(RegKey::predef(HKEY_CURRENT_USER)
             .delete_subkey(path).is_ok());
+    }
+
+    #[test]
+    fn test_copy_tree() {
+        with_key!(key, "CopyTree" => {
+            let sub_tree = key.create_subkey("Src\\Sub\\Tree").unwrap();
+            for v in vec!["one", "two", "three"] {
+                sub_tree.set_value(v, &v);
+            }
+            let dst = key.create_subkey("Dst").unwrap();
+            assert!(key.copy_tree("Src", &dst).is_ok());
+        });
     }
 
     #[test]
