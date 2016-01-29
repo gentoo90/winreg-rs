@@ -918,7 +918,10 @@ impl<'key> Iterator for EnumValues<'key> {
             } {
                 0 => {
                     self.index += 1;
-                    let name = String::from_utf16(&name[..name_len as usize]).unwrap();
+                    let name = match String::from_utf16(&name[..name_len as usize]) {
+                        Ok(s) => s,
+                        Err(_) => return Some(werr!(winerror::ERROR_INVALID_DATA))
+                    };
                     unsafe{ buf.set_len(buf_len as usize); }
                     // minimal check before transmute to RegType
                     if buf_type > winapi::REG_QWORD {
