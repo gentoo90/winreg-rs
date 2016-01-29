@@ -64,6 +64,6 @@ impl Transaction {
 
 impl Drop for Transaction {
     fn drop(&mut self) {
-        self.close_().unwrap();
+        self.close_().unwrap_or(());
     }
 }

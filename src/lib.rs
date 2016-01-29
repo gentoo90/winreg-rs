@@ -195,6 +195,8 @@
 //!```
 #![cfg_attr(feature="clippy", feature(plugin))]
 #![cfg_attr(feature="clippy", plugin(clippy))]
+#![cfg_attr(feature="clippy", warn(option_unwrap_used))]
+#![cfg_attr(feature="clippy", warn(result_unwrap_used))]
 extern crate winapi;
 extern crate kernel32;
 extern crate advapi32;
@@ -247,19 +249,26 @@ pub struct RegValue {
     pub vtype: RegType,
 }
 
+macro_rules! format_reg_value {
+    ($e:expr => $t:ident) => (
+        match $t::from_reg_value($e) {
+            Ok(val) => format!("{:?}", val),
+            Err(_) => return Err(fmt::Error),
+        }
+    )
+}
+
 impl fmt::Debug for RegValue {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         let f_val = match self.vtype {
             REG_SZ | REG_EXPAND_SZ | REG_MULTI_SZ => {
-                format!("{:?}", String::from_reg_value(self).unwrap())
+                format_reg_value!(self => String)
             },
             REG_DWORD => {
-                let dword_val = u32::from_reg_value(self).unwrap();
-                format!("{:?}", dword_val)
+                format_reg_value!(self => u32)
             },
             REG_QWORD => {
-                let dword_val = u64::from_reg_value(self).unwrap();
-                format!("{:?}", dword_val)
+                format_reg_value!(self => u64)
             },
             _ => format!("{:?}", self.bytes) //TODO: implement more types
         };
@@ -835,7 +844,7 @@ impl RegKey {
 
 impl Drop for RegKey {
     fn drop(&mut self) {
-        self.close_().unwrap();
+        self.close_().unwrap_or(());
     }
 }
 
@@ -942,6 +951,8 @@ fn v16_to_v8(v: &[u16]) -> Vec<u8> {
 
 
 #[cfg(test)]
+#[cfg_attr(feature="clippy", allow(option_unwrap_used))]
+#[cfg_attr(feature="clippy", allow(result_unwrap_used))]
 mod test {
     extern crate rand;
     use super::*;
@@ -984,7 +995,7 @@ mod test {
         with_key!(key, "CopyTree" => {
             let sub_tree = key.create_subkey("Src\\Sub\\Tree").unwrap();
             for v in vec!["one", "two", "three"] {
-                sub_tree.set_value(v, &v);
+                sub_tree.set_value(v, &v).unwrap();
             }
             let dst = key.create_subkey("Dst").unwrap();
             assert!(key.copy_tree("Src", &dst).is_ok());
