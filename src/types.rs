@@ -22,10 +22,9 @@ impl FromRegValue for String {
         match val.vtype {
             REG_SZ | REG_EXPAND_SZ | REG_MULTI_SZ => {
                 let words = unsafe {
-                    let pwords = val.bytes.as_ptr() as *mut [u16; 2048 as usize];
-                    *pwords
+                    slice::from_raw_parts(val.bytes.as_ptr() as *const u16, val.bytes.len() / 2)
                 };
-                let mut s:String = String::from_utf16_lossy(&words[..(val.bytes.len()/2)]);
+                let mut s = String::from_utf16_lossy(words);
                 while s.ends_with("\u{0}") {s.pop();}
                 if val.vtype == REG_MULTI_SZ {
                     return Ok(s.replace("\u{0}", "\n"))
