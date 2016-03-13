@@ -25,7 +25,7 @@ impl FromRegValue for String {
                     slice::from_raw_parts(val.bytes.as_ptr() as *const u16, val.bytes.len() / 2)
                 };
                 let mut s = String::from_utf16_lossy(words);
-                while s.ends_with("\u{0}") {s.pop();}
+                while s.ends_with('\u{0}') {s.pop();}
                 if val.vtype == REG_MULTI_SZ {
                     return Ok(s.replace("\u{0}", "\n"))
                 }
