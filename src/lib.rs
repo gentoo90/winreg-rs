@@ -963,6 +963,7 @@ mod test {
     use super::types::*;
     use std::collections::HashMap;
     use rustc_serialize::{Encodable,Decodable};
+    use self::rand::Rng;
 
     #[test]
     fn test_open_subkey_with_flags_query_info() {
@@ -1021,6 +1022,17 @@ mod test {
         with_key!(key, "StringValue" => {
             let name = "RustStringVal";
             let val1 = "Test123 \n$%^&|+-*/\\()".to_owned();
+            key.set_value(name, &val1).unwrap();
+            let val2: String = key.get_value(name).unwrap();
+            assert_eq!(val1, val2);
+        });
+    }
+
+    #[test]
+    fn test_long_string_value() {
+        with_key!(key, "LongStringValue" => {
+            let name = "RustLongStringVal";
+            let val1 : String = rand::thread_rng().gen_ascii_chars().take(7000).collect();
             key.set_value(name, &val1).unwrap();
             let val2: String = key.get_value(name).unwrap();
             assert_eq!(val1, val2);
