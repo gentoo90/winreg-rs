@@ -206,9 +206,17 @@ fn main() {
 
 ## Changelog
 
+### 0.3.4
+
+* Add `copy_tree` method to `RegKey`
+* Now checked with [rust-clippy](https://github.com/Manishearth/rust-clippy)
+    * no more `unwrap`s
+    * replaced `to_string` with `to_owned`
+* Fix: reading strings longer than 2048 characters (#6)
+
 ### 0.3.3
 
-* Fix: now able to read values longer than 2048 bytes
+* Fix: now able to read values longer than 2048 bytes (#3)
 
 ### 0.3.2
 
