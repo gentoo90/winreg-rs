@@ -964,6 +964,7 @@ mod test {
     use std::collections::HashMap;
     use rustc_serialize::{Encodable,Decodable};
     use self::rand::Rng;
+    use std::ffi::{OsStr,OsString};
 
     #[test]
     fn test_open_subkey_with_flags_query_info() {
@@ -1036,6 +1037,29 @@ mod test {
             key.set_value(name, &val1).unwrap();
             let val2: String = key.get_value(name).unwrap();
             assert_eq!(val1, val2);
+        });
+    }
+
+    #[test]
+    fn test_os_string_value() {
+        with_key!(key, "OsStringValue" => {
+            let name = "RustOsStringVal";
+            let val1 = OsStr::new("Test123 \n$%^&|+-*/\\()");
+            key.set_value(name, &val1).unwrap();
+            let val2: OsString = key.get_value(name).unwrap();
+            assert_eq!(val1, val2);
+        });
+    }
+
+    #[test]
+    fn test_long_os_string_value() {
+        with_key!(key, "LongStringValue" => {
+        let name = "RustLongStringVal";
+        let val1 = rand::thread_rng().gen_ascii_chars().take(7000).collect::<String>();
+        let val1 = OsStr::new(&val1);
+        key.set_value(name, &val1).unwrap();
+        let val2: OsString = key.get_value(name).unwrap();
+        assert_eq!(val1, val2);
         });
     }
 
