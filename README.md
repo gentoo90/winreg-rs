@@ -8,8 +8,8 @@ Current features:
     * open/create/delete keys
     * read and write values
     * seamless conversion between `REG_*` types and rust primitives
-        * `String` <= `REG_SZ`, `REG_EXPAND_SZ` or `REG_MULTI_SZ`
-        * `String` and `&str` => `REG_SZ`
+        * `String` and `OsString` <= `REG_SZ`, `REG_EXPAND_SZ` or `REG_MULTI_SZ`
+        * `String`, `&str` and `OsStr` => `REG_SZ`
         * `u32` <=> `REG_DWORD`
         * `u64` <=> `REG_QWORD`
 * Iteration through key names and through values
@@ -205,6 +205,11 @@ fn main() {
 ```
 
 ## Changelog
+
+### 0.3.5
+
+* Implement `FromRegValue` for `OsString` and `ToRegValue` for `OsStr` (#8)
+* Minor fixes
 
 ### 0.3.4
 
