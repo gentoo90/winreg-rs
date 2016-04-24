@@ -55,7 +55,7 @@
 //!    key.create_subkey("sub\\key").unwrap();
 //!    hkcu.delete_subkey_all(&path).unwrap();
 //!
-//!    println!("Trying to open nonexisting key...");
+//!    println!("Trying to open nonexistent key...");
 //!    let key2 = hkcu.open_subkey(&path)
 //!    .unwrap_or_else(|e| match e.kind() {
 //!        io::ErrorKind::NotFound => panic!("Key doesn't exist"),
@@ -112,14 +112,14 @@
 //!    input = input.trim_right().to_owned();
 //!    if input == "y" || input == "Y" {
 //!        t.commit().unwrap();
-//!        println!("Transaction commited.");
+//!        println!("Transaction committed.");
 //!    }
 //!    else {
-//!        // this is optional, if transaction wasn't commited,
+//!        // this is optional, if transaction wasn't committed,
 //!        // it will be rolled back on disposal
 //!        t.rollback().unwrap();
 //!
-//!        println!("Transaction wasn't commited, it will be rolled back.");
+//!        println!("Transaction wasn't committed, it will be rolled back.");
 //!    }
 //!}
 //!```
@@ -455,8 +455,8 @@ impl RegKey {
     /// # use winreg::RegKey;
     /// # use winreg::enums::*;
     /// let hkcu = RegKey::predef(HKEY_CURRENT_USER);
-    /// let src = hkcu.open_subkey_with_flags("Software\\MyProdust", KEY_READ).unwrap();
-    /// let dst = hkcu.create_subkey("Software\\MyProdust\\Section2").unwrap();
+    /// let src = hkcu.open_subkey_with_flags("Software\\MyProduct", KEY_READ).unwrap();
+    /// let dst = hkcu.create_subkey("Software\\MyProduct\\Section2").unwrap();
     /// src.copy_tree("Section1", &dst).unwrap();
     /// ```
     pub fn copy_tree<P: AsRef<OsStr>>(&self, path: P, dest: &RegKey) -> io::Result<()> {
@@ -965,6 +965,7 @@ mod test {
     use rustc_serialize::{Encodable,Decodable};
     use self::rand::Rng;
     use std::ffi::{OsStr,OsString};
+    //use std::os::windows::ffi::{OsStrExt,OsStringExt};
 
     #[test]
     fn test_open_subkey_with_flags_query_info() {
@@ -999,8 +1000,8 @@ mod test {
     fn test_copy_tree() {
         with_key!(key, "CopyTree" => {
             let sub_tree = key.create_subkey("Src\\Sub\\Tree").unwrap();
-            for v in vec!["one", "two", "three"] {
-                sub_tree.set_value(v, &v).unwrap();
+            for v in &["one", "two", "three"] {
+                sub_tree.set_value(v, v).unwrap();
             }
             let dst = key.create_subkey("Dst").unwrap();
             assert!(key.copy_tree("Src", &dst).is_ok());
@@ -1133,9 +1134,9 @@ mod test {
         with_key!(key, "EnumLongValues" => {
             let mut vals = HashMap::with_capacity(3);
 
-            for i in vec!(5500, 9500, 15000) {
+            for i in &[5500, 9500, 15000] {
                 let name: String = format!("val{}", i);
-                let val = RegValue { vtype: REG_BINARY, bytes: (0..i).map(|_| rand::random::<u8>()).collect() };
+                let val = RegValue { vtype: REG_BINARY, bytes: (0..*i).map(|_| rand::random::<u8>()).collect() };
                 vals.insert(name, val);
             }
 

@@ -65,7 +65,7 @@ fn main() {
     key.create_subkey("sub\\key").unwrap();
     hkcu.delete_subkey_all(&path).unwrap();
 
-    println!("Trying to open nonexisting key...");
+    println!("Trying to open nonexistent key...");
     let key2 = hkcu.open_subkey(&path)
     .unwrap_or_else(|e| match e.kind() {
         io::ErrorKind::NotFound => panic!("Key doesn't exist"),
@@ -122,14 +122,14 @@ fn main() {
     input = input.trim_right().to_owned();
     if input == "y" || input == "Y" {
         t.commit().unwrap();
-        println!("Transaction commited.");
+        println!("Transaction committed.");
     }
     else {
-        // this is optional, if transaction wasn't commited,
+        // this is optional, if transaction wasn't committed,
         // it will be rolled back on disposal
         t.rollback().unwrap();
 
-        println!("Transaction wasn't commited, it will be rolled back.");
+        println!("Transaction wasn't committed, it will be rolled back.");
     }
 }
 ```
