@@ -197,6 +197,7 @@
 #![cfg_attr(feature="clippy", plugin(clippy))]
 #![cfg_attr(feature="clippy", warn(option_unwrap_used))]
 #![cfg_attr(feature="clippy", warn(result_unwrap_used))]
+#![cfg(windows)]
 extern crate winapi;
 extern crate kernel32;
 extern crate advapi32;
