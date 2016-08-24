@@ -26,7 +26,7 @@ Current features:
 winreg = "0.3"
 ```
 
-```rust
+```rust,no_run
 extern crate winreg;
 use std::path::Path;
 use std::io;
@@ -77,7 +77,7 @@ fn main() {
 
 ### Iterators
 
-```rust
+```rust,no_run
 extern crate winreg;
 use winreg::RegKey;
 use winreg::enums::*;
@@ -102,7 +102,7 @@ fn main() {
 
 ### Transactions
 
-```rust
+```rust,no_run
 extern crate winreg;
 use std::io;
 use winreg::RegKey;
@@ -136,7 +136,7 @@ fn main() {
 
 ### Serialization
 
-```rust
+```rust,no_run
 extern crate rustc_serialize;
 extern crate winreg;
 use winreg::enums::*;
