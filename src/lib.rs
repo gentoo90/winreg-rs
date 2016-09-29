@@ -1045,7 +1045,7 @@ mod test {
     fn test_os_string_value() {
         with_key!(key, "OsStringValue" => {
             let name = "RustOsStringVal";
-            let val1 = OsStr::new("Test123 \n$%^&|+-*/\\()");
+            let val1 = OsStr::new("Test123 \n$%^&|+-*/\\()\u{0}");
             key.set_value(name, &val1).unwrap();
             let val2: OsString = key.get_value(name).unwrap();
             assert_eq!(val1, val2);
@@ -1054,8 +1054,8 @@ mod test {
 
     #[test]
     fn test_long_os_string_value() {
-        with_key!(key, "LongStringValue" => {
-        let name = "RustLongStringVal";
+        with_key!(key, "LongOsStringValue" => {
+        let name = "RustLongOsStringVal";
         let val1 = rand::thread_rng().gen_ascii_chars().take(7000).collect::<String>();
         let val1 = OsStr::new(&val1);
         key.set_value(name, &val1).unwrap();
