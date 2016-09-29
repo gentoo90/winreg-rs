@@ -962,10 +962,8 @@ mod test {
     use super::enums::*;
     use super::types::*;
     use std::collections::HashMap;
-    use rustc_serialize::{Encodable,Decodable};
     use self::rand::Rng;
     use std::ffi::{OsStr,OsString};
-    //use std::os::windows::ffi::{OsStrExt,OsStringExt};
 
     #[test]
     fn test_open_subkey_with_flags_query_info() {
@@ -1183,7 +1181,7 @@ mod test {
             t_u16: 32768,
             t_u32: 123456789,
             t_u64: 123456789101112,
-            t_usize: 123456789101112,
+            t_usize: 1234567891,
             t_struct: Rectangle{ x: 55, y: 77, w: 500, h: 300 },
             t_string: "Test123 \n$%^&|+-*/\\()".to_owned(),
             t_i8: -123,
