@@ -1,4 +1,4 @@
-winreg [![Crates.io](https://img.shields.io/crates/v/winreg.svg)](https://crates.io/crates/winreg)
+winreg [![Crates.io](https://img.shields.io/crates/v/winreg.svg)](https://crates.io/crates/winreg) [![Build status](https://ci.appveyor.com/api/projects/status/f3lwrt67ghrf5omd?svg=true)](https://ci.appveyor.com/project/gentoo90/winreg-rs)
 ======
 
 Rust bindings to MS Windows Registry API. Work in progress.
