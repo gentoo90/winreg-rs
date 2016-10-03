@@ -962,10 +962,8 @@ mod test {
     use super::enums::*;
     use super::types::*;
     use std::collections::HashMap;
-    use rustc_serialize::{Encodable,Decodable};
     use self::rand::Rng;
     use std::ffi::{OsStr,OsString};
-    //use std::os::windows::ffi::{OsStrExt,OsStringExt};
 
     #[test]
     fn test_open_subkey_with_flags_query_info() {
@@ -1045,7 +1043,7 @@ mod test {
     fn test_os_string_value() {
         with_key!(key, "OsStringValue" => {
             let name = "RustOsStringVal";
-            let val1 = OsStr::new("Test123 \n$%^&|+-*/\\()");
+            let val1 = OsStr::new("Test123 \n$%^&|+-*/\\()\u{0}");
             key.set_value(name, &val1).unwrap();
             let val2: OsString = key.get_value(name).unwrap();
             assert_eq!(val1, val2);
@@ -1054,8 +1052,8 @@ mod test {
 
     #[test]
     fn test_long_os_string_value() {
-        with_key!(key, "LongStringValue" => {
-        let name = "RustLongStringVal";
+        with_key!(key, "LongOsStringValue" => {
+        let name = "RustLongOsStringVal";
         let val1 = rand::thread_rng().gen_ascii_chars().take(7000).collect::<String>();
         let val1 = OsStr::new(&val1);
         key.set_value(name, &val1).unwrap();
@@ -1183,7 +1181,7 @@ mod test {
             t_u16: 32768,
             t_u32: 123456789,
             t_u64: 123456789101112,
-            t_usize: 123456789101112,
+            t_usize: 1234567891,
             t_struct: Rectangle{ x: 55, y: 77, w: 500, h: 300 },
             t_string: "Test123 \n$%^&|+-*/\\()".to_owned(),
             t_i8: -123,

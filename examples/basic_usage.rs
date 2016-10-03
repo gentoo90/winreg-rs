@@ -42,7 +42,7 @@ fn main() {
     hkcu.delete_subkey_all(&path).unwrap();
 
     println!("Trying to open nonexistent key...");
-    let key2 = hkcu.open_subkey(&path)
+    hkcu.open_subkey(&path)
     .unwrap_or_else(|e| match e.kind() {
         io::ErrorKind::NotFound => panic!("Key doesn't exist"),
         io::ErrorKind::PermissionDenied => panic!("Access denied"),
