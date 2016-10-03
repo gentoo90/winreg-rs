@@ -1054,7 +1054,8 @@ mod test {
     fn test_long_os_string_value() {
         with_key!(key, "LongOsStringValue" => {
         let name = "RustLongOsStringVal";
-        let val1 = rand::thread_rng().gen_ascii_chars().take(7000).collect::<String>();
+        let mut val1 = rand::thread_rng().gen_ascii_chars().take(7000).collect::<String>();
+        val1.push('\u{0}');
         let val1 = OsStr::new(&val1);
         key.set_value(name, &val1).unwrap();
         let val2: OsString = key.get_value(name).unwrap();
