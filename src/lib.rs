@@ -124,75 +124,6 @@
 //!}
 //!```
 //!
-//!### Serialization
-//!
-//!```no_run
-//!extern crate rustc_serialize;
-//!extern crate winreg;
-//!use winreg::enums::*;
-//!
-//!#[derive(Debug,RustcEncodable,RustcDecodable,PartialEq)]
-//!struct Rectangle{
-//!    x: u32,
-//!    y: u32,
-//!    w: u32,
-//!    h: u32,
-//!}
-//!
-//!#[derive(Debug,RustcEncodable,RustcDecodable,PartialEq)]
-//!struct Test {
-//!    t_bool: bool,
-//!    t_u8: u8,
-//!    t_u16: u16,
-//!    t_u32: u32,
-//!    t_u64: u64,
-//!    t_usize: usize,
-//!    t_struct: Rectangle,
-//!    t_string: String,
-//!    t_i8: i8,
-//!    t_i16: i16,
-//!    t_i32: i32,
-//!    t_i64: i64,
-//!    t_isize: isize,
-//!    t_f64: f64,
-//!    t_f32: f32,
-//!}
-//!
-//!fn main() {
-//!    let hkcu = winreg::RegKey::predef(HKEY_CURRENT_USER);
-//!    let key = hkcu.create_subkey("Software\\RustEncode").unwrap();
-//!    let v1 = Test{
-//!        t_bool: false,
-//!        t_u8: 127,
-//!        t_u16: 32768,
-//!        t_u32: 123456789,
-//!        t_u64: 123456789101112,
-//!        t_usize: 123456789101112,
-//!        t_struct: Rectangle{
-//!            x: 55,
-//!            y: 77,
-//!            w: 500,
-//!            h: 300,
-//!        },
-//!        t_string: "test 123!".to_owned(),
-//!        t_i8: -123,
-//!        t_i16: -2049,
-//!        t_i32: 20100,
-//!        t_i64: -12345678910,
-//!        t_isize: -1234567890,
-//!        t_f64: -0.01,
-//!        t_f32: 3.14,
-//!    };
-//!
-//!    key.encode(&v1).unwrap();
-//!
-//!    let v2: Test = key.decode().unwrap();
-//!    println!("Decoded {:?}", v2);
-//!
-//!    // This shows `false` because f32 and f64 encoding/decoding is NOT precise
-//!    println!("Equal to encoded: {:?}", v1 == v2);
-//!}
-//!```
 #![cfg_attr(feature="clippy", feature(plugin))]
 #![cfg_attr(feature="clippy", plugin(clippy))]
 #![cfg_attr(feature="clippy", warn(option_unwrap_used))]
@@ -201,6 +132,7 @@ extern crate winapi;
 extern crate kernel32;
 extern crate advapi32;
 extern crate ktmw32;
+#[cfg(feature = "serialization-rustc")]
 extern crate rustc_serialize;
 use std::ptr;
 use std::slice;
@@ -224,8 +156,9 @@ macro_rules! werr {
 
 pub mod enums;
 pub mod types;
-pub mod serialization;
 pub mod transaction;
+#[cfg(feature = "serialization-rustc")]
+pub mod serialization;
 
 /// Metadata returned by `RegKey::query_info`
 #[derive(Debug,Default)]
@@ -743,6 +676,7 @@ impl RegKey {
     }
 
     /// Save `Encodable` type to a registry key.
+    /// Part of `serialization-rustc` feature.
     ///
     /// # Examples
     ///
@@ -779,6 +713,7 @@ impl RegKey {
     /// s_key.encode(&s).unwrap();
     /// # }
     /// ```
+    #[cfg(feature = "serialization-rustc")]
     pub fn encode<T: rustc_serialize::Encodable>(&self, value: &T)
         -> serialization::EncodeResult<()>
     {
@@ -790,6 +725,7 @@ impl RegKey {
     }
 
     /// Load `Decodable` type from a registry key.
+    /// Part of `serialization-rustc` feature.
     ///
     /// # Examples
     ///
@@ -821,6 +757,7 @@ impl RegKey {
     /// let s: Settings = s_key.decode().unwrap();
     /// # }
     /// ```
+    #[cfg(feature = "serialization-rustc")]
     pub fn decode<T: rustc_serialize::Decodable>(&self)
         -> serialization::DecodeResult<T>
     {
@@ -1147,6 +1084,7 @@ mod test {
         });
     }
 
+    #[cfg(feature = "serialization-rustc")]
     #[test]
     fn test_serialization() {
         #[derive(Debug,RustcEncodable,RustcDecodable,PartialEq)]
