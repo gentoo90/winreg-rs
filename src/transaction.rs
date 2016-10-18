@@ -7,12 +7,6 @@
 //! Structure for a registry transaction.
 //! Part of `transactions` feature.
 //!
-//!```toml,ignore
-//!# Cargo.toml
-//![dependencies]
-//!winreg = { version = "0.3", features = ["transactions"] }
-//!```
-//!
 //!```no_run
 //!extern crate winreg;
 //!use std::io;

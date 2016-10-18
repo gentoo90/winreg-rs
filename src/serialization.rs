@@ -7,12 +7,6 @@
 //! Registry keys parsing and serialization
 //! Part of `serialization-rustc` feature.
 //!
-//!```toml,ignore
-//!# Cargo.toml
-//![dependencies]
-//!winreg = { version = "0.3", features = ["serialization-rustc"] }
-//!```
-//!
 //!```no_run
 //!extern crate rustc_serialize;
 //!extern crate winreg;

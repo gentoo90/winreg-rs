@@ -23,7 +23,7 @@ Current features:
 ```toml
 # Cargo.toml
 [dependencies]
-winreg = "0.3"
+winreg = "0.4"
 ```
 
 ```rust
@@ -205,6 +205,11 @@ fn main() {
 ```
 
 ## Changelog
+
+### 0.4
+
+* Make transactions and serialization otional features
+* Update dependensies + minor fixes (#12)
 
 ### 0.3.5
 

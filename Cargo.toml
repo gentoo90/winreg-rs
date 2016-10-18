@@ -1,11 +1,11 @@
 [package]
 name = "winreg"
-version = "0.3.5"
+version = "0.4.0"
 authors = ["Igor Shaula <gentoo90@gmail.com>"]
 license = "MIT"
 description = "Rust bindings to MS Windows Registry API"
 repository = "https://github.com/gentoo90/winreg-rs"
-documentation = "https://gentoo90.github.io/winreg-rs/v0.3.5/winreg/"
+documentation = "https://gentoo90.github.io/winreg-rs/v0.4.0/winreg/"
 readme = "README.md"
 keywords = ["Windows", "WinSDK", "Registry"]
 
@@ -21,7 +21,6 @@ clippy = { version = "^0", optional = true }
 rand = "0.3"
 
 [features]
-default = []
+default = ["transactions", "serialization-rustc"]
 transactions = ["ktmw32-sys"]
 serialization-rustc = ["transactions", "rustc-serialize"]
-all = ["serialization-rustc"]
