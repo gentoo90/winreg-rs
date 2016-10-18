@@ -1,0 +1,8 @@
+[package]
+name = "winreg_example_transactions"
+version = "0.1.0"
+authors = ["Igor Shaula <gentoo90@gmail.com>"]
+publish = false
+
+[dependencies]
+winreg = { path = "../../", features = ["transactions"] }

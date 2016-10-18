@@ -90,40 +90,6 @@
 //!}
 //!```
 //!
-//!### Transactions
-//!
-//!```no_run
-//!extern crate winreg;
-//!use std::io;
-//!use winreg::RegKey;
-//!use winreg::enums::*;
-//!use winreg::transaction::Transaction;
-//!
-//!fn main() {
-//!    let t = Transaction::new().unwrap();
-//!    let hkcu = RegKey::predef(HKEY_CURRENT_USER);
-//!    let key = hkcu.create_subkey_transacted("Software\\RustTransaction", &t).unwrap();
-//!    key.set_value("TestQWORD", &1234567891011121314u64).unwrap();
-//!    key.set_value("TestDWORD", &1234567890u32).unwrap();
-//!
-//!    println!("Commit transaction? [y/N]:");
-//!    let mut input = String::new();
-//!    io::stdin().read_line(&mut input).unwrap();
-//!    input = input.trim_right().to_owned();
-//!    if input == "y" || input == "Y" {
-//!        t.commit().unwrap();
-//!        println!("Transaction committed.");
-//!    }
-//!    else {
-//!        // this is optional, if transaction wasn't committed,
-//!        // it will be rolled back on disposal
-//!        t.rollback().unwrap();
-//!
-//!        println!("Transaction wasn't committed, it will be rolled back.");
-//!    }
-//!}
-//!```
-//!
 #![cfg_attr(feature="clippy", feature(plugin))]
 #![cfg_attr(feature="clippy", plugin(clippy))]
 #![cfg_attr(feature="clippy", warn(option_unwrap_used))]
@@ -131,6 +97,7 @@
 extern crate winapi;
 extern crate kernel32;
 extern crate advapi32;
+#[cfg(feature = "transactions")]
 extern crate ktmw32;
 #[cfg(feature = "serialization-rustc")]
 extern crate rustc_serialize;
@@ -146,6 +113,7 @@ use winapi::winerror;
 use winapi::{HKEY, DWORD, WCHAR};
 use enums::*;
 use types::{FromRegValue, ToRegValue};
+#[cfg(feature = "transactions")]
 use transaction::Transaction;
 
 macro_rules! werr {
@@ -156,6 +124,7 @@ macro_rules! werr {
 
 pub mod enums;
 pub mod types;
+#[cfg(feature = "transactions")]
 pub mod transaction;
 #[cfg(feature = "serialization-rustc")]
 pub mod serialization;
@@ -284,10 +253,14 @@ impl RegKey {
         }
     }
 
+    /// Part of `transactions` feature.
+    #[cfg(feature = "transactions")]
     pub fn open_subkey_transacted<P: AsRef<OsStr>>(&self, path: P, t: &Transaction) -> io::Result<RegKey> {
         self.open_subkey_transacted_with_flags(path, t, winapi::KEY_ALL_ACCESS)
     }
 
+    /// Part of `transactions` feature.
+    #[cfg(feature = "transactions")]
     pub fn open_subkey_transacted_with_flags<P: AsRef<OsStr>>(&self, path: P, t: &Transaction, perms: winapi::REGSAM)
         -> io::Result<RegKey>
     {
@@ -349,10 +322,14 @@ impl RegKey {
         }
     }
 
+    /// Part of `transactions` feature.
+    #[cfg(feature = "transactions")]
     pub fn create_subkey_transacted<P: AsRef<OsStr>>(&self, path: P, t: &Transaction) -> io::Result<RegKey> {
         self.create_subkey_transacted_with_flags(path, t, winapi::KEY_ALL_ACCESS)
     }
 
+    /// Part of `transactions` feature.
+    #[cfg(feature = "transactions")]
     pub fn create_subkey_transacted_with_flags<P: AsRef<OsStr>>(&self, path: P, t: &Transaction, perms: winapi::REGSAM)
         -> io::Result<RegKey>
     {
@@ -491,6 +468,8 @@ impl RegKey {
         }
     }
 
+    /// Part of `transactions` feature.
+    #[cfg(feature = "transactions")]
     pub fn delete_subkey_transacted<P: AsRef<OsStr>>(&self, path: P, t: &Transaction) -> io::Result<()> {
         let c_path = to_utf16(path);
         match unsafe {
