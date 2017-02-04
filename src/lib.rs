@@ -127,7 +127,9 @@ pub mod types;
 #[cfg(feature = "transactions")]
 pub mod transaction;
 #[cfg(feature = "serialization-rustc")]
-pub mod serialization;
+mod encoder;
+#[cfg(feature = "serialization-rustc")]
+mod decoder;
 
 /// Metadata returned by `RegKey::query_info`
 #[derive(Debug,Default)]
@@ -694,10 +696,10 @@ impl RegKey {
     /// ```
     #[cfg(feature = "serialization-rustc")]
     pub fn encode<T: rustc_serialize::Encodable>(&self, value: &T)
-        -> serialization::EncodeResult<()>
+        -> encoder::EncodeResult<()>
     {
         let mut encoder = try!(
-            serialization::Encoder::from_key(&self)
+            encoder::Encoder::from_key(&self)
         );
         try!(value.encode(&mut encoder));
         encoder.commit()
@@ -738,10 +740,10 @@ impl RegKey {
     /// ```
     #[cfg(feature = "serialization-rustc")]
     pub fn decode<T: rustc_serialize::Decodable>(&self)
-        -> serialization::DecodeResult<T>
+        -> decoder::DecodeResult<T>
     {
         let mut decoder = try!(
-            serialization::Decoder::from_key(&self)
+            decoder::Decoder::from_key(&self)
         );
         T::decode(&mut decoder)
     }
