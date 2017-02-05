@@ -101,6 +101,8 @@ extern crate advapi32;
 extern crate ktmw32;
 #[cfg(feature = "serialization-rustc")]
 extern crate rustc_serialize;
+#[cfg(feature = "serialization-serde")]
+extern crate serde;
 use std::ptr;
 use std::slice;
 use std::fmt;
@@ -126,7 +128,7 @@ pub mod enums;
 pub mod types;
 #[cfg(feature = "transactions")]
 pub mod transaction;
-#[cfg(feature = "serialization-rustc")]
+#[cfg(any(feature = "serialization-rustc", feature = "serialization-serde"))]
 mod encoder;
 #[cfg(feature = "serialization-rustc")]
 mod decoder;
@@ -705,6 +707,17 @@ impl RegKey {
         encoder.commit()
     }
 
+    #[cfg(feature = "serialization-serde")]
+    pub fn encode<T: serde::Serialize>(&self, value: &T)
+        -> encoder::EncodeResult<()>
+    {
+        let mut encoder = try!(
+            encoder::Encoder::from_key(&self)
+        );
+        try!(value.serialize(&mut encoder));
+        encoder.commit()
+    }
+
     /// Load `Decodable` type from a registry key.
     /// Part of `serialization-rustc` feature.
     ///
@@ -888,6 +901,9 @@ fn v16_to_v8(v: &[u16]) -> Vec<u8> {
     }
 }
 
+#[cfg(all(test, feature = "serialization-serde"))]
+#[macro_use]
+extern crate serde_derive;
 
 #[cfg(test)]
 #[cfg_attr(feature="clippy", allow(option_unwrap_used))]
@@ -1081,10 +1097,12 @@ mod test {
         });
     }
 
-    #[cfg(feature = "serialization-rustc")]
+    #[cfg(any(feature = "serialization-rustc", feature = "serialization-serde"))]
     #[test]
     fn test_serialization() {
-        #[derive(Debug,RustcEncodable,RustcDecodable,PartialEq)]
+        #[cfg_attr(feature = "serialization-rustc", derive(RustcEncodable,RustcDecodable))]
+        #[cfg_attr(feature = "serialization-serde", derive(Serialize, Deserialize))]
+        #[derive(Debug,PartialEq)]
         struct Rectangle{
             x: u32,
             y: u32,
@@ -1092,7 +1110,9 @@ mod test {
             h: u32,
         }
 
-        #[derive(Debug,RustcEncodable,RustcDecodable,PartialEq)]
+        #[cfg_attr(feature = "serialization-rustc", derive(RustcEncodable,RustcDecodable))]
+        #[cfg_attr(feature = "serialization-serde", derive(Serialize, Deserialize))]
+        #[derive(Debug,PartialEq)]
         struct Test {
             t_bool: bool,
             t_u8: u8,

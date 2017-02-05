@@ -3,8 +3,9 @@
 // http://opensource.org/licenses/MIT>. This file
 // may not be copied, modified, or distributed
 // except according to those terms.
-#![cfg(feature = "serialization-rustc")]
 use std::io;
+use std::fmt;
+use std::error::Error;
 use super::RegKey;
 use super::enums::*;
 use super::transaction::Transaction;
@@ -29,13 +30,32 @@ macro_rules! no_impl {
     )
 }
 
-mod serialization_rustc;
+#[cfg(feature = "serialization-rustc")] mod serialization_rustc;
+#[cfg(feature = "serialization-serde")] mod serialization_serde;
 
 #[derive(Debug)]
 pub enum EncoderError{
     EncodeNotImplemented(String),
+    SerializerError(String),
     IoError(io::Error),
     NoFieldName,
+}
+
+impl fmt::Display for EncoderError {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        write!(f, "{:?}", self)
+    }
+}
+
+impl Error for EncoderError {
+    fn description(&self) -> &str {
+        match *self {
+            EncoderError::EncodeNotImplemented(ref s) => s,
+            EncoderError::SerializerError(ref s) => s,
+            EncoderError::IoError(ref e) => e.description(),
+            EncoderError::NoFieldName => "No field name"
+        }
+    }
 }
 
 pub type EncodeResult<T> = Result<T, EncoderError>;

@@ -15,12 +15,15 @@ kernel32-sys = "0.2"
 advapi32-sys = "0.2"
 ktmw32-sys = { version = "0.1", optional = true }
 rustc-serialize = { version = "0.3.19", optional = true }
+serde = { version = "0.9.6", optional = true }
 clippy = { version = "^0", optional = true }
 
 [dev-dependencies]
 rand = "0.3"
+serde_derive = "0.9.6"
 
 [features]
 default = ["transactions", "serialization-rustc"]
 transactions = ["ktmw32-sys"]
 serialization-rustc = ["transactions", "rustc-serialize"]
+serialization-serde = ["transactions", "serde"]
