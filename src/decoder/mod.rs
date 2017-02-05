@@ -3,8 +3,9 @@
 // http://opensource.org/licenses/MIT>. This file
 // may not be copied, modified, or distributed
 // except according to those terms.
-#![cfg(feature = "serialization-rustc")]
 use std::io;
+use std::fmt;
+use std::error::Error;
 use super::{RegKey};
 use super::enums::*;
 use super::winapi;
@@ -34,14 +35,40 @@ macro_rules! no_impl {
     )
 }
 
-mod serialization_rustc;
+#[cfg(feature = "serialization-rustc")] mod serialization_rustc;
+#[cfg(feature = "serialization-serde")] mod serialization_serde;
 
 #[derive(Debug)]
 pub enum DecoderError{
     DecodeNotImplemented(String),
+    DeserializerError(String),
     IoError(io::Error),
     ParseError(String),
     NoFieldName,
+}
+
+impl fmt::Display for DecoderError {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        write!(f, "{:?}", self)
+    }
+}
+
+impl Error for DecoderError {
+    fn description(&self) -> &str {
+        match *self {
+            DecoderError::DecodeNotImplemented(ref s) => s,
+            DecoderError::DeserializerError(ref s) => s,
+            DecoderError::IoError(ref e) => e.description(),
+            DecoderError::ParseError(ref s) => s,
+            DecoderError::NoFieldName => "No field name"
+        }
+    }
+}
+
+impl From<io::Error> for DecoderError {
+    fn from(err: io::Error) -> DecoderError {
+        DecoderError::IoError(err)
+    }
 }
 
 pub type DecodeResult<T> = Result<T, DecoderError>;
@@ -52,7 +79,7 @@ pub struct Decoder {
     f_name: Option<String>,
 }
 
-const DECODER_SAM: winapi::DWORD = KEY_QUERY_VALUE;
+const DECODER_SAM: winapi::DWORD = KEY_QUERY_VALUE | KEY_ENUMERATE_SUB_KEYS;
 
 impl Decoder {
     pub fn from_key(key: &RegKey) -> DecodeResult<Decoder> {

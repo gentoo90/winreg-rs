@@ -130,7 +130,7 @@ pub mod types;
 pub mod transaction;
 #[cfg(any(feature = "serialization-rustc", feature = "serialization-serde"))]
 mod encoder;
-#[cfg(feature = "serialization-rustc")]
+#[cfg(any(feature = "serialization-rustc", feature = "serialization-serde"))]
 mod decoder;
 
 /// Metadata returned by `RegKey::query_info`
@@ -759,6 +759,16 @@ impl RegKey {
             decoder::Decoder::from_key(&self)
         );
         T::decode(&mut decoder)
+    }
+
+    #[cfg(feature = "serialization-serde")]
+    pub fn decode<T: serde::Deserialize>(&self)
+        -> decoder::DecodeResult<T>
+    {
+        let mut decoder = try!(
+            decoder::Decoder::from_key(&self)
+        );
+        T::deserialize(&mut decoder)
     }
 
     fn close_(&mut self) -> io::Result<()> {
