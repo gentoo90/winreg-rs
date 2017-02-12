@@ -756,30 +756,14 @@ impl RegKey {
             err => werr!(err)
         }
     }
-}
 
-impl Drop for RegKey {
-    fn drop(&mut self) {
-        self.close_().unwrap_or(());
-    }
-}
-
-/// Iterator over subkeys names
-pub struct EnumKeys<'key> {
-    key: &'key RegKey,
-    index: DWORD,
-}
-
-impl<'key> Iterator for EnumKeys<'key> {
-    type Item = io::Result<String>;
-
-    fn next(&mut self) -> Option<io::Result<String>> {
+    fn enum_key(&self, index: DWORD) -> Option<io::Result<String>> {
         let mut name_len = 2048;
         let mut name = [0 as WCHAR; 2048];
         match unsafe {
             advapi32::RegEnumKeyExW(
-                self.key.hkey,
-                self.index,
+                self.hkey,
+                index,
                 name.as_mut_ptr(),
                 &mut name_len,
                 ptr::null_mut(), // reserved
@@ -789,11 +773,10 @@ impl<'key> Iterator for EnumKeys<'key> {
             ) as DWORD
         } {
             0 => {
-                self.index += 1;
-                Some(match String::from_utf16(&name[..name_len as usize]) {
-                    Ok(s) => Ok(s),
-                    Err(_) => werr!(winerror::ERROR_INVALID_BLOCK)
-                })
+                match String::from_utf16(&name[..name_len as usize]) {
+                    Ok(s) => Some(Ok(s)),
+                    Err(_) => Some(werr!(winerror::ERROR_INVALID_BLOCK))
+                }
             },
             winerror::ERROR_NO_MORE_ITEMS => None,
             err => {
@@ -801,18 +784,8 @@ impl<'key> Iterator for EnumKeys<'key> {
             }
         }
     }
-}
 
-/// Iterator over values
-pub struct EnumValues<'key> {
-    key: &'key RegKey,
-    index: DWORD,
-}
-
-impl<'key> Iterator for EnumValues<'key> {
-    type Item = io::Result<(String, RegValue)>;
-
-    fn next(&mut self) -> Option<io::Result<(String, RegValue)>> {
+    fn enum_value(&self, index: DWORD) -> Option<io::Result<(String, RegValue)>> {
         let mut name_len = 2048;
         let mut name = [0 as WCHAR; 2048];
 
@@ -822,8 +795,8 @@ impl<'key> Iterator for EnumValues<'key> {
         loop {
             match unsafe {
                 advapi32::RegEnumValueW(
-                    self.key.hkey,
-                    self.index,
+                    self.hkey,
+                    index,
                     name.as_mut_ptr(),
                     &mut name_len,
                     ptr::null_mut(), // reserved
@@ -833,7 +806,6 @@ impl<'key> Iterator for EnumValues<'key> {
                 ) as DWORD
             } {
                 0 => {
-                    self.index += 1;
                     let name = match String::from_utf16(&name[..name_len as usize]) {
                         Ok(s) => s,
                         Err(_) => return Some(werr!(winerror::ERROR_INVALID_DATA))
@@ -854,6 +826,52 @@ impl<'key> Iterator for EnumValues<'key> {
                 winerror::ERROR_NO_MORE_ITEMS => return None,
                 err => return Some(werr!(err))
             }
+        }
+    }
+}
+
+impl Drop for RegKey {
+    fn drop(&mut self) {
+        self.close_().unwrap_or(());
+    }
+}
+
+/// Iterator over subkeys names
+pub struct EnumKeys<'key> {
+    key: &'key RegKey,
+    index: DWORD,
+}
+
+impl<'key> Iterator for EnumKeys<'key> {
+    type Item = io::Result<String>;
+
+    fn next(&mut self) -> Option<io::Result<String>> {
+        match self.key.enum_key(self.index) {
+            v @ Some(_) => {
+                self.index += 1;
+                v
+            },
+            e @ None => e
+        }
+    }
+}
+
+/// Iterator over values
+pub struct EnumValues<'key> {
+    key: &'key RegKey,
+    index: DWORD,
+}
+
+impl<'key> Iterator for EnumValues<'key> {
+    type Item = io::Result<(String, RegValue)>;
+
+    fn next(&mut self) -> Option<io::Result<(String, RegValue)>> {
+        match self.key.enum_value(self.index) {
+            v @ Some(_) => {
+                self.index += 1;
+                v
+            },
+            e @ None => e
         }
     }
 }
