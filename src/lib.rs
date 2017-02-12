@@ -875,8 +875,6 @@ fn v16_to_v8(v: &[u16]) -> Vec<u8> {
 mod test {
     extern crate rand;
     use super::*;
-    use super::enums::*;
-    use super::types::*;
     use std::collections::HashMap;
     use self::rand::Rng;
     use std::ffi::{OsStr,OsString};
