@@ -74,7 +74,13 @@ impl From<io::Error> for DecoderError {
 pub type DecodeResult<T> = Result<T, DecoderError>;
 
 #[derive(Debug)]
-enum DecoderState {
+enum DecoderReadingState {
+    WaitingForKey,
+    WaitingForValue,
+}
+
+#[derive(Debug)]
+enum DecoderEnumerationState {
     EnumeratingKeys(winapi::DWORD),
     EnumeratingValues(winapi::DWORD),
 }
@@ -83,7 +89,8 @@ enum DecoderState {
 pub struct Decoder {
     key: RegKey,
     f_name: Option<String>,
-    state: DecoderState
+    reading_state: DecoderReadingState,
+    enumeration_state: DecoderEnumerationState,
 }
 
 const DECODER_SAM: winapi::DWORD = KEY_QUERY_VALUE | KEY_ENUMERATE_SUB_KEYS;
@@ -99,7 +106,8 @@ impl Decoder {
         Decoder{
             key: key,
             f_name: None,
-            state: DecoderState::EnumeratingKeys(0)
+            reading_state: DecoderReadingState::WaitingForKey,
+            enumeration_state: DecoderEnumerationState::EnumeratingKeys(0)
         }
     }
 }

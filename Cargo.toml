@@ -27,3 +27,15 @@ default = ["transactions", "serialization-serde"]
 transactions = ["ktmw32-sys"]
 serialization-rustc = ["transactions", "rustc-serialize"]
 serialization-serde = ["transactions", "serde"]
+
+[[example]]
+name = "transactions"
+required-features = ["transactions"]
+
+[[example]]
+name = "serialization"
+required-features = ["serialization-serde"]
+
+[[example]]
+name = "installed_apps"
+required-features = ["serialization-serde"]
