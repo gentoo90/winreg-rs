@@ -114,7 +114,7 @@ impl<'a> Serializer for &'a mut Encoder {
 
     fn serialize_unit_variant(self,
                               name: &'static str,
-                              variant_index: usize,
+                              variant_index: u32,
                               variant: &'static str)
                               -> EncodeResult<Self::Ok> {
         no_impl!("serialize_unit_variant")
@@ -129,7 +129,7 @@ impl<'a> Serializer for &'a mut Encoder {
 
     fn serialize_newtype_variant<T: ?Sized + Serialize>(self,
                                                         name: &'static str,
-                                                        variant_index: usize,
+                                                        variant_index: u32,
                                                         variant: &'static str,
                                                         value: &T)
                                                         -> EncodeResult<Self::Ok> {
@@ -138,10 +138,6 @@ impl<'a> Serializer for &'a mut Encoder {
 
     fn serialize_seq(self, len: Option<usize>) -> EncodeResult<Self::SerializeSeq> {
         no_impl!("serialize_seq")
-    }
-
-    fn serialize_seq_fixed_size(self, size: usize) -> EncodeResult<Self::SerializeSeq> {
-        no_impl!("serialize_seq_fixed_size")
     }
 
     fn serialize_tuple(self, len: usize) -> EncodeResult<Self::SerializeTuple> {
@@ -157,7 +153,7 @@ impl<'a> Serializer for &'a mut Encoder {
 
     fn serialize_tuple_variant(self,
                                name: &'static str,
-                               variant_index: usize,
+                               variant_index: u32,
                                variant: &'static str,
                                len: usize)
                                -> EncodeResult<Self::SerializeTupleVariant> {
@@ -194,7 +190,7 @@ impl<'a> Serializer for &'a mut Encoder {
 
     fn serialize_struct_variant(self,
                                 name: &'static str,
-                                variant_index: usize,
+                                variant_index: u32,
                                 variant: &'static str,
                                 len: usize)
                                 -> EncodeResult<Self::SerializeStructVariant> {

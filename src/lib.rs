@@ -762,7 +762,7 @@ impl RegKey {
     }
 
     #[cfg(feature = "serialization-serde")]
-    pub fn decode<T: serde::Deserialize>(&self)
+    pub fn decode<'de, T: serde::Deserialize<'de>>(&self)
         -> decoder::DecodeResult<T>
     {
         let mut decoder = try!(

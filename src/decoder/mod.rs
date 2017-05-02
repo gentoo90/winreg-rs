@@ -24,7 +24,7 @@ macro_rules! read_value{
 
 macro_rules! parse_string{
     ($s:ident) => ({
-        let s: String = try!(read_value!($s));
+        let s: String = read_value!($s)?;
         s.parse().map_err(|e| DecoderError::ParseError(format!("{:?}", e)))
     })
 }
@@ -74,9 +74,16 @@ impl From<io::Error> for DecoderError {
 pub type DecodeResult<T> = Result<T, DecoderError>;
 
 #[derive(Debug)]
+enum DecoderState {
+    EnumeratingKeys(winapi::DWORD),
+    EnumeratingValues(winapi::DWORD),
+}
+
+#[derive(Debug)]
 pub struct Decoder {
     key: RegKey,
     f_name: Option<String>,
+    state: DecoderState
 }
 
 const DECODER_SAM: winapi::DWORD = KEY_QUERY_VALUE | KEY_ENUMERATE_SUB_KEYS;
@@ -92,6 +99,7 @@ impl Decoder {
         Decoder{
             key: key,
             f_name: None,
+            state: DecoderState::EnumeratingKeys(0)
         }
     }
 }
