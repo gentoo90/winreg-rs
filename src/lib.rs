@@ -99,8 +99,6 @@ extern crate kernel32;
 extern crate advapi32;
 #[cfg(feature = "transactions")]
 extern crate ktmw32;
-#[cfg(feature = "serialization-rustc")]
-extern crate rustc_serialize;
 #[cfg(feature = "serialization-serde")]
 extern crate serde;
 use std::ptr;
@@ -128,9 +126,9 @@ pub mod enums;
 pub mod types;
 #[cfg(feature = "transactions")]
 pub mod transaction;
-#[cfg(any(feature = "serialization-rustc", feature = "serialization-serde"))]
+#[cfg(feature = "serialization-serde")]
 mod encoder;
-#[cfg(any(feature = "serialization-rustc", feature = "serialization-serde"))]
+#[cfg(feature = "serialization-serde")]
 mod decoder;
 
 /// Metadata returned by `RegKey::query_info`
@@ -659,19 +657,19 @@ impl RegKey {
     }
 
     /// Save `Encodable` type to a registry key.
-    /// Part of `serialization-rustc` feature.
+    /// Part of `serialization-serde` feature.
     ///
     /// # Examples
     ///
     /// ```no_run
-    /// extern crate rustc_serialize;
+    /// #[macro_use]
+    /// extern crate serde_derive;
     /// extern crate winreg;
     /// # fn main() {
     /// use winreg::RegKey;
     /// use winreg::enums::*;
-    /// use rustc_serialize::Encodable;
     ///
-    /// #[derive(RustcEncodable)]
+    /// #[derive(Serialize)]
     /// struct Rectangle{
     ///     x: u32,
     ///     y: u32,
@@ -679,7 +677,7 @@ impl RegKey {
     ///     h: u32,
     /// }
     ///
-    /// #[derive(RustcEncodable)]
+    /// #[derive(Serialize)]
     /// struct Settings{
     ///     current_dir: String,
     ///     window_pos: Rectangle,
@@ -696,42 +694,31 @@ impl RegKey {
     /// s_key.encode(&s).unwrap();
     /// # }
     /// ```
-    #[cfg(feature = "serialization-rustc")]
-    pub fn encode<T: rustc_serialize::Encodable>(&self, value: &T)
-        -> encoder::EncodeResult<()>
-    {
-        let mut encoder = try!(
-            encoder::Encoder::from_key(&self)
-        );
-        try!(value.encode(&mut encoder));
-        encoder.commit()
-    }
-
     #[cfg(feature = "serialization-serde")]
     pub fn encode<T: serde::Serialize>(&self, value: &T)
         -> encoder::EncodeResult<()>
     {
         let mut encoder = try!(
-            encoder::Encoder::from_key(&self)
+            encoder::Encoder::from_key(self)
         );
         try!(value.serialize(&mut encoder));
         encoder.commit()
     }
 
     /// Load `Decodable` type from a registry key.
-    /// Part of `serialization-rustc` feature.
+    /// Part of `serialization-serde` feature.
     ///
     /// # Examples
     ///
     /// ```no_run
-    /// extern crate rustc_serialize;
+    /// #[macro_use]
+    /// extern crate serde_derive;
     /// extern crate winreg;
     /// # fn main() {
     /// use winreg::RegKey;
     /// use winreg::enums::*;
-    /// use rustc_serialize::Decodable;
     ///
-    /// #[derive(RustcDecodable)]
+    /// #[derive(Deserialize)]
     /// struct Rectangle{
     ///     x: u32,
     ///     y: u32,
@@ -739,7 +726,7 @@ impl RegKey {
     ///     h: u32,
     /// }
     ///
-    /// #[derive(RustcDecodable)]
+    /// #[derive(Deserialize)]
     /// struct Settings{
     ///     current_dir: String,
     ///     window_pos: Rectangle,
@@ -751,22 +738,12 @@ impl RegKey {
     /// let s: Settings = s_key.decode().unwrap();
     /// # }
     /// ```
-    #[cfg(feature = "serialization-rustc")]
-    pub fn decode<T: rustc_serialize::Decodable>(&self)
-        -> decoder::DecodeResult<T>
-    {
-        let mut decoder = try!(
-            decoder::Decoder::from_key(&self)
-        );
-        T::decode(&mut decoder)
-    }
-
     #[cfg(feature = "serialization-serde")]
     pub fn decode<'de, T: serde::Deserialize<'de>>(&self)
         -> decoder::DecodeResult<T>
     {
         let mut decoder = try!(
-            decoder::Decoder::from_key(&self)
+            decoder::Decoder::from_key(self)
         );
         T::deserialize(&mut decoder)
     }
@@ -1102,17 +1079,15 @@ mod test {
             for (name, val) in key.enum_values()
                                   .map(|x| x.unwrap())
             {
-                assert_eq!(val.bytes, vals.get(&name).unwrap().bytes);
+                assert_eq!(val.bytes, vals[&name].bytes);
             }
         });
     }
 
-    #[cfg(any(feature = "serialization-rustc", feature = "serialization-serde"))]
+    #[cfg(feature = "serialization-serde")]
     #[test]
     fn test_serialization() {
-        #[cfg_attr(feature = "serialization-rustc", derive(RustcEncodable,RustcDecodable))]
-        #[cfg_attr(feature = "serialization-serde", derive(Serialize, Deserialize))]
-        #[derive(Debug,PartialEq)]
+        #[derive(Debug, PartialEq, Serialize, Deserialize)]
         struct Rectangle{
             x: u32,
             y: u32,
@@ -1120,9 +1095,7 @@ mod test {
             h: u32,
         }
 
-        #[cfg_attr(feature = "serialization-rustc", derive(RustcEncodable,RustcDecodable))]
-        #[cfg_attr(feature = "serialization-serde", derive(Serialize, Deserialize))]
-        #[derive(Debug,PartialEq)]
+        #[derive(Debug, PartialEq, Serialize, Deserialize)]
         struct Test {
             t_bool: bool,
             t_u8: u8,

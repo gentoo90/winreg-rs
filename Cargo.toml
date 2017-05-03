@@ -25,7 +25,6 @@ serde_derive = "1"
 [features]
 default = ["transactions", "serialization-serde"]
 transactions = ["ktmw32-sys"]
-serialization-rustc = ["transactions", "rustc-serialize"]
 serialization-serde = ["transactions", "serde"]
 
 [[example]]

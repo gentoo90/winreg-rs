@@ -35,7 +35,6 @@ macro_rules! no_impl {
     )
 }
 
-#[cfg(feature = "serialization-rustc")] mod serialization_rustc;
 #[cfg(feature = "serialization-serde")] mod serialization_serde;
 
 #[derive(Debug)]
@@ -55,12 +54,11 @@ impl fmt::Display for DecoderError {
 
 impl Error for DecoderError {
     fn description(&self) -> &str {
+        use self::DecoderError::*;
         match *self {
-            DecoderError::DecodeNotImplemented(ref s) => s,
-            DecoderError::DeserializerError(ref s) => s,
-            DecoderError::IoError(ref e) => e.description(),
-            DecoderError::ParseError(ref s) => s,
-            DecoderError::NoFieldName => "No field name"
+            DecodeNotImplemented(ref s) | DeserializerError(ref s) | ParseError(ref s) => s,
+            IoError(ref e) => e.description(),
+            NoFieldName => "No field name"
         }
     }
 }

@@ -30,7 +30,6 @@ macro_rules! no_impl {
     )
 }
 
-#[cfg(feature = "serialization-rustc")] mod serialization_rustc;
 #[cfg(feature = "serialization-serde")] mod serialization_serde;
 
 #[derive(Debug)]
@@ -49,11 +48,11 @@ impl fmt::Display for EncoderError {
 
 impl Error for EncoderError {
     fn description(&self) -> &str {
+        use self::EncoderError::*;
         match *self {
-            EncoderError::EncodeNotImplemented(ref s) => s,
-            EncoderError::SerializerError(ref s) => s,
-            EncoderError::IoError(ref e) => e.description(),
-            EncoderError::NoFieldName => "No field name"
+            EncodeNotImplemented(ref s) | SerializerError(ref s) => s,
+            IoError(ref e) => e.description(),
+            NoFieldName => "No field name"
         }
     }
 }
