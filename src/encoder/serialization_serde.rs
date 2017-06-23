@@ -7,18 +7,7 @@ use std::fmt;
 use std::mem;
 use super::{Encoder, EncoderError, EncodeResult, ENCODER_SAM};
 use super::EncoderState::*;
-// use std::convert::Into;
 use serde::ser::*;
-
-// pub struct RegSerializer {
-//     key: RegKey,
-// }
-
-// impl RegSerializer {
-//     pub fn new(key: &RegKey) -> Self {
-//         RegSerializer { key: key.open_subkey("").unwrap() }
-//     }
-// }
 
 impl Error for EncoderError {
     fn custom<T: fmt::Display>(msg: T) -> Self {
@@ -168,7 +157,6 @@ impl<'a> Serializer for &'a mut Encoder {
                         name: &'static str,
                         len: usize)
                         -> EncodeResult<Self::SerializeStruct> {
-        // )
         match mem::replace(&mut self.state, Start) {
             Start => {
                 // root structure
