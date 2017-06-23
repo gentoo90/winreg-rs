@@ -22,18 +22,14 @@ impl<'de, 'a> Deserializer<'de> for &'a mut Decoder {
         match self.enumeration_state {
             EnumeratingKeys(..) => no_impl!("deserialize_any for keys"),
             EnumeratingValues(..) => {
-                match self.f_name {
-                    Some(ref s) => {
-                        let v = self.key.get_raw_value(s)?;
-                        use RegType::*;
-                        match v.vtype {
-                            REG_SZ | REG_EXPAND_SZ | REG_MULTI_SZ => visitor.visit_string(String::from_reg_value(&v)?),
-                            REG_DWORD => visitor.visit_u32(u32::from_reg_value(&v)?),
-                            REG_QWORD => visitor.visit_u64(u64::from_reg_value(&v)?),
-                            _ => Err(DecoderError::DecodeNotImplemented("value type deserialization not implemented".to_owned()))
-                        }
-                    },
-                    None => Err(DecoderError::NoFieldName)
+                let s = self.f_name.as_ref().ok_or(DecoderError::NoFieldName)?;
+                let v = self.key.get_raw_value(s)?;
+                use RegType::*;
+                match v.vtype {
+                    REG_SZ | REG_EXPAND_SZ | REG_MULTI_SZ => visitor.visit_string(String::from_reg_value(&v)?),
+                    REG_DWORD => visitor.visit_u32(u32::from_reg_value(&v)?),
+                    REG_QWORD => visitor.visit_u64(u64::from_reg_value(&v)?),
+                    _ => Err(DecoderError::DecodeNotImplemented("value type deserialization not implemented".to_owned()))
                 }
             }
         }
