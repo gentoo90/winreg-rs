@@ -36,5 +36,9 @@ name = "serialization"
 required-features = ["serialization-serde"]
 
 [[example]]
+name = "map_serialization"
+required-features = ["serialization-serde"]
+
+[[example]]
 name = "installed_apps"
 required-features = ["serialization-serde"]
