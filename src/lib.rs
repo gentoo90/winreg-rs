@@ -488,7 +488,6 @@ impl RegKey {
     }
 
     /// Recursively delete subkey with all its subkeys and values.
-    /// Will delete itself if `path` is an empty string.
     /// If `path` is an empty string, the subkeys and values of this key are deleted.
     ///
     /// # Examples
