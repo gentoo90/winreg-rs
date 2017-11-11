@@ -41,13 +41,13 @@
 #![cfg(feature = "transactions")]
 use std::ptr;
 use std::io;
-use super::winapi;
-use super::kernel32;
-use super::ktmw32;
+use winapi::um::winnt;
+use winapi::um::handleapi;
+use winapi::um::ktmw32;
 
 #[derive(Debug)]
 pub struct Transaction {
-    pub handle: winapi::HANDLE,
+    pub handle: winnt::HANDLE,
 }
 
 impl Transaction {
@@ -63,7 +63,7 @@ impl Transaction {
                 0,
                 ptr::null_mut(),
             );
-            if handle == winapi::INVALID_HANDLE_VALUE {
+            if handle == handleapi::INVALID_HANDLE_VALUE {
                 return Err(io::Error::last_os_error())
             };
             Ok(Transaction{ handle: handle })
@@ -90,7 +90,7 @@ impl Transaction {
 
     fn close_(&mut self) -> io::Result<()> {
         unsafe {
-            match kernel32::CloseHandle(self.handle) {
+            match handleapi::CloseHandle(self.handle) {
                 0 => Err(io::Error::last_os_error()),
                 _ => Ok(())
             }

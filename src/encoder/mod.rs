@@ -6,10 +6,10 @@
 use std::io;
 use std::fmt;
 use std::error::Error;
+use winapi::shared::minwindef::DWORD;
 use super::RegKey;
 use super::enums::*;
 use super::transaction::Transaction;
-use super::winapi;
 use self::EncoderState::*;
 
 macro_rules! emit_value{
@@ -79,7 +79,7 @@ pub struct Encoder {
     state: EncoderState,
 }
 
-const ENCODER_SAM: winapi::DWORD = KEY_CREATE_SUB_KEY|KEY_SET_VALUE;
+const ENCODER_SAM: DWORD = KEY_CREATE_SUB_KEY|KEY_SET_VALUE;
 
 impl Encoder {
     pub fn from_key(key: &RegKey) -> EncodeResult<Encoder> {

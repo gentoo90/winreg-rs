@@ -6,9 +6,9 @@
 use std::io;
 use std::fmt;
 use std::error::Error;
+use winapi::shared::minwindef::DWORD;
 use super::{RegKey};
 use super::enums::*;
-use super::winapi;
 
 macro_rules! read_value{
     ($s:ident) => (
@@ -79,8 +79,8 @@ enum DecoderReadingState {
 
 #[derive(Debug)]
 enum DecoderEnumerationState {
-    EnumeratingKeys(winapi::DWORD),
-    EnumeratingValues(winapi::DWORD),
+    EnumeratingKeys(DWORD),
+    EnumeratingValues(DWORD),
 }
 
 #[derive(Debug)]
@@ -91,7 +91,7 @@ pub struct Decoder {
     enumeration_state: DecoderEnumerationState,
 }
 
-const DECODER_SAM: winapi::DWORD = KEY_QUERY_VALUE | KEY_ENUMERATE_SUB_KEYS;
+const DECODER_SAM: DWORD = KEY_QUERY_VALUE | KEY_ENUMERATE_SUB_KEYS;
 
 impl Decoder {
     pub fn from_key(key: &RegKey) -> DecodeResult<Decoder> {
