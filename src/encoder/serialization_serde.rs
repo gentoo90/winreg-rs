@@ -66,11 +66,13 @@ impl<'a> Serializer for &'a mut Encoder {
     }
 
     fn serialize_f32(self, value: f32) -> EncodeResult<Self::Ok> {
-        no_impl!("serialize_f32")
+        let s = value.to_string();
+        emit_value!(self, s)
     }
 
     fn serialize_f64(self, value: f64) -> EncodeResult<Self::Ok> {
-        no_impl!("serialize_f64")
+        let s = value.to_string();
+        emit_value!(self, s)
     }
 
     fn serialize_char(self, value: char) -> EncodeResult<Self::Ok> {

@@ -1110,8 +1110,8 @@ mod test {
             t_i32: i32,
             t_i64: i64,
             t_isize: isize,
-            // t_f64: f64,
-            // t_f32: f32,
+            t_f64: f64,
+            t_f32: f32,
         }
 
         let v1 = Test{
@@ -1128,8 +1128,8 @@ mod test {
             t_i32: 20100,
             t_i64: -12345678910,
             t_isize: -1234567890,
-            // t_f64: -0.01,
-            // t_f32: 3.14,
+            t_f64: -0.01,
+            t_f32: 3.14,
         };
 
         with_key!(key, "Serialization" => {
