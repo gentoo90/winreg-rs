@@ -20,13 +20,13 @@ impl<'a> Serializer for &'a mut Encoder {
     type Ok = ();
     type Error = EncoderError;
 
-    type SerializeSeq = RegSerializeSeqStub;
-    type SerializeTuple = RegSerializeTupleStub;
-    type SerializeTupleStruct = RegSerializeTupleStructStub;
-    type SerializeTupleVariant = RegSerializeTupleVariantStub;
-    type SerializeMap = RegCompound<'a>;
-    type SerializeStruct = RegSerializeStructStub<'a>;
-    type SerializeStructVariant = RegSerializeStructVariantStub;
+    type SerializeSeq = SeqEncoder;
+    type SerializeTuple = TupleEncoder;
+    type SerializeTupleStruct = TupleStructEncoder;
+    type SerializeTupleVariant = TupleVariantEncoder;
+    type SerializeMap = MapEncoder<'a>;
+    type SerializeStruct = StructEncoder<'a>;
+    type SerializeStructVariant = StructVariantEncoder;
 
     fn serialize_bool(self, value: bool) -> EncodeResult<Self::Ok> {
         self.serialize_u32(value as u32)
@@ -150,7 +150,7 @@ impl<'a> Serializer for &'a mut Encoder {
     }
 
     fn serialize_map(self, len: Option<usize>) -> EncodeResult<Self::SerializeMap> {
-        Ok(RegCompound { enc: self })
+        Ok(MapEncoder { enc: self })
     }
 
     fn serialize_struct(self,
@@ -160,7 +160,7 @@ impl<'a> Serializer for &'a mut Encoder {
         match mem::replace(&mut self.state, Start) {
             Start => {
                 // root structure
-                Ok(RegSerializeStructStub { enc: self, is_root: true })
+                Ok(StructEncoder { enc: self, is_root: true })
             }
             NextKey(ref s) => {
                 // nested structure
@@ -168,7 +168,7 @@ impl<'a> Serializer for &'a mut Encoder {
                     .create_subkey_transacted_with_flags(&s, &self.tr, ENCODER_SAM) {
                     Ok(subkey) => {
                         self.keys.push(subkey);
-                        Ok(RegSerializeStructStub { enc: self, is_root: true })
+                        Ok(StructEncoder { enc: self, is_root: true })
                     }
                     Err(err) => Err(EncoderError::IoError(err)),
                 }
@@ -186,9 +186,9 @@ impl<'a> Serializer for &'a mut Encoder {
     }
 }
 
-pub struct RegSerializeSeqStub {}
+pub struct SeqEncoder {}
 
-impl SerializeSeq for RegSerializeSeqStub {
+impl SerializeSeq for SeqEncoder {
     type Ok = ();
     type Error = EncoderError;
     fn serialize_element<T: ?Sized + Serialize>(&mut self, value: &T) -> EncodeResult<Self::Ok> {
@@ -199,9 +199,9 @@ impl SerializeSeq for RegSerializeSeqStub {
     }
 }
 
-pub struct RegSerializeTupleStub {}
+pub struct TupleEncoder {}
 
-impl SerializeTuple for RegSerializeTupleStub {
+impl SerializeTuple for TupleEncoder {
     type Ok = ();
     type Error = EncoderError;
 
@@ -214,9 +214,9 @@ impl SerializeTuple for RegSerializeTupleStub {
     }
 }
 
-pub struct RegSerializeTupleStructStub {}
+pub struct TupleStructEncoder {}
 
-impl SerializeTupleStruct for RegSerializeTupleStructStub {
+impl SerializeTupleStruct for TupleStructEncoder {
     type Ok = ();
     type Error = EncoderError;
 
@@ -229,9 +229,9 @@ impl SerializeTupleStruct for RegSerializeTupleStructStub {
     }
 }
 
-pub struct RegSerializeTupleVariantStub {}
+pub struct TupleVariantEncoder {}
 
-impl SerializeTupleVariant for RegSerializeTupleVariantStub {
+impl SerializeTupleVariant for TupleVariantEncoder {
     type Ok = ();
     type Error = EncoderError;
 
@@ -244,11 +244,11 @@ impl SerializeTupleVariant for RegSerializeTupleVariantStub {
     }
 }
 
-pub struct RegCompound<'a> {
+pub struct MapEncoder<'a> {
     enc: &'a mut Encoder,
 }
 
-impl<'a> SerializeMap for RegCompound<'a> {
+impl<'a> SerializeMap for MapEncoder<'a> {
     type Ok = ();
     type Error = EncoderError;
 
@@ -265,12 +265,12 @@ impl<'a> SerializeMap for RegCompound<'a> {
     }
 }
 
-pub struct RegSerializeStructStub<'a> {
+pub struct StructEncoder<'a> {
     enc: &'a mut Encoder,
     is_root: bool
 }
 
-impl<'a> SerializeStruct for RegSerializeStructStub<'a> {
+impl<'a> SerializeStruct for StructEncoder<'a> {
     type Ok = ();
     type Error = EncoderError;
 
@@ -290,9 +290,9 @@ impl<'a> SerializeStruct for RegSerializeStructStub<'a> {
     }
 }
 
-pub struct RegSerializeStructVariantStub {}
+pub struct StructVariantEncoder {}
 
-impl SerializeStructVariant for RegSerializeStructVariantStub {
+impl SerializeStructVariant for StructVariantEncoder {
     type Ok = ();
     type Error = EncoderError;
 
