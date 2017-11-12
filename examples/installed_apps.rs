@@ -9,7 +9,6 @@ extern crate winreg;
 use winreg::enums::*;
 use std::collections::HashMap;
 use std::fmt;
-use std::borrow::Cow::{Borrowed, Owned};
 
 #[allow(non_snake_case)]
 #[derive(Debug, Serialize, Deserialize)]
@@ -38,7 +37,7 @@ fn main() {
 
     let apps: HashMap<String, InstalledApp> = uninstall_key.decode().expect("deserialization failed");
 
-    for (k, v) in &apps {
+    for (_k, v) in &apps {
         println!("{}", v);
     }
 }

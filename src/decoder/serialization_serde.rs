@@ -79,11 +79,11 @@ impl<'de, 'a> Deserializer<'de> for &'a mut Decoder {
         visitor.visit_f64(parse_string!(self)?)
     }
 
-    fn deserialize_char<V>(self, visitor: V) -> DecodeResult<V::Value> where V: Visitor<'de> {
+    fn deserialize_char<V>(self, _visitor: V) -> DecodeResult<V::Value> where V: Visitor<'de> {
         no_impl!("deserialize_char")
     }
 
-    fn deserialize_str<V>(self, visitor: V) -> DecodeResult<V::Value> where V: Visitor<'de> {
+    fn deserialize_str<V>(self, _visitor: V) -> DecodeResult<V::Value> where V: Visitor<'de> {
         no_impl!("deserialize_str")
     }
 
@@ -98,11 +98,11 @@ impl<'de, 'a> Deserializer<'de> for &'a mut Decoder {
         }
     }
 
-    fn deserialize_bytes<V>(self, visitor: V) -> DecodeResult<V::Value> where V: Visitor<'de> {
+    fn deserialize_bytes<V>(self, _visitor: V) -> DecodeResult<V::Value> where V: Visitor<'de> {
         no_impl!("deserialize_bytes")
     }
 
-    fn deserialize_byte_buf<V>(self, visitor: V) -> DecodeResult<V::Value> where V: Visitor<'de> {
+    fn deserialize_byte_buf<V>(self, _visitor: V) -> DecodeResult<V::Value> where V: Visitor<'de> {
         no_impl!("deserialize_byte_buf")
     }
 
@@ -117,27 +117,27 @@ impl<'de, 'a> Deserializer<'de> for &'a mut Decoder {
         }
     }
 
-    fn deserialize_unit<V>(self, visitor: V) -> DecodeResult<V::Value> where V: Visitor<'de> {
+    fn deserialize_unit<V>(self, _visitor: V) -> DecodeResult<V::Value> where V: Visitor<'de> {
         no_impl!("deserialize_unit")
     }
 
-    fn deserialize_unit_struct<V>(self, name: &'static str, visitor: V) -> DecodeResult<V::Value> where V: Visitor<'de> {
+    fn deserialize_unit_struct<V>(self, _name: &'static str, _visitor: V) -> DecodeResult<V::Value> where V: Visitor<'de> {
         no_impl!("deserialize_unit_struct")
     }
 
-    fn deserialize_newtype_struct<V>(self, name: &'static str, visitor: V) -> DecodeResult<V::Value> where V: Visitor<'de> {
+    fn deserialize_newtype_struct<V>(self, _name: &'static str, _visitor: V) -> DecodeResult<V::Value> where V: Visitor<'de> {
         no_impl!("deserialize_newtype_struct")
     }
 
-    fn deserialize_seq<V>(self, visitor: V) -> DecodeResult<V::Value> where V: Visitor<'de> {
+    fn deserialize_seq<V>(self, _visitor: V) -> DecodeResult<V::Value> where V: Visitor<'de> {
         no_impl!("deserialize_seq")
     }
 
-    fn deserialize_tuple<V>(self, len: usize, visitor: V) -> DecodeResult<V::Value> where V: Visitor<'de> {
+    fn deserialize_tuple<V>(self, _len: usize, _visitor: V) -> DecodeResult<V::Value> where V: Visitor<'de> {
         no_impl!("deserialize_tuple")
     }
 
-    fn deserialize_tuple_struct<V>(self, name: &'static str, len: usize, visitor: V) -> DecodeResult<V::Value> where V: Visitor<'de> {
+    fn deserialize_tuple_struct<V>(self, _name: &'static str, _len: usize, _visitor: V) -> DecodeResult<V::Value> where V: Visitor<'de> {
         no_impl!("deserialize_tuple_struct")
     }
 
@@ -145,7 +145,7 @@ impl<'de, 'a> Deserializer<'de> for &'a mut Decoder {
         visitor.visit_map(self)
     }
 
-    fn deserialize_struct<V>(self, name: &'static str, fields: &'static [&'static str], visitor: V) -> DecodeResult<V::Value> where V: Visitor<'de> {
+    fn deserialize_struct<V>(self, _name: &'static str, _fields: &'static [&'static str], visitor: V) -> DecodeResult<V::Value> where V: Visitor<'de> {
         visitor.visit_map(self)
     }
 
@@ -153,7 +153,7 @@ impl<'de, 'a> Deserializer<'de> for &'a mut Decoder {
         self.deserialize_string(visitor)
     }
 
-    fn deserialize_enum<V>(self, name: &'static str, variants: &'static [&'static str], visitor: V) -> DecodeResult<V::Value> where V: Visitor<'de> {
+    fn deserialize_enum<V>(self, _name: &'static str, _variants: &'static [&'static str], _visitor: V) -> DecodeResult<V::Value> where V: Visitor<'de> {
         no_impl!("deserialize_enum")
     }
 
