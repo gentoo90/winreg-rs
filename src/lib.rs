@@ -445,8 +445,8 @@ impl RegKey {
         EnumValues{key: self, index: 0}
     }
 
-    /// Delete key. Cannot delete if it has subkeys.
-    /// Will delete itself if `path` is an empty string.
+    /// Delete key.Key names are not case sensitive. 
+    /// Cannot delete if it has subkeys.
     /// Use `delete_subkey_all` for that.
     ///
     /// # Examples
@@ -462,7 +462,7 @@ impl RegKey {
         match unsafe {
             advapi32::RegDeleteKeyW(
                 self.hkey,
-                c_path.as_ptr(),
+                c_path.as_ptr(), //This parameter cannot be NULL.
             ) as DWORD
         } {
             0 => Ok(()),
@@ -477,11 +477,11 @@ impl RegKey {
         match unsafe {
             advapi32::RegDeleteKeyTransactedW(
                 self.hkey,
-                c_path.as_ptr(),
+                c_path.as_ptr(), //The value of this parameter cannot be NULL.
                 0,
                 0,
                 t.handle,
-                ptr::null_mut(),
+                ptr::null_mut(), 
             ) as DWORD
         } {
             0 => Ok(()),
@@ -490,7 +490,7 @@ impl RegKey {
     }
 
     /// Recursively delete subkey with all its subkeys and values.
-    /// Will delete itself if `path` is an empty string.
+    /// If `path` is an empty string, the subkeys and values of this key are deleted.
     ///
     /// # Examples
     ///
@@ -501,11 +501,18 @@ impl RegKey {
     ///     .delete_subkey_all("Software\\MyProduct").unwrap();
     /// ```
     pub fn delete_subkey_all<P: AsRef<OsStr>>(&self, path: P) -> io::Result<()> {
-        let c_path = to_utf16(path);
+        let c_path;
+        let path_ptr;
+        if path.as_ref().is_empty(){
+            path_ptr = ptr::null();
+        }else{
+            c_path = to_utf16(path);
+            path_ptr = c_path.as_ptr();
+        }
         match unsafe{
             advapi32::RegDeleteTreeW(
                 self.hkey,
-                c_path.as_ptr(),
+                path_ptr,//If this parameter is NULL, the subkeys and values of this key are deleted.
             ) as DWORD
         } {
             0 => Ok(()),
