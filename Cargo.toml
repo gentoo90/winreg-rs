@@ -10,7 +10,7 @@ readme = "README.md"
 keywords = ["Windows", "WinSDK", "Registry"]
 
 [dependencies]
-winapi = { version = "0.3.0-alpha.0", features = ["minwindef", "winerror", "winnt", "winreg", "handleapi", "ktmw32"] }
+winapi = { version = "0.3.0-alpha.0", features = ["minwindef", "winerror", "winnt", "winreg", "handleapi"] }
 rustc-serialize = { version = "0.3.19", optional = true }
 serde = { version = "1", optional = true }
 clippy = { version = "^0", optional = true }
@@ -21,7 +21,7 @@ serde_derive = "1"
 
 [features]
 default = ["transactions", "serialization-serde"]
-transactions = []
+transactions = ["winapi/ktmw32"]
 serialization-serde = ["transactions", "serde"]
 
 [[example]]
