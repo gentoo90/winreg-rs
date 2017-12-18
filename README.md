@@ -23,7 +23,7 @@ Current features:
 ```toml
 # Cargo.toml
 [dependencies]
-winreg = "0.4"
+winreg = "0.5"
 ```
 
 ```rust
@@ -101,6 +101,12 @@ fn main() {
 
 ### Transactions
 
+```toml
+# Cargo.toml
+[dependencies]
+winreg = { version = "0.5", features = ["transactions"] }
+```
+
 ```rust
 extern crate winreg;
 use std::io;
@@ -135,12 +141,22 @@ fn main() {
 
 ### Serialization
 
+```toml
+# Cargo.toml
+[dependencies]
+winreg = { version = "0.5", features = ["serialization-serde"] }
+serde = "1"
+serde_derive = "1"
+```
+
 ```rust
-extern crate rustc_serialize;
+#[macro_use]
+extern crate serde_derive;
+extern crate serde;
 extern crate winreg;
 use winreg::enums::*;
 
-#[derive(Debug,RustcEncodable,RustcDecodable,PartialEq)]
+#[derive(Debug, Serialize, Deserialize, PartialEq)]
 struct Rectangle{
     x: u32,
     y: u32,
@@ -148,7 +164,7 @@ struct Rectangle{
     h: u32,
 }
 
-#[derive(Debug,RustcEncodable,RustcDecodable,PartialEq)]
+#[derive(Debug, Serialize, Deserialize, PartialEq)]
 struct Test {
     t_bool: bool,
     t_u8: u8,
@@ -205,7 +221,16 @@ fn main() {
 
 ## Changelog
 
-### 0.4
+### 0.5.0
+
+* Breaking change: `open_subkey` now opens a key with readonly permissions.
+Use `create_subkey` or `open_subkey_with_flags` to open with read-write permissins.
+* Breaking change: features `transactions` and `serialization-serde` are now disabled by default.
+* Breaking change: serialization now uses `serde` instead of `rustc-serialize`.
+* `winreg` updated to `0.3`.
+* Documentation fixes (#14)
+
+### 0.4.0
 
 * Make transactions and serialization otional features
 * Update dependensies + minor fixes (#12)
