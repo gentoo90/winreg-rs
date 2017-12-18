@@ -209,9 +209,10 @@ impl RegKey {
         RegKey{ hkey: hkey }
     }
 
-    /// Open subkey with `KEY_ALL_ACCESS` permissions.
+    /// Open subkey with `KEY_READ` permissions.
     /// Will open another handle to itself if `path` is an empty string.
     /// To open with different permissions use `open_subkey_with_flags`.
+    /// You can also use `create_subkey` to open with `KEY_ALL_ACCESS` permissions.
     ///
     /// # Examples
     ///
@@ -222,7 +223,7 @@ impl RegKey {
     ///     .open_subkey("Software").unwrap();
     /// ```
     pub fn open_subkey<P: AsRef<OsStr>>(&self, path: P) -> io::Result<RegKey> {
-        self.open_subkey_with_flags(path, enums::KEY_ALL_ACCESS)
+        self.open_subkey_with_flags(path, enums::KEY_READ)
     }
 
     /// Open subkey with desired permissions.
@@ -256,7 +257,7 @@ impl RegKey {
     /// Part of `transactions` feature.
     #[cfg(feature = "transactions")]
     pub fn open_subkey_transacted<P: AsRef<OsStr>>(&self, path: P, t: &Transaction) -> io::Result<RegKey> {
-        self.open_subkey_transacted_with_flags(path, t, winnt::KEY_ALL_ACCESS)
+        self.open_subkey_transacted_with_flags(path, t, winnt::KEY_READ)
     }
 
     /// Part of `transactions` feature.
