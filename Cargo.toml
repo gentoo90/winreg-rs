@@ -24,6 +24,12 @@ transactions = ["winapi/ktmw32"]
 serialization-serde = ["transactions", "serde"]
 
 [[example]]
+name = "basic_usage"
+
+[[example]]
+name = "enum"
+
+[[example]]
 name = "transactions"
 required-features = ["transactions"]
 
