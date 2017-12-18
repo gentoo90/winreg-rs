@@ -32,7 +32,7 @@ impl fmt::Display for InstalledApp {
 
 fn main() {
     let hklm = winreg::RegKey::predef(HKEY_LOCAL_MACHINE);
-    let uninstall_key = hklm.open_subkey_with_flags("SOFTWARE\\Microsoft\\Windows\\CurrentVersion\\Uninstall", KEY_READ)
+    let uninstall_key = hklm.open_subkey("SOFTWARE\\Microsoft\\Windows\\CurrentVersion\\Uninstall")
         .expect("key is missing");
 
     let apps: HashMap<String, InstalledApp> = uninstall_key.decode().expect("deserialization failed");

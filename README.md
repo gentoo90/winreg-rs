@@ -36,8 +36,7 @@ use winreg::enums::*;
 fn main() {
     println!("Reading some system info...");
     let hklm = RegKey::predef(HKEY_LOCAL_MACHINE);
-    let cur_ver = hklm.open_subkey_with_flags("SOFTWARE\\Microsoft\\Windows\\CurrentVersion",
-        KEY_READ).unwrap();
+    let cur_ver = hklm.open_subkey("SOFTWARE\\Microsoft\\Windows\\CurrentVersion").unwrap();
     let pf: String = cur_ver.get_value("ProgramFilesDir").unwrap();
     let dp: String = cur_ver.get_value("DevicePath").unwrap();
     println!("ProgramFiles = {}\nDevicePath = {}", pf, dp);
@@ -92,7 +91,7 @@ fn main() {
     }
 
     let system = RegKey::predef(HKEY_LOCAL_MACHINE)
-        .open_subkey_with_flags("HARDWARE\\DESCRIPTION\\System", KEY_READ)
+        .open_subkey("HARDWARE\\DESCRIPTION\\System")
         .unwrap();
     for (name, value) in system.enum_values().map(|x| x.unwrap()) {
         println!("{} = {:?}", name, value);
