@@ -5,7 +5,7 @@ authors = ["Igor Shaula <gentoo90@gmail.com>"]
 license = "MIT"
 description = "Rust bindings to MS Windows Registry API"
 repository = "https://github.com/gentoo90/winreg-rs"
-documentation = "https://gentoo90.github.io/winreg-rs/v0.5.0/winreg/"
+documentation = "https://gentoo90.github.io/winreg-rs/v0.5.0/winreg/index.html"
 readme = "README.md"
 keywords = ["Windows", "WinSDK", "Registry"]
 
