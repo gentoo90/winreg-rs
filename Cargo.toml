@@ -10,7 +10,7 @@ readme = "README.md"
 keywords = ["Windows", "WinSDK", "Registry"]
 
 [dependencies]
-winapi = { version = "0.3.0-alpha.0", features = ["minwindef", "winerror", "winnt", "winreg", "handleapi"] }
+winapi = { version = "0.3", features = ["minwindef", "winerror", "winnt", "winreg", "handleapi"] }
 rustc-serialize = { version = "0.3.19", optional = true }
 serde = { version = "1", optional = true }
 clippy = { version = "^0", optional = true }
@@ -35,6 +35,3 @@ required-features = ["serialization-serde"]
 [[example]]
 name = "installed_apps"
 required-features = ["serialization-serde"]
-
-[patch.crates-io]
-winapi = { git = 'https://github.com/retep998/winapi-rs' }
