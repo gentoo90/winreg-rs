@@ -974,9 +974,24 @@ mod test {
     fn test_long_string_value() {
         with_key!(key, "LongStringValue" => {
             let name = "RustLongStringVal";
-            let val1 : String = rand::thread_rng().gen_ascii_chars().take(7000).collect();
+            let val1: String = rand::thread_rng().gen_ascii_chars().take(7000).collect();
             key.set_value(name, &val1).unwrap();
             let val2: String = key.get_value(name).unwrap();
+            assert_eq!(val1, val2);
+        });
+    }
+
+    #[test]
+    fn test_strings_vector_value() {
+        with_key!(key, "StringsVectorValue" => {
+            let name = "RustStringsVectorVal";
+
+            let mut val1 = Vec::new();
+            val1.push("lorem ipsum \ndolor");
+            val1.push("sit amet");
+            key.set_value(name, &val1).unwrap();
+            let val2: Vec<String> = key.get_value(name).unwrap();
+
             assert_eq!(val1, val2);
         });
     }

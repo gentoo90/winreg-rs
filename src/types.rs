@@ -19,7 +19,9 @@ use super::{to_utf16,v16_to_v8};
 /// **NOTE:** Uses `from_utf16_lossy` when converting to `String`.
 ///
 /// **NOTE:** When converting to `String`, trailing `NULL` characters are trimmed
-/// and line separating `NULL` characters in `REG_MULTI_SZ` are replaced by `\n`.
+/// and line separating `NULL` characters in `REG_MULTI_SZ` are replaced by `\n`
+/// effectively representing the value as a multiline string.
+/// When converting to `Vec<String>` `NULL` is used as a strings separator.
 /// When converting to `OsString`, all `NULL` characters are left as is.
 pub trait FromRegValue : Sized {
     fn from_reg_value(val: &RegValue) -> io::Result<Self>;
@@ -38,6 +40,23 @@ impl FromRegValue for String {
                     return Ok(s.replace("\u{0}", "\n"))
                 }
                 Ok(s)
+            },
+            _ => werr!(winerror::ERROR_BAD_FILE_TYPE)
+        }
+    }
+}
+
+impl FromRegValue for Vec<String> {
+    fn from_reg_value(val: &RegValue) -> io::Result<Vec<String>> {
+        match val.vtype {
+            REG_MULTI_SZ => {
+                let words = unsafe {
+                    slice::from_raw_parts(val.bytes.as_ptr() as *const u16, val.bytes.len() / 2)
+                };
+                let mut s = String::from_utf16_lossy(words);
+                while s.ends_with('\u{0}') {s.pop();}
+                let v: Vec<String> = s.split('\0').map(|x| x.to_owned()).collect();
+                return Ok(v)
             },
             _ => werr!(winerror::ERROR_BAD_FILE_TYPE)
         }
@@ -112,6 +131,16 @@ impl<'a> ToRegValue for &'a OsStr {
         RegValue{
             bytes: v16_to_v8(&(self.encode_wide().collect::<Vec<_>>())),
             vtype: REG_SZ
+        }
+    }
+}
+
+impl<T: AsRef<OsStr>> ToRegValue for Vec<T> {
+    fn to_reg_value(&self) -> RegValue {
+        let os_strings = self.into_iter().map(|x| to_utf16(x)).collect::<Vec<_>>().concat();
+        RegValue{
+            bytes: v16_to_v8(&os_strings),
+            vtype: REG_MULTI_SZ
         }
     }
 }
