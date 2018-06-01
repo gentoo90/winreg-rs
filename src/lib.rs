@@ -218,7 +218,8 @@ impl RegKey {
     /// # use winreg::RegKey;
     /// # use winreg::enums::*;
     /// let hklm = RegKey::predef(HKEY_LOCAL_MACHINE);
-    /// let handle = hklm.raw_handle();
+    /// let soft = hklm.open_subkey("SOFTWARE").unwrap();
+    /// let handle = soft.raw_handle();
     /// ```
     pub fn raw_handle(&self) -> HKEY {
         self.hkey
@@ -459,7 +460,7 @@ impl RegKey {
         EnumValues{key: self, index: 0}
     }
 
-    /// Delete key.Key names are not case sensitive. 
+    /// Delete key.Key names are not case sensitive.
     /// Cannot delete if it has subkeys.
     /// Use `delete_subkey_all` for that.
     ///
@@ -495,7 +496,7 @@ impl RegKey {
                 0,
                 0,
                 t.handle,
-                ptr::null_mut(), 
+                ptr::null_mut(),
             ) as DWORD
         } {
             0 => Ok(()),
@@ -922,6 +923,13 @@ mod test {
     use std::collections::HashMap;
     use self::rand::Rng;
     use std::ffi::{OsStr,OsString};
+
+    #[test]
+    fn test_raw_handle() {
+        let hklm = RegKey::predef(HKEY_LOCAL_MACHINE);
+        let handle = hklm.raw_handle();
+        assert_eq!(HKEY_LOCAL_MACHINE, handle);
+    }
 
     #[test]
     fn test_open_subkey_with_flags_query_info() {
