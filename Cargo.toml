@@ -1,13 +1,14 @@
 [package]
 name = "winreg"
-version = "0.5.0"
+version = "0.5.1"
 authors = ["Igor Shaula <gentoo90@gmail.com>"]
 license = "MIT"
 description = "Rust bindings to MS Windows Registry API"
 repository = "https://github.com/gentoo90/winreg-rs"
-documentation = "https://gentoo90.github.io/winreg-rs/v0.5.0/winreg/index.html"
+documentation = "https://gentoo90.github.io/winreg-rs/v0.5.1/winreg"
 readme = "README.md"
 keywords = ["Windows", "WinSDK", "Registry"]
+categories = ["api-bindings", "os::windows-apis"]
 
 [dependencies]
 winapi = { version = "0.3", features = ["minwindef", "winerror", "winnt", "winreg", "handleapi"] }
