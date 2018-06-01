@@ -183,6 +183,8 @@ pub struct RegKey {
     hkey: HKEY,
 }
 
+unsafe impl Send for RegKey {}
+
 impl RegKey {
     /// Open one of predefined keys:
     ///
@@ -206,6 +208,20 @@ impl RegKey {
     /// ```
     pub fn predef(hkey: HKEY) -> RegKey {
         RegKey{ hkey: hkey }
+    }
+
+    /// Return inner winapi HKEY of a key:
+    ///
+    /// # Examples
+    ///
+    /// ```no_run
+    /// # use winreg::RegKey;
+    /// # use winreg::enums::*;
+    /// let hklm = RegKey::predef(HKEY_LOCAL_MACHINE);
+    /// let handle = hklm.raw_handle();
+    /// ```
+    pub fn raw_handle(&self) -> HKEY {
+        self.hkey
     }
 
     /// Open subkey with `KEY_READ` permissions.
