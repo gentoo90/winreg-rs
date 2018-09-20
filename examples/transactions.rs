@@ -22,13 +22,13 @@ fn main() {
     input = input.trim_right().to_owned();
     if input == "y" || input == "Y" {
         t.commit().unwrap();
-        println!("Transaction commited.");
+        println!("Transaction committed.");
     }
     else {
-        // this is optional, if transaction wasn't commited,
+        // this is optional, if transaction wasn't committed,
         // it will be rolled back on disposal
         t.rollback().unwrap();
 
-        println!("Transaction wasn't commited, it will be rolled back.");
+        println!("Transaction wasn't committed, it will be rolled back.");
     }
 }
