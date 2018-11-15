@@ -48,7 +48,7 @@ struct Test {
 
 fn main() {
     let hkcu = winreg::RegKey::predef(HKEY_CURRENT_USER);
-    let key = hkcu.create_subkey("Software\\RustEncode").unwrap();
+    let (key, _disp) = hkcu.create_subkey("Software\\RustEncode").unwrap();
     let v1 = Test{
         t_bool: false,
         t_u8: 127,

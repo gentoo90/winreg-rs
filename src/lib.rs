@@ -36,7 +36,12 @@
 //!    println!("And now lets write something...");
 //!    let hkcu = RegKey::predef(HKEY_CURRENT_USER);
 //!    let path = Path::new("Software").join("WinregRsExample1");
-//!    let key = hkcu.create_subkey(&path).unwrap();
+//!    let (key, disp) = hkcu.create_subkey(&path).unwrap();
+//!
+//!    match disp {
+//!        REG_CREATED_NEW_KEY => println!("A new key has been created"),
+//!        REG_OPENED_EXISTING_KEY => println!("An existing key has been opened")
+//!    }
 //!
 //!    key.set_value("TestSZ", &"written by Rust").unwrap();
 //!    let sz_val: String = key.get_value("TestSZ").unwrap();
@@ -311,16 +316,16 @@ impl RegKey {
     /// # use winreg::RegKey;
     /// # use winreg::enums::*;
     /// let hkcu = RegKey::predef(HKEY_CURRENT_USER);
-    /// let settings = hkcu.create_subkey("Software\\MyProduct\\Settings").unwrap();
+    /// let (settings, disp) = hkcu.create_subkey("Software\\MyProduct\\Settings").unwrap();
     /// ```
-    pub fn create_subkey<P: AsRef<OsStr>>(&self, path: P) -> io::Result<RegKey> {
+    pub fn create_subkey<P: AsRef<OsStr>>(&self, path: P) -> io::Result<(RegKey, RegDisposition)> {
         self.create_subkey_with_flags(path, enums::KEY_ALL_ACCESS)
     }
 
-    pub fn create_subkey_with_flags<P: AsRef<OsStr>>(&self, path: P, perms: winapi_reg::REGSAM) -> io::Result<RegKey> {
+    pub fn create_subkey_with_flags<P: AsRef<OsStr>>(&self, path: P, perms: winapi_reg::REGSAM) -> io::Result<(RegKey, RegDisposition)> {
         let c_path = to_utf16(path);
         let mut new_hkey: HKEY = ptr::null_mut();
-        let mut disp: DWORD = 0;
+        let mut disp_buf: DWORD = 0;
         match unsafe {
             winapi_reg::RegCreateKeyExW(
                 self.hkey,
@@ -331,28 +336,31 @@ impl RegKey {
                 perms,
                 ptr::null_mut(),
                 &mut new_hkey,
-                &mut disp // TODO: return this somehow
+                &mut disp_buf
             )
         } {
-            0 => Ok(RegKey{ hkey: new_hkey }),
+            0 => {
+                let disp: RegDisposition = unsafe{ transmute(disp_buf as u8) };
+                Ok((RegKey{ hkey: new_hkey }, disp))
+            },
             err => werr!(err)
         }
     }
 
     /// Part of `transactions` feature.
     #[cfg(feature = "transactions")]
-    pub fn create_subkey_transacted<P: AsRef<OsStr>>(&self, path: P, t: &Transaction) -> io::Result<RegKey> {
+    pub fn create_subkey_transacted<P: AsRef<OsStr>>(&self, path: P, t: &Transaction) -> io::Result<(RegKey, RegDisposition)> {
         self.create_subkey_transacted_with_flags(path, t, winnt::KEY_ALL_ACCESS)
     }
 
     /// Part of `transactions` feature.
     #[cfg(feature = "transactions")]
     pub fn create_subkey_transacted_with_flags<P: AsRef<OsStr>>(&self, path: P, t: &Transaction, perms: winapi_reg::REGSAM)
-        -> io::Result<RegKey>
+        -> io::Result<(RegKey, RegDisposition)>
     {
         let c_path = to_utf16(path);
         let mut new_hkey: HKEY = ptr::null_mut();
-        let mut disp: DWORD = 0;
+        let mut disp_buf: DWORD = 0;
         match unsafe {
             winapi_reg::RegCreateKeyTransactedW(
                 self.hkey,
@@ -363,12 +371,15 @@ impl RegKey {
                 perms,
                 ptr::null_mut(),
                 &mut new_hkey,
-                &mut disp, // TODO: return this somehow
+                &mut disp_buf,
                 t.handle,
                 ptr::null_mut(),
             ) as DWORD
         } {
-            0 => Ok(RegKey{ hkey: new_hkey }),
+            0 => {
+                let disp: RegDisposition = unsafe{ transmute(disp_buf as u8) };
+                Ok((RegKey{ hkey: new_hkey }, disp))
+            },
             err => werr!(err)
         }
     }
@@ -383,7 +394,7 @@ impl RegKey {
     /// # use winreg::enums::*;
     /// let hkcu = RegKey::predef(HKEY_CURRENT_USER);
     /// let src = hkcu.open_subkey_with_flags("Software\\MyProduct", KEY_READ).unwrap();
-    /// let dst = hkcu.create_subkey("Software\\MyProduct\\Section2").unwrap();
+    /// let (dst, dst_disp) = hkcu.create_subkey("Software\\MyProduct\\Section2").unwrap();
     /// src.copy_tree("Section1", &dst).unwrap();
     /// ```
     pub fn copy_tree<P: AsRef<OsStr>>(&self, path: P, dest: &RegKey) -> io::Result<()> {
@@ -612,7 +623,7 @@ impl RegKey {
     /// # use winreg::RegKey;
     /// # use winreg::enums::*;
     /// # let hkcu = RegKey::predef(HKEY_CURRENT_USER);
-    /// let settings = hkcu.create_subkey("Software\\MyProduct\\Settings").unwrap();
+    /// let (settings, disp) = hkcu.create_subkey("Software\\MyProduct\\Settings").unwrap();
     /// settings.set_value("server", &"www.example.com").unwrap();
     /// settings.set_value("port", &8080u32).unwrap();
     /// ```
@@ -940,11 +951,22 @@ mod test {
         assert!(hklm.open_subkey_with_flags("i\\just\\hope\\nobody\\created\\that\\key", KEY_READ).is_err());
     }
 
+    #[test]
+    fn test_create_subkey_disposition() {
+        let hkcu = RegKey::predef(HKEY_CURRENT_USER);
+        let path = "Software\\WinRegRsTestCreateSubkey";
+        let (_subkey, disp) = hkcu.create_subkey(path).unwrap();
+        assert_eq!(disp, REG_CREATED_NEW_KEY);
+        let (_subkey2, disp2) = hkcu.create_subkey(path).unwrap();
+        assert_eq!(disp2, REG_OPENED_EXISTING_KEY);
+        hkcu.delete_subkey_all(&path).unwrap();
+    }
+
     macro_rules! with_key {
         ($k:ident, $path:expr => $b:block) => {{
             let mut path = "Software\\WinRegRsTest".to_owned();
             path.push_str($path);
-            let $k = RegKey::predef(HKEY_CURRENT_USER)
+            let ($k, _disp) = RegKey::predef(HKEY_CURRENT_USER)
                 .create_subkey(&path).unwrap();
             $b
             RegKey::predef(HKEY_CURRENT_USER)
@@ -963,11 +985,11 @@ mod test {
     #[test]
     fn test_copy_tree() {
         with_key!(key, "CopyTree" => {
-            let sub_tree = key.create_subkey("Src\\Sub\\Tree").unwrap();
+            let (sub_tree, _sub_tree_disp) = key.create_subkey("Src\\Sub\\Tree").unwrap();
             for v in &["one", "two", "three"] {
                 sub_tree.set_value(v, v).unwrap();
             }
-            let dst = key.create_subkey("Dst").unwrap();
+            let (dst, _dst_disp) = key.create_subkey("Dst").unwrap();
             assert!(key.copy_tree("Src", &dst).is_ok());
         });
     }

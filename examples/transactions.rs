@@ -12,7 +12,7 @@ use winreg::transaction::Transaction;
 fn main() {
     let t = Transaction::new().unwrap();
     let hkcu = RegKey::predef(HKEY_CURRENT_USER);
-    let key = hkcu.create_subkey_transacted("Software\\RustTransaction", &t).unwrap();
+    let (key, _disp) = hkcu.create_subkey_transacted("Software\\RustTransaction", &t).unwrap();
     key.set_value("TestQWORD", &1234567891011121314u64).unwrap();
     key.set_value("TestDWORD", &1234567890u32).unwrap();
 

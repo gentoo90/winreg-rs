@@ -168,7 +168,7 @@ impl<'a> Serializer for &'a mut Encoder {
                 // nested structure
                 match self.keys[self.keys.len() - 1]
                     .create_subkey_transacted_with_flags(&s, &self.tr, ENCODER_SAM) {
-                    Ok(subkey) => {
+                    Ok((subkey, _disp)) => {
                         self.keys.push(subkey);
                         Ok(StructEncoder { enc: self, is_root: true })
                     }

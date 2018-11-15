@@ -56,3 +56,9 @@ REG_RESOURCE_REQUIREMENTS_LIST,
 REG_QWORD
 ]);
 pub use self::RegType::*;
+
+winapi_enum!(RegDisposition, "Enumeration of possible disposition values" => [
+REG_CREATED_NEW_KEY,
+REG_OPENED_EXISTING_KEY
+]);
+pub use self::RegDisposition::*;

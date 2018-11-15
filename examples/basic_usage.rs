@@ -22,7 +22,12 @@ fn main() {
     println!("And now lets write something...");
     let hkcu = RegKey::predef(HKEY_CURRENT_USER);
     let path = Path::new("Software").join("WinregRsExample1");
-    let key = hkcu.create_subkey(&path).unwrap();
+    let (key, disp) = hkcu.create_subkey(&path).unwrap();
+
+    match disp {
+        REG_CREATED_NEW_KEY => println!("A new key has been created"),
+        REG_OPENED_EXISTING_KEY => println!("An existing key has been opened")
+    }
 
     key.set_value("TestSZ", &"written by Rust").unwrap();
     let sz_val: String = key.get_value("TestSZ").unwrap();
