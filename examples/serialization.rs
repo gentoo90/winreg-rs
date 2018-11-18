@@ -6,6 +6,7 @@
 #[macro_use]
 extern crate serde_derive;
 extern crate winreg;
+use std::error::Error;
 use winreg::enums::*;
 
 #[derive(Debug, Serialize, Deserialize, PartialEq)]
@@ -46,9 +47,9 @@ struct Test {
     // t_char: char,
 }
 
-fn main() {
+fn main() -> Result<(), Box<Error>> {
     let hkcu = winreg::RegKey::predef(HKEY_CURRENT_USER);
-    let (key, _disp) = hkcu.create_subkey("Software\\RustEncode").unwrap();
+    let (key, _disp) = hkcu.create_subkey("Software\\RustEncode")?;
     let v1 = Test{
         t_bool: false,
         t_u8: 127,
@@ -71,11 +72,12 @@ fn main() {
         // t_char: 'a',
     };
 
-    key.encode(&v1).unwrap();
+    key.encode(&v1)?;
 
-    let v2: Test = key.decode().unwrap();
+    let v2: Test = key.decode()?;
     println!("Decoded {:?}", v2);
 
     // This shows `false` because f32 and f64 encoding/decoding is NOT precise
     println!("Equal to encoded: {:?}", v1 == v2);
+    Ok(())
 }

@@ -23,49 +23,50 @@
 //!use winreg::RegKey;
 //!use winreg::enums::*;
 //!
-//!fn main() {
+//!fn main() -> io::Result<()> {
 //!    println!("Reading some system info...");
 //!    let hklm = RegKey::predef(HKEY_LOCAL_MACHINE);
-//!    let cur_ver = hklm.open_subkey("SOFTWARE\\Microsoft\\Windows\\CurrentVersion").unwrap();
-//!    let pf: String = cur_ver.get_value("ProgramFilesDir").unwrap();
-//!    let dp: String = cur_ver.get_value("DevicePath").unwrap();
+//!    let cur_ver = hklm.open_subkey("SOFTWARE\\Microsoft\\Windows\\CurrentVersion")?;
+//!    let pf: String = cur_ver.get_value("ProgramFilesDir")?;
+//!    let dp: String = cur_ver.get_value("DevicePath")?;
 //!    println!("ProgramFiles = {}\nDevicePath = {}", pf, dp);
-//!    let info = cur_ver.query_info().unwrap();
+//!    let info = cur_ver.query_info()?;
 //!    println!("info = {:?}", info);
 //!
 //!    println!("And now lets write something...");
 //!    let hkcu = RegKey::predef(HKEY_CURRENT_USER);
 //!    let path = Path::new("Software").join("WinregRsExample1");
-//!    let (key, disp) = hkcu.create_subkey(&path).unwrap();
+//!    let (key, disp) = hkcu.create_subkey(&path)?;
 //!
 //!    match disp {
 //!        REG_CREATED_NEW_KEY => println!("A new key has been created"),
 //!        REG_OPENED_EXISTING_KEY => println!("An existing key has been opened")
 //!    }
 //!
-//!    key.set_value("TestSZ", &"written by Rust").unwrap();
-//!    let sz_val: String = key.get_value("TestSZ").unwrap();
-//!    key.delete_value("TestSZ").unwrap();
+//!    key.set_value("TestSZ", &"written by Rust")?;
+//!    let sz_val: String = key.get_value("TestSZ")?;
+//!    key.delete_value("TestSZ")?;
 //!    println!("TestSZ = {}", sz_val);
 //!
-//!    key.set_value("TestDWORD", &1234567890u32).unwrap();
-//!    let dword_val: u32 = key.get_value("TestDWORD").unwrap();
+//!    key.set_value("TestDWORD", &1234567890u32)?;
+//!    let dword_val: u32 = key.get_value("TestDWORD")?;
 //!    println!("TestDWORD = {}", dword_val);
 //!
-//!    key.set_value("TestQWORD", &1234567891011121314u64).unwrap();
-//!    let qword_val: u64 = key.get_value("TestQWORD").unwrap();
+//!    key.set_value("TestQWORD", &1234567891011121314u64)?;
+//!    let qword_val: u64 = key.get_value("TestQWORD")?;
 //!    println!("TestQWORD = {}", qword_val);
 //!
-//!    key.create_subkey("sub\\key").unwrap();
-//!    hkcu.delete_subkey_all(&path).unwrap();
+//!    key.create_subkey("sub\\key")?;
+//!    hkcu.delete_subkey_all(&path)?;
 //!
 //!    println!("Trying to open nonexistent key...");
-//!    let key2 = hkcu.open_subkey(&path)
+//!    hkcu.open_subkey(&path)
 //!    .unwrap_or_else(|e| match e.kind() {
 //!        io::ErrorKind::NotFound => panic!("Key doesn't exist"),
 //!        io::ErrorKind::PermissionDenied => panic!("Access denied"),
 //!        _ => panic!("{:?}", e)
 //!    });
+//!    Ok(())
 //!}
 //!```
 //!
@@ -73,10 +74,11 @@
 //!
 //!```no_run
 //!extern crate winreg;
+//!use std::io;
 //!use winreg::RegKey;
 //!use winreg::enums::*;
 //!
-//!fn main() {
+//!fn main() -> io::Result<()> {
 //!    println!("File extensions, registered in system:");
 //!    for i in RegKey::predef(HKEY_CLASSES_ROOT)
 //!        .enum_keys().map(|x| x.unwrap())
@@ -86,10 +88,12 @@
 //!    }
 //!
 //!    let system = RegKey::predef(HKEY_LOCAL_MACHINE)
-//!        .open_subkey("HARDWARE\\DESCRIPTION\\System").unwrap();
+//!        .open_subkey("HARDWARE\\DESCRIPTION\\System")?;
 //!    for (name, value) in system.enum_values().map(|x| x.unwrap()) {
 //!        println!("{} = {:?}", name, value);
 //!    }
+//!
+//!    Ok(())
 //!}
 //!```
 //!
@@ -220,11 +224,15 @@ impl RegKey {
     /// # Examples
     ///
     /// ```no_run
+    /// # use std::error::Error;
     /// # use winreg::RegKey;
     /// # use winreg::enums::*;
+    /// # fn main() -> Result<(), Box<Error>> {
     /// let hklm = RegKey::predef(HKEY_LOCAL_MACHINE);
-    /// let soft = hklm.open_subkey("SOFTWARE").unwrap();
+    /// let soft = hklm.open_subkey("SOFTWARE")?;
     /// let handle = soft.raw_handle();
+    /// # Ok(())
+    /// # }
     /// ```
     pub fn raw_handle(&self) -> HKEY {
         self.hkey
@@ -238,10 +246,14 @@ impl RegKey {
     /// # Examples
     ///
     /// ```no_run
+    /// # use std::error::Error;
     /// # use winreg::RegKey;
     /// # use winreg::enums::*;
+    /// # fn main() -> Result<(), Box<Error>> {
     /// let soft = RegKey::predef(HKEY_CURRENT_USER)
-    ///     .open_subkey("Software").unwrap();
+    ///     .open_subkey("Software")?;
+    /// # Ok(())
+    /// # }
     /// ```
     pub fn open_subkey<P: AsRef<OsStr>>(&self, path: P) -> io::Result<RegKey> {
         self.open_subkey_with_flags(path, enums::KEY_READ)
@@ -253,10 +265,14 @@ impl RegKey {
     /// # Examples
     ///
     /// ```no_run
+    /// # use std::error::Error;
     /// # use winreg::RegKey;
     /// # use winreg::enums::*;
+    /// # fn main() -> Result<(), Box<Error>> {
     /// let hklm = RegKey::predef(HKEY_LOCAL_MACHINE);
-    /// hklm.open_subkey_with_flags("SOFTWARE\\Microsoft", KEY_READ).unwrap();
+    /// hklm.open_subkey_with_flags("SOFTWARE\\Microsoft", KEY_READ)?;
+    /// # Ok(())
+    /// # }
     /// ```
     pub fn open_subkey_with_flags<P: AsRef<OsStr>>(&self, path: P, perms: winapi_reg::REGSAM) -> io::Result<RegKey> {
         let c_path = to_utf16(path);
@@ -313,10 +329,14 @@ impl RegKey {
     /// # Examples
     ///
     /// ```no_run
+    /// # use std::error::Error;
     /// # use winreg::RegKey;
     /// # use winreg::enums::*;
+    /// # fn main() -> Result<(), Box<Error>> {
     /// let hkcu = RegKey::predef(HKEY_CURRENT_USER);
-    /// let (settings, disp) = hkcu.create_subkey("Software\\MyProduct\\Settings").unwrap();
+    /// let (settings, disp) = hkcu.create_subkey("Software\\MyProduct\\Settings")?;
+    /// # Ok(())
+    /// # }
     /// ```
     pub fn create_subkey<P: AsRef<OsStr>>(&self, path: P) -> io::Result<(RegKey, RegDisposition)> {
         self.create_subkey_with_flags(path, enums::KEY_ALL_ACCESS)
@@ -390,12 +410,16 @@ impl RegKey {
     /// # Examples
     ///
     /// ```no_run
+    /// # use std::error::Error;
     /// # use winreg::RegKey;
     /// # use winreg::enums::*;
+    /// # fn main() -> Result<(), Box<Error>> {
     /// let hkcu = RegKey::predef(HKEY_CURRENT_USER);
-    /// let src = hkcu.open_subkey_with_flags("Software\\MyProduct", KEY_READ).unwrap();
-    /// let (dst, dst_disp) = hkcu.create_subkey("Software\\MyProduct\\Section2").unwrap();
-    /// src.copy_tree("Section1", &dst).unwrap();
+    /// let src = hkcu.open_subkey_with_flags("Software\\MyProduct", KEY_READ)?;
+    /// let (dst, dst_disp) = hkcu.create_subkey("Software\\MyProduct\\Section2")?;
+    /// src.copy_tree("Section1", &dst)?;
+    /// # Ok(())
+    /// # }
     /// ```
     pub fn copy_tree<P: AsRef<OsStr>>(&self, path: P, dest: &RegKey) -> io::Result<()> {
         let c_path = to_utf16(path);
@@ -458,14 +482,17 @@ impl RegKey {
     /// # Examples
     ///
     /// ```no_run
+    /// # use std::error::Error;
     /// # use winreg::RegKey;
     /// # use winreg::enums::*;
+    /// # fn main() -> Result<(), Box<Error>> {
     /// let system = RegKey::predef(HKEY_LOCAL_MACHINE)
-    ///     .open_subkey_with_flags("HARDWARE\\DESCRIPTION\\System", KEY_READ)
-    ///     .unwrap();
+    ///     .open_subkey_with_flags("HARDWARE\\DESCRIPTION\\System", KEY_READ)?;
     /// for (name, value) in system.enum_values().map(|x| x.unwrap()) {
     ///     println!("{} = {:?}", name, value);
     /// }
+    /// # Ok(())
+    /// # }
     /// ```
     pub fn enum_values(&self) -> EnumValues {
         EnumValues{key: self, index: 0}
@@ -478,10 +505,14 @@ impl RegKey {
     /// # Examples
     ///
     /// ```no_run
+    /// # use std::error::Error;
     /// # use winreg::RegKey;
     /// # use winreg::enums::*;
+    /// # fn main() -> Result<(), Box<Error>> {
     /// RegKey::predef(HKEY_CURRENT_USER)
-    ///     .delete_subkey(r"Software\MyProduct\History").unwrap();
+    ///     .delete_subkey(r"Software\MyProduct\History")?;
+    /// # Ok(())
+    /// # }
     /// ```
     pub fn delete_subkey<P: AsRef<OsStr>>(&self, path: P) -> io::Result<()> {
         let c_path = to_utf16(path);
@@ -521,10 +552,14 @@ impl RegKey {
     /// # Examples
     ///
     /// ```no_run
+    /// # use std::error::Error;
     /// # use winreg::RegKey;
     /// # use winreg::enums::*;
+    /// # fn main() -> Result<(), Box<Error>> {
     /// RegKey::predef(HKEY_CURRENT_USER)
-    ///     .delete_subkey_all("Software\\MyProduct").unwrap();
+    ///     .delete_subkey_all("Software\\MyProduct")?;
+    /// # Ok(())
+    /// # }
     /// ```
     pub fn delete_subkey_all<P: AsRef<OsStr>>(&self, path: P) -> io::Result<()> {
         let c_path;
@@ -553,12 +588,16 @@ impl RegKey {
     /// # Examples
     ///
     /// ```no_run
+    /// # use std::error::Error;
     /// # use winreg::RegKey;
     /// # use winreg::enums::*;
-    /// # let hkcu = RegKey::predef(HKEY_CURRENT_USER);
-    /// let settings = hkcu.open_subkey("Software\\MyProduct\\Settings").unwrap();
-    /// let server: String = settings.get_value("server").unwrap();
-    /// let port: u32 = settings.get_value("port").unwrap();
+    /// # fn main() -> Result<(), Box<Error>> {
+    /// let hkcu = RegKey::predef(HKEY_CURRENT_USER);
+    /// let settings = hkcu.open_subkey("Software\\MyProduct\\Settings")?;
+    /// let server: String = settings.get_value("server")?;
+    /// let port: u32 = settings.get_value("port")?;
+    /// # Ok(())
+    /// # }
     /// ```
     pub fn get_value<T: FromRegValue, N: AsRef<OsStr>>(&self, name: N) -> io::Result<T> {
         match self.get_raw_value(name) {
@@ -573,12 +612,16 @@ impl RegKey {
     /// # Examples
     ///
     /// ```no_run
+    /// # use std::error::Error;
     /// # use winreg::RegKey;
     /// # use winreg::enums::*;
-    /// # let hkcu = RegKey::predef(HKEY_CURRENT_USER);
-    /// let settings = hkcu.open_subkey("Software\\MyProduct\\Settings").unwrap();
-    /// let data = settings.get_raw_value("data").unwrap();
+    /// # fn main() -> Result<(), Box<Error>> {
+    /// let hkcu = RegKey::predef(HKEY_CURRENT_USER);
+    /// let settings = hkcu.open_subkey("Software\\MyProduct\\Settings")?;
+    /// let data = settings.get_raw_value("data")?;
     /// println!("Bytes: {:?}", data.bytes);
+    /// # Ok(())
+    /// # }
     /// ```
     pub fn get_raw_value<N: AsRef<OsStr>>(&self, name: N) -> io::Result<RegValue> {
         let c_name = to_utf16(name);
@@ -620,12 +663,16 @@ impl RegKey {
     /// # Examples
     ///
     /// ```no_run
+    /// # use std::error::Error;
     /// # use winreg::RegKey;
     /// # use winreg::enums::*;
-    /// # let hkcu = RegKey::predef(HKEY_CURRENT_USER);
-    /// let (settings, disp) = hkcu.create_subkey("Software\\MyProduct\\Settings").unwrap();
-    /// settings.set_value("server", &"www.example.com").unwrap();
-    /// settings.set_value("port", &8080u32).unwrap();
+    /// # fn main() -> Result<(), Box<Error>> {
+    /// let hkcu = RegKey::predef(HKEY_CURRENT_USER);
+    /// let (settings, disp) = hkcu.create_subkey("Software\\MyProduct\\Settings")?;
+    /// settings.set_value("server", &"www.example.com")?;
+    /// settings.set_value("port", &8080u32)?;
+    /// # Ok(())
+    /// # }
     /// ```
     pub fn set_value<T: ToRegValue, N: AsRef<OsStr>>(&self, name: N, value: &T) -> io::Result<()> {
         self.set_raw_value(name, &value.to_reg_value())
@@ -637,14 +684,18 @@ impl RegKey {
     /// # Examples
     ///
     /// ```no_run
+    /// # use std::error::Error;
     /// use winreg::{RegKey, RegValue};
     /// use winreg::enums::*;
+    /// # fn main() -> Result<(), Box<Error>> {
     /// let hkcu = RegKey::predef(HKEY_CURRENT_USER);
-    /// let settings = hkcu.open_subkey("Software\\MyProduct\\Settings").unwrap();
+    /// let settings = hkcu.open_subkey("Software\\MyProduct\\Settings")?;
     /// let bytes: Vec<u8> = vec![1, 2, 3, 5, 8, 13, 21, 34, 55, 89];
     /// let data = RegValue{ vtype: REG_BINARY, bytes: bytes};
-    /// settings.set_raw_value("data", &data).unwrap();
-    /// println!("Bytes: {:?}", data.bytes)
+    /// settings.set_raw_value("data", &data)?;
+    /// println!("Bytes: {:?}", data.bytes);
+    /// # Ok(())
+    /// # }
     /// ```
     pub fn set_raw_value<N: AsRef<OsStr>>(&self, name: N, value: &RegValue) -> io::Result<()> {
         let c_name = to_utf16(name);
@@ -670,11 +721,15 @@ impl RegKey {
     /// # Examples
     ///
     /// ```no_run
+    /// # use std::error::Error;
     /// # use winreg::RegKey;
     /// # use winreg::enums::*;
-    /// # let hkcu = RegKey::predef(HKEY_CURRENT_USER);
-    /// let settings = hkcu.open_subkey("Software\\MyProduct\\Settings").unwrap();
-    /// settings.delete_value("data").unwrap();
+    /// # fn main() -> Result<(), Box<Error>> {
+    /// let hkcu = RegKey::predef(HKEY_CURRENT_USER);
+    /// let settings = hkcu.open_subkey("Software\\MyProduct\\Settings")?;
+    /// settings.delete_value("data")?;
+    /// # Ok(())
+    /// # }
     /// ```
     pub fn delete_value<N: AsRef<OsStr>>(&self, name: N) -> io::Result<()> {
         let c_name = to_utf16(name);
@@ -695,10 +750,10 @@ impl RegKey {
     /// # Examples
     ///
     /// ```no_run
+    /// # use std::error::Error;
     /// #[macro_use]
     /// extern crate serde_derive;
     /// extern crate winreg;
-    /// # fn main() {
     /// use winreg::RegKey;
     /// use winreg::enums::*;
     ///
@@ -717,14 +772,16 @@ impl RegKey {
     ///     show_in_tray: bool,
     /// }
     ///
+    /// # fn main() -> Result<(), Box<Error>> {
     /// let s: Settings = Settings{
     ///     current_dir: "C:\\".to_owned(),
     ///     window_pos: Rectangle{ x:200, y: 100, w: 800, h: 500 },
     ///     show_in_tray: false,
     /// };
     /// let s_key = RegKey::predef(HKEY_CURRENT_USER)
-    ///     .open_subkey("Software\\MyProduct\\Settings").unwrap();
-    /// s_key.encode(&s).unwrap();
+    ///     .open_subkey("Software\\MyProduct\\Settings")?;
+    /// s_key.encode(&s)?;
+    /// # Ok(())
     /// # }
     /// ```
     #[cfg(feature = "serialization-serde")]
@@ -744,10 +801,10 @@ impl RegKey {
     /// # Examples
     ///
     /// ```no_run
+    /// # use std::error::Error;
     /// #[macro_use]
     /// extern crate serde_derive;
     /// extern crate winreg;
-    /// # fn main() {
     /// use winreg::RegKey;
     /// use winreg::enums::*;
     ///
@@ -766,9 +823,11 @@ impl RegKey {
     ///     show_in_tray: bool,
     /// }
     ///
+    /// # fn main() -> Result<(), Box<Error>> {
     /// let s_key = RegKey::predef(HKEY_CURRENT_USER)
-    ///     .open_subkey("Software\\MyProduct\\Settings").unwrap();
-    /// let s: Settings = s_key.decode().unwrap();
+    ///     .open_subkey("Software\\MyProduct\\Settings")?;
+    /// let s: Settings = s_key.decode()?;
+    /// # Ok(())
     /// # }
     /// ```
     #[cfg(feature = "serialization-serde")]

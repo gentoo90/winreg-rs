@@ -9,41 +9,41 @@ use std::io;
 use winreg::RegKey;
 use winreg::enums::*;
 
-fn main() {
+fn main() -> io::Result<()> {
     println!("Reading some system info...");
     let hklm = RegKey::predef(HKEY_LOCAL_MACHINE);
-    let cur_ver = hklm.open_subkey("SOFTWARE\\Microsoft\\Windows\\CurrentVersion").unwrap();
-    let pf: String = cur_ver.get_value("ProgramFilesDir").unwrap();
-    let dp: String = cur_ver.get_value("DevicePath").unwrap();
+    let cur_ver = hklm.open_subkey("SOFTWARE\\Microsoft\\Windows\\CurrentVersion")?;
+    let pf: String = cur_ver.get_value("ProgramFilesDir")?;
+    let dp: String = cur_ver.get_value("DevicePath")?;
     println!("ProgramFiles = {}\nDevicePath = {}", pf, dp);
-    let info = cur_ver.query_info().unwrap();
+    let info = cur_ver.query_info()?;
     println!("info = {:?}", info);
 
     println!("And now lets write something...");
     let hkcu = RegKey::predef(HKEY_CURRENT_USER);
     let path = Path::new("Software").join("WinregRsExample1");
-    let (key, disp) = hkcu.create_subkey(&path).unwrap();
+    let (key, disp) = hkcu.create_subkey(&path)?;
 
     match disp {
         REG_CREATED_NEW_KEY => println!("A new key has been created"),
         REG_OPENED_EXISTING_KEY => println!("An existing key has been opened")
     }
 
-    key.set_value("TestSZ", &"written by Rust").unwrap();
-    let sz_val: String = key.get_value("TestSZ").unwrap();
-    key.delete_value("TestSZ").unwrap();
+    key.set_value("TestSZ", &"written by Rust")?;
+    let sz_val: String = key.get_value("TestSZ")?;
+    key.delete_value("TestSZ")?;
     println!("TestSZ = {}", sz_val);
 
-    key.set_value("TestDWORD", &1234567890u32).unwrap();
-    let dword_val: u32 = key.get_value("TestDWORD").unwrap();
+    key.set_value("TestDWORD", &1234567890u32)?;
+    let dword_val: u32 = key.get_value("TestDWORD")?;
     println!("TestDWORD = {}", dword_val);
 
-    key.set_value("TestQWORD", &1234567891011121314u64).unwrap();
-    let qword_val: u64 = key.get_value("TestQWORD").unwrap();
+    key.set_value("TestQWORD", &1234567891011121314u64)?;
+    let qword_val: u64 = key.get_value("TestQWORD")?;
     println!("TestQWORD = {}", qword_val);
 
-    key.create_subkey("sub\\key").unwrap();
-    hkcu.delete_subkey_all(&path).unwrap();
+    key.create_subkey("sub\\key")?;
+    hkcu.delete_subkey_all(&path)?;
 
     println!("Trying to open nonexistent key...");
     hkcu.open_subkey(&path)
@@ -52,4 +52,5 @@ fn main() {
         io::ErrorKind::PermissionDenied => panic!("Access denied"),
         _ => panic!("{:?}", e)
     });
+    Ok(())
 }
