@@ -323,6 +323,8 @@ impl RegKey {
     /// Create subkey (and all missing parent keys)
     /// and open it with `KEY_ALL_ACCESS` permissions.
     /// Will just open key if it already exists.
+    /// If succeeds returns a tuple with the created subkey and its disposition,
+    /// which can be `REG_CREATED_NEW_KEY` or `REG_OPENED_EXISTING_KEY`.
     /// Will open another handle to itself if `path` is an empty string.
     /// To create with different permissions use `create_subkey_with_flags`.
     ///
@@ -331,10 +333,15 @@ impl RegKey {
     /// ```no_run
     /// # use std::error::Error;
     /// # use winreg::RegKey;
-    /// # use winreg::enums::*;
+    /// use winreg::enums::*;
     /// # fn main() -> Result<(), Box<Error>> {
     /// let hkcu = RegKey::predef(HKEY_CURRENT_USER);
     /// let (settings, disp) = hkcu.create_subkey("Software\\MyProduct\\Settings")?;
+    ///
+    /// match disp {
+    ///     REG_CREATED_NEW_KEY => println!("A new key has been created"),
+    ///     REG_OPENED_EXISTING_KEY => println!("An existing key has been opened")
+    /// }
     /// # Ok(())
     /// # }
     /// ```
