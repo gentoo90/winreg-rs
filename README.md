@@ -23,7 +23,7 @@ Current features:
 ```toml
 # Cargo.toml
 [dependencies]
-winreg = "0.5"
+winreg = "0.6"
 ```
 
 ```rust
@@ -33,44 +33,50 @@ use std::io;
 use winreg::RegKey;
 use winreg::enums::*;
 
-fn main() {
+fn main() -> io::Result<()> {
     println!("Reading some system info...");
     let hklm = RegKey::predef(HKEY_LOCAL_MACHINE);
-    let cur_ver = hklm.open_subkey("SOFTWARE\\Microsoft\\Windows\\CurrentVersion").unwrap();
-    let pf: String = cur_ver.get_value("ProgramFilesDir").unwrap();
-    let dp: String = cur_ver.get_value("DevicePath").unwrap();
+    let cur_ver = hklm.open_subkey("SOFTWARE\\Microsoft\\Windows\\CurrentVersion")?;
+    let pf: String = cur_ver.get_value("ProgramFilesDir")?;
+    let dp: String = cur_ver.get_value("DevicePath")?;
     println!("ProgramFiles = {}\nDevicePath = {}", pf, dp);
-    let info = cur_ver.query_info().unwrap();
+    let info = cur_ver.query_info()?;
     println!("info = {:?}", info);
 
     println!("And now lets write something...");
     let hkcu = RegKey::predef(HKEY_CURRENT_USER);
     let path = Path::new("Software").join("WinregRsExample1");
-    let key = hkcu.create_subkey(&path).unwrap();
+    let (key, disp) = hkcu.create_subkey(&path)?;
 
-    key.set_value("TestSZ", &"written by Rust").unwrap();
-    let sz_val: String = key.get_value("TestSZ").unwrap();
-    key.delete_value("TestSZ").unwrap();
+    match disp {
+        REG_CREATED_NEW_KEY => println!("A new key has been created"),
+        REG_OPENED_EXISTING_KEY => println!("An existing key has been opened")
+    }
+
+    key.set_value("TestSZ", &"written by Rust")?;
+    let sz_val: String = key.get_value("TestSZ")?;
+    key.delete_value("TestSZ")?;
     println!("TestSZ = {}", sz_val);
 
-    key.set_value("TestDWORD", &1234567890u32).unwrap();
-    let dword_val: u32 = key.get_value("TestDWORD").unwrap();
+    key.set_value("TestDWORD", &1234567890u32)?;
+    let dword_val: u32 = key.get_value("TestDWORD")?;
     println!("TestDWORD = {}", dword_val);
 
-    key.set_value("TestQWORD", &1234567891011121314u64).unwrap();
-    let qword_val: u64 = key.get_value("TestQWORD").unwrap();
+    key.set_value("TestQWORD", &1234567891011121314u64)?;
+    let qword_val: u64 = key.get_value("TestQWORD")?;
     println!("TestQWORD = {}", qword_val);
 
-    key.create_subkey("sub\\key").unwrap();
-    hkcu.delete_subkey_all(&path).unwrap();
+    key.create_subkey("sub\\key")?;
+    hkcu.delete_subkey_all(&path)?;
 
     println!("Trying to open nonexistent key...");
-    let key2 = hkcu.open_subkey(&path)
+    hkcu.open_subkey(&path)
     .unwrap_or_else(|e| match e.kind() {
         io::ErrorKind::NotFound => panic!("Key doesn't exist"),
         io::ErrorKind::PermissionDenied => panic!("Access denied"),
         _ => panic!("{:?}", e)
     });
+    Ok(())
 }
 ```
 
@@ -78,10 +84,11 @@ fn main() {
 
 ```rust
 extern crate winreg;
+use std::io;
 use winreg::RegKey;
 use winreg::enums::*;
 
-fn main() {
+fn main() -> io::Result<()> {
     println!("File extensions, registered in system:");
     for i in RegKey::predef(HKEY_CLASSES_ROOT)
         .enum_keys().map(|x| x.unwrap())
@@ -91,11 +98,12 @@ fn main() {
     }
 
     let system = RegKey::predef(HKEY_LOCAL_MACHINE)
-        .open_subkey("HARDWARE\\DESCRIPTION\\System")
-        .unwrap();
+        .open_subkey("HARDWARE\\DESCRIPTION\\System")?;
     for (name, value) in system.enum_values().map(|x| x.unwrap()) {
         println!("{} = {:?}", name, value);
     }
+
+    Ok(())
 }
 ```
 
@@ -104,7 +112,7 @@ fn main() {
 ```toml
 # Cargo.toml
 [dependencies]
-winreg = { version = "0.5", features = ["transactions"] }
+winreg = { version = "0.6", features = ["transactions"] }
 ```
 
 ```rust
@@ -114,28 +122,30 @@ use winreg::RegKey;
 use winreg::enums::*;
 use winreg::transaction::Transaction;
 
-fn main() {
-    let t = Transaction::new().unwrap();
+fn main() -> io::Result<()> {
+    let t = Transaction::new()?;
     let hkcu = RegKey::predef(HKEY_CURRENT_USER);
-    let key = hkcu.create_subkey_transacted("Software\\RustTransaction", &t).unwrap();
-    key.set_value("TestQWORD", &1234567891011121314u64).unwrap();
-    key.set_value("TestDWORD", &1234567890u32).unwrap();
+    let (key, _disp) = hkcu.create_subkey_transacted("Software\\RustTransaction", &t)?;
+    key.set_value("TestQWORD", &1234567891011121314u64)?;
+    key.set_value("TestDWORD", &1234567890u32)?;
 
     println!("Commit transaction? [y/N]:");
     let mut input = String::new();
-    io::stdin().read_line(&mut input).unwrap();
+    io::stdin().read_line(&mut input)?;
     input = input.trim_right().to_owned();
     if input == "y" || input == "Y" {
-        t.commit().unwrap();
+        t.commit()?;
         println!("Transaction committed.");
     }
     else {
         // this is optional, if transaction wasn't committed,
         // it will be rolled back on disposal
-        t.rollback().unwrap();
+        t.rollback()?;
 
         println!("Transaction wasn't committed, it will be rolled back.");
     }
+
+    Ok(())
 }
 ```
 
@@ -144,7 +154,7 @@ fn main() {
 ```toml
 # Cargo.toml
 [dependencies]
-winreg = { version = "0.5", features = ["serialization-serde"] }
+winreg = { version = "0.6", features = ["serialization-serde"] }
 serde = "1"
 serde_derive = "1"
 ```
@@ -152,16 +162,26 @@ serde_derive = "1"
 ```rust
 #[macro_use]
 extern crate serde_derive;
-extern crate serde;
 extern crate winreg;
+use std::error::Error;
 use winreg::enums::*;
 
 #[derive(Debug, Serialize, Deserialize, PartialEq)]
-struct Rectangle{
+struct Coords {
     x: u32,
     y: u32,
+}
+
+#[derive(Debug, Serialize, Deserialize, PartialEq)]
+struct Size {
     w: u32,
     h: u32,
+}
+
+#[derive(Debug, Serialize, Deserialize, PartialEq)]
+struct Rectangle {
+    coords: Coords,
+    size: Size,
 }
 
 #[derive(Debug, Serialize, Deserialize, PartialEq)]
@@ -183,21 +203,19 @@ struct Test {
     t_f32: f32,
 }
 
-fn main() {
+fn main() -> Result<(), Box<Error>> {
     let hkcu = winreg::RegKey::predef(HKEY_CURRENT_USER);
-    let key = hkcu.create_subkey("Software\\RustEncode").unwrap();
+    let (key, _disp) = hkcu.create_subkey("Software\\RustEncode")?;
     let v1 = Test{
         t_bool: false,
         t_u8: 127,
         t_u16: 32768,
         t_u32: 123456789,
         t_u64: 123456789101112,
-        t_usize: 123456789101112,
+        t_usize: 1234567891,
         t_struct: Rectangle{
-            x: 55,
-            y: 77,
-            w: 500,
-            h: 300,
+            coords: Coords{ x: 55, y: 77 },
+            size: Size{ w: 500, h: 300 },
         },
         t_string: "test 123!".to_owned(),
         t_i8: -123,
@@ -209,17 +227,24 @@ fn main() {
         t_f32: 3.14,
     };
 
-    key.encode(&v1).unwrap();
+    key.encode(&v1)?;
 
-    let v2: Test = key.decode().unwrap();
+    let v2: Test = key.decode()?;
     println!("Decoded {:?}", v2);
 
-    // This shows `false` because f32 and f64 encoding/decoding is NOT precise
     println!("Equal to encoded: {:?}", v1 == v2);
+    Ok(())
 }
 ```
 
 ## Changelog
+
+### 0.6.0
+
+* Breaking change: `create_subkey`, `create_subkey_with_flags`, `create_subkey_transacted` and
+`create_subkey_transacted_with_flags` now return a tuple which contains the subkey and its disposition
+which can be `REG_CREATED_NEW_KEY` or `REG_OPENED_EXISTING_KEY` ([#21](https://github.com/gentoo90/winreg-rs/issues/21)).
+* Examples fixed to not use `unwrap` according to [Rust API guidelines](https://rust-lang-nursery.github.io/api-guidelines/documentation.html#examples-use--not-try-not-unwrap-c-question-mark).
 
 ### 0.5.1
 
@@ -232,7 +257,7 @@ fn main() {
 Use `create_subkey` or `open_subkey_with_flags` to open with read-write permissins.
 * Breaking change: features `transactions` and `serialization-serde` are now disabled by default.
 * Breaking change: serialization now uses `serde` instead of `rustc-serialize`.
-* `winreg` updated to `0.3`.
+* `winapi` updated to `0.3`.
 * Documentation fixes ([#14](https://github.com/gentoo90/winreg-rs/pull/14))
 
 ### 0.4.0

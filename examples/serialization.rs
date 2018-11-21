@@ -77,7 +77,6 @@ fn main() -> Result<(), Box<Error>> {
     let v2: Test = key.decode()?;
     println!("Decoded {:?}", v2);
 
-    // This shows `false` because f32 and f64 encoding/decoding is NOT precise
     println!("Equal to encoded: {:?}", v1 == v2);
     Ok(())
 }
