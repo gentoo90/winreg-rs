@@ -50,16 +50,16 @@ struct Test {
 fn main() -> Result<(), Box<Error>> {
     let hkcu = winreg::RegKey::predef(HKEY_CURRENT_USER);
     let (key, _disp) = hkcu.create_subkey("Software\\RustEncode")?;
-    let v1 = Test{
+    let v1 = Test {
         t_bool: false,
         t_u8: 127,
         t_u16: 32768,
         t_u32: 123456789,
         t_u64: 123456789101112,
         t_usize: 1234567891,
-        t_struct: Rectangle{
-            coords: Coords{ x: 55, y: 77 },
-            size: Size{ w: 500, h: 300 },
+        t_struct: Rectangle {
+            coords: Coords { x: 55, y: 77 },
+            size: Size { w: 500, h: 300 },
         },
         t_string: "test 123!".to_owned(),
         t_i8: -123,

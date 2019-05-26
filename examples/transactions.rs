@@ -5,9 +5,9 @@
 // except according to those terms.
 extern crate winreg;
 use std::io;
-use winreg::RegKey;
 use winreg::enums::*;
 use winreg::transaction::Transaction;
+use winreg::RegKey;
 
 fn main() -> io::Result<()> {
     let t = Transaction::new()?;
@@ -23,8 +23,7 @@ fn main() -> io::Result<()> {
     if input == "y" || input == "Y" {
         t.commit()?;
         println!("Transaction committed.");
-    }
-    else {
+    } else {
         // this is optional, if transaction wasn't committed,
         // it will be rolled back on disposal
         t.rollback()?;

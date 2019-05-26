@@ -4,10 +4,10 @@
 // may not be copied, modified, or distributed
 // except according to those terms.
 extern crate winreg;
-use std::path::Path;
 use std::io;
-use winreg::RegKey;
+use std::path::Path;
 use winreg::enums::*;
+use winreg::RegKey;
 
 fn main() -> io::Result<()> {
     println!("Reading some system info...");
@@ -26,7 +26,7 @@ fn main() -> io::Result<()> {
 
     match disp {
         REG_CREATED_NEW_KEY => println!("A new key has been created"),
-        REG_OPENED_EXISTING_KEY => println!("An existing key has been opened")
+        REG_OPENED_EXISTING_KEY => println!("An existing key has been opened"),
     }
 
     key.set_value("TestSZ", &"written by Rust")?;
@@ -46,11 +46,10 @@ fn main() -> io::Result<()> {
     hkcu.delete_subkey_all(&path)?;
 
     println!("Trying to open nonexistent key...");
-    hkcu.open_subkey(&path)
-    .unwrap_or_else(|e| match e.kind() {
+    hkcu.open_subkey(&path).unwrap_or_else(|e| match e.kind() {
         io::ErrorKind::NotFound => panic!("Key doesn't exist"),
         io::ErrorKind::PermissionDenied => panic!("Access denied"),
-        _ => panic!("{:?}", e)
+        _ => panic!("{:?}", e),
     });
     Ok(())
 }

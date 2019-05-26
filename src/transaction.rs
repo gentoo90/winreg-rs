@@ -39,11 +39,11 @@
 //!}
 //!```
 #![cfg(feature = "transactions")]
-use std::ptr;
 use std::io;
-use winapi::um::winnt;
+use std::ptr;
 use winapi::um::handleapi;
 use winapi::um::ktmw32;
+use winapi::um::winnt;
 
 #[derive(Debug)]
 pub struct Transaction {
@@ -64,9 +64,9 @@ impl Transaction {
                 ptr::null_mut(),
             );
             if handle == handleapi::INVALID_HANDLE_VALUE {
-                return Err(io::Error::last_os_error())
+                return Err(io::Error::last_os_error());
             };
-            Ok(Transaction{ handle: handle })
+            Ok(Transaction { handle: handle })
         }
     }
 
@@ -74,7 +74,7 @@ impl Transaction {
         unsafe {
             match ktmw32::CommitTransaction(self.handle) {
                 0 => Err(io::Error::last_os_error()),
-                _ => Ok(())
+                _ => Ok(()),
             }
         }
     }
@@ -83,7 +83,7 @@ impl Transaction {
         unsafe {
             match ktmw32::RollbackTransaction(self.handle) {
                 0 => Err(io::Error::last_os_error()),
-                _ => Ok(())
+                _ => Ok(()),
             }
         }
     }
@@ -92,7 +92,7 @@ impl Transaction {
         unsafe {
             match handleapi::CloseHandle(self.handle) {
                 0 => Err(io::Error::last_os_error()),
-                _ => Ok(())
+                _ => Ok(()),
             }
         }
     }
