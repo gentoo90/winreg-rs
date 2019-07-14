@@ -117,7 +117,7 @@ use std::slice;
 use transaction::Transaction;
 use types::{FromRegValue, ToRegValue};
 pub use winapi::shared::minwindef::HKEY;
-use winapi::shared::minwindef::{BYTE, DWORD, LPBYTE};
+use winapi::shared::minwindef::{BYTE, DWORD, FILETIME, LPBYTE};
 use winapi::shared::winerror;
 use winapi::um::winnt::{self, WCHAR};
 use winapi::um::winreg as winapi_reg;
@@ -149,7 +149,7 @@ pub struct RegKeyMetadata {
     pub max_value_name_len: DWORD,
     pub max_value_len: DWORD,
     // pub SecurityDescriptor: DWORD,
-    // pub LastWriteTime: winapi::PFILETIME,
+    pub last_write_time: FILETIME,
 }
 
 /// Raw registry value
@@ -461,7 +461,7 @@ impl RegKey {
                 &mut info.max_value_name_len,
                 &mut info.max_value_len,
                 ptr::null_mut(), // lpcbSecurityDescriptor: winapi::LPDWORD,
-                ptr::null_mut(), // lpftLastWriteTime: winapi::PFILETIME,
+                &mut info.last_write_time,
             ) as DWORD
         } {
             0 => Ok(info),
