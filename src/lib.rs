@@ -109,10 +109,6 @@
 //!
 #[cfg(feature = "chrono")]
 extern crate chrono;
-#![cfg_attr(feature = "clippy", feature(plugin))]
-#![cfg_attr(feature = "clippy", plugin(clippy))]
-#![cfg_attr(feature = "clippy", warn(option_unwrap_used))]
-#![cfg_attr(feature = "clippy", warn(result_unwrap_used))]
 #[cfg(feature = "serialization-serde")]
 extern crate serde;
 extern crate winapi;

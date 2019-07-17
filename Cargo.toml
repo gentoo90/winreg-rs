@@ -14,7 +14,6 @@ categories = ["api-bindings", "os::windows-apis"]
 winapi = { version = "0.3", features = ["impl-default", "impl-debug", "minwindef", "minwinbase", "timezoneapi", "winerror", "winnt", "winreg", "handleapi"] }
 chrono = { version = "0.4.6", optional = true }
 serde = { version = "1", optional = true }
-clippy = { version = "^0", optional = true }
 
 [dev-dependencies]
 rand = "0.3"
