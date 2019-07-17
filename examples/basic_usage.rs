@@ -18,6 +18,15 @@ fn main() -> io::Result<()> {
     println!("ProgramFiles = {}\nDevicePath = {}", pf, dp);
     let info = cur_ver.query_info()?;
     println!("info = {:?}", info);
+    let mt = info.get_last_write_time_system();
+    println!(
+        "last_write_time as winapi::um::minwinbase::SYSTEMTIME = {}-{:02}-{:02} {:02}:{:02}:{:02}",
+        mt.wYear, mt.wMonth, mt.wDay, mt.wHour, mt.wMinute, mt.wSecond
+    );
+    println!(
+        "last_write_time as chrono::NaiveDateTime = {}",
+        info.get_last_write_time_chrono()
+    );
 
     println!("And now lets write something...");
     let hkcu = RegKey::predef(HKEY_CURRENT_USER);

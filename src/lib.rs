@@ -18,10 +18,10 @@
 //!
 //!```no_run
 //!extern crate winreg;
-//!use std::path::Path;
 //!use std::io;
-//!use winreg::RegKey;
+//!use std::path::Path;
 //!use winreg::enums::*;
+//!use winreg::RegKey;
 //!
 //!fn main() -> io::Result<()> {
 //!    println!("Reading some system info...");
@@ -32,6 +32,17 @@
 //!    println!("ProgramFiles = {}\nDevicePath = {}", pf, dp);
 //!    let info = cur_ver.query_info()?;
 //!    println!("info = {:?}", info);
+//!    let mt = info.get_last_write_time_system();
+//!    println!(
+//!        "last_write_time as winapi::um::minwinbase::SYSTEMTIME = {}-{:02}-{:02} {:02}:{:02}:{:02}",
+//!        mt.wYear, mt.wMonth, mt.wDay, mt.wHour, mt.wMinute, mt.wSecond
+//!    );
+//!
+//!    // enable `chrono` feature on `winreg` to make this work
+//!    // println!(
+//!    //     "last_write_time as chrono::NaiveDateTime = {}",
+//!    //     info.get_last_write_time_chrono()
+//!    // );
 //!
 //!    println!("And now lets write something...");
 //!    let hkcu = RegKey::predef(HKEY_CURRENT_USER);
@@ -40,7 +51,7 @@
 //!
 //!    match disp {
 //!        REG_CREATED_NEW_KEY => println!("A new key has been created"),
-//!        REG_OPENED_EXISTING_KEY => println!("An existing key has been opened")
+//!        REG_OPENED_EXISTING_KEY => println!("An existing key has been opened"),
 //!    }
 //!
 //!    key.set_value("TestSZ", &"written by Rust")?;
@@ -60,11 +71,10 @@
 //!    hkcu.delete_subkey_all(&path)?;
 //!
 //!    println!("Trying to open nonexistent key...");
-//!    hkcu.open_subkey(&path)
-//!    .unwrap_or_else(|e| match e.kind() {
+//!    hkcu.open_subkey(&path).unwrap_or_else(|e| match e.kind() {
 //!        io::ErrorKind::NotFound => panic!("Key doesn't exist"),
 //!        io::ErrorKind::PermissionDenied => panic!("Access denied"),
-//!        _ => panic!("{:?}", e)
+//!        _ => panic!("{:?}", e),
 //!    });
 //!    Ok(())
 //!}
@@ -97,6 +107,8 @@
 //!}
 //!```
 //!
+#[cfg(feature = "chrono")]
+extern crate chrono;
 #![cfg_attr(feature = "clippy", feature(plugin))]
 #![cfg_attr(feature = "clippy", plugin(clippy))]
 #![cfg_attr(feature = "clippy", warn(option_unwrap_used))]
@@ -119,6 +131,8 @@ use types::{FromRegValue, ToRegValue};
 pub use winapi::shared::minwindef::HKEY;
 use winapi::shared::minwindef::{BYTE, DWORD, FILETIME, LPBYTE};
 use winapi::shared::winerror;
+use winapi::um::minwinbase::SYSTEMTIME;
+use winapi::um::timezoneapi::FileTimeToSystemTime;
 use winapi::um::winnt::{self, WCHAR};
 use winapi::um::winreg as winapi_reg;
 
@@ -150,6 +164,30 @@ pub struct RegKeyMetadata {
     pub max_value_len: DWORD,
     // pub SecurityDescriptor: DWORD,
     pub last_write_time: FILETIME,
+}
+
+impl RegKeyMetadata {
+    /// Returns `last_write_time` field as `winapi::um::minwinbase::SYSTEMTIME`
+    pub fn get_last_write_time_system(&self) -> SYSTEMTIME {
+        let mut st: SYSTEMTIME = unsafe { ::std::mem::zeroed() };
+        unsafe {
+            FileTimeToSystemTime(&self.last_write_time, &mut st);
+        }
+        st
+    }
+
+    /// Returns `last_write_time` field as `chrono::NaiveDateTime`.
+    /// Part of `chrono` feature.
+    #[cfg(feature = "chrono")]
+    pub fn get_last_write_time_chrono(&self) -> chrono::NaiveDateTime {
+        let st = self.get_last_write_time_system();
+
+        chrono::NaiveDate::from_ymd(st.wYear.into(), st.wMonth.into(), st.wDay.into()).and_hms(
+            st.wHour.into(),
+            st.wMinute.into(),
+            st.wSecond.into(),
+        )
+    }
 }
 
 /// Raw registry value
@@ -1022,7 +1060,12 @@ mod test {
         let win = hklm
             .open_subkey_with_flags("Software\\Microsoft\\Windows", KEY_READ)
             .unwrap();
-        assert!(win.query_info().is_ok());
+
+        let info = win.query_info().unwrap();
+        info.get_last_write_time_system();
+        #[cfg(feature = "chrono")]
+        info.get_last_write_time_chrono();
+
         assert!(win
             .open_subkey_with_flags("CurrentVersion\\", KEY_READ)
             .is_ok());

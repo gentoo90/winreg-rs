@@ -28,10 +28,10 @@ winreg = "0.6"
 
 ```rust
 extern crate winreg;
-use std::path::Path;
 use std::io;
-use winreg::RegKey;
+use std::path::Path;
 use winreg::enums::*;
+use winreg::RegKey;
 
 fn main() -> io::Result<()> {
     println!("Reading some system info...");
@@ -42,6 +42,17 @@ fn main() -> io::Result<()> {
     println!("ProgramFiles = {}\nDevicePath = {}", pf, dp);
     let info = cur_ver.query_info()?;
     println!("info = {:?}", info);
+    let mt = info.get_last_write_time_system();
+    println!(
+        "last_write_time as winapi::um::minwinbase::SYSTEMTIME = {}-{:02}-{:02} {:02}:{:02}:{:02}",
+        mt.wYear, mt.wMonth, mt.wDay, mt.wHour, mt.wMinute, mt.wSecond
+    );
+
+    // enable `chrono` feature on `winreg` to make this work
+    // println!(
+    //     "last_write_time as chrono::NaiveDateTime = {}",
+    //     info.get_last_write_time_chrono()
+    // );
 
     println!("And now lets write something...");
     let hkcu = RegKey::predef(HKEY_CURRENT_USER);
@@ -50,7 +61,7 @@ fn main() -> io::Result<()> {
 
     match disp {
         REG_CREATED_NEW_KEY => println!("A new key has been created"),
-        REG_OPENED_EXISTING_KEY => println!("An existing key has been opened")
+        REG_OPENED_EXISTING_KEY => println!("An existing key has been opened"),
     }
 
     key.set_value("TestSZ", &"written by Rust")?;
@@ -70,11 +81,10 @@ fn main() -> io::Result<()> {
     hkcu.delete_subkey_all(&path)?;
 
     println!("Trying to open nonexistent key...");
-    hkcu.open_subkey(&path)
-    .unwrap_or_else(|e| match e.kind() {
+    hkcu.open_subkey(&path).unwrap_or_else(|e| match e.kind() {
         io::ErrorKind::NotFound => panic!("Key doesn't exist"),
         io::ErrorKind::PermissionDenied => panic!("Access denied"),
-        _ => panic!("{:?}", e)
+        _ => panic!("{:?}", e),
     });
     Ok(())
 }
