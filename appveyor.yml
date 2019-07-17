@@ -27,4 +27,5 @@ build: false
 
 test_script:
   - cargo fmt --all -- --check
-  - cargo test --features=serialization-serde
+  - cargo test --release --no-default-features
+  - cargo test --release --all-features

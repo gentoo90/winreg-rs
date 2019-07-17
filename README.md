@@ -1,5 +1,15 @@
-winreg [![Crates.io](https://img.shields.io/crates/v/winreg.svg)](https://crates.io/crates/winreg) [![Build status](https://ci.appveyor.com/api/projects/status/f3lwrt67ghrf5omd?svg=true)](https://ci.appveyor.com/project/gentoo90/winreg-rs)
+winreg
+[![Winreg on Appveyor][appveyor-image]][appveyor]
+[![Winreg on crates.io][cratesio-image]][cratesio]
+[![Winreg on docs.rs][docsrs-image]][docsrs]
 ======
+
+[appveyor-image]: https://ci.appveyor.com/api/projects/status/f3lwrt67ghrf5omd?svg=true
+[appveyor]: https://ci.appveyor.com/project/gentoo90/winreg-rs
+[cratesio-image]: https://img.shields.io/crates/v/winreg.svg
+[cratesio]: https://crates.io/crates/winreg
+[docsrs-image]: https://docs.rs/winreg/badge.svg
+[docsrs]: https://docs.rs/winreg
 
 Rust bindings to MS Windows Registry API. Work in progress.
 
@@ -248,6 +258,11 @@ fn main() -> Result<(), Box<Error>> {
 ```
 
 ## Changelog
+
+### 0.6.1
+
+* Add `last_write_time` field to `RegKeyMetadata` (returned by `RegKey::query_info()`) ([#25](https://github.com/gentoo90/winreg-rs/pull/25)).
+* Add `get_last_write_time_system()` and `get_last_write_time_chrono()` (under `chrono` feature) methods to `RegKeyMetadata`.
 
 ### 0.6.0
 
