@@ -549,7 +549,7 @@ impl RegKey {
         }
     }
 
-    /// Delete key.Key names are not case sensitive.
+    /// Delete key. Key names are not case sensitive.
     /// Cannot delete if it has subkeys.
     /// Use `delete_subkey_all` for that.
     ///
@@ -566,12 +566,37 @@ impl RegKey {
     /// # }
     /// ```
     pub fn delete_subkey<P: AsRef<OsStr>>(&self, path: P) -> io::Result<()> {
+        self.delete_subkey_with_flags(path, 0)
+    }
+
+    /// Delete key from the desired platform-specific view of the registry.
+    /// Key names are not case sensitive.
+    ///
+    /// # Examples
+    /// ```no_run
+    /// # use std::error::Error;
+    /// # use winreg::RegKey;
+    /// # use winreg::enums::*;
+    /// # fn main() -> Result<(), Box<Error>> {
+    /// // delete the key from the 32-bit registry view
+    /// RegKey::predef(HKEY_LOCAL_MACHINE)
+    ///     .delete_subkey_with_flags(r"Software\MyProduct\History", KEY_WOW64_32KEY)?;
+    /// # Ok(())
+    /// # }
+    /// ```
+    pub fn delete_subkey_with_flags<P: AsRef<OsStr>>(
+        &self,
+        path: P,
+        perms: winapi_reg::REGSAM,
+    ) -> io::Result<()> {
         let c_path = to_utf16(path);
         match unsafe {
-            winapi_reg::RegDeleteKeyW(
+            winapi_reg::RegDeleteKeyExW(
                 self.hkey,
-                c_path.as_ptr(), //This parameter cannot be NULL.
-            ) as DWORD
+                c_path.as_ptr(), // This parameter cannot be NULL.
+                perms,
+                0,
+            )
         } {
             0 => Ok(()),
             err => werr!(err),
@@ -585,16 +610,27 @@ impl RegKey {
         path: P,
         t: &Transaction,
     ) -> io::Result<()> {
+        self.delete_subkey_transacted_with_flags(path, t, 0)
+    }
+
+    /// Part of `transactions` feature.
+    #[cfg(feature = "transactions")]
+    pub fn delete_subkey_transacted_with_flags<P: AsRef<OsStr>>(
+        &self,
+        path: P,
+        t: &Transaction,
+        perms: winapi_reg::REGSAM,
+    ) -> io::Result<()> {
         let c_path = to_utf16(path);
         match unsafe {
             winapi_reg::RegDeleteKeyTransactedW(
                 self.hkey,
-                c_path.as_ptr(), //The value of this parameter cannot be NULL.
-                0,
+                c_path.as_ptr(), // This parameter cannot be NULL.
+                perms,
                 0,
                 t.handle,
                 ptr::null_mut(),
-            ) as DWORD
+            )
         } {
             0 => Ok(()),
             err => werr!(err),
@@ -1101,6 +1137,17 @@ mod test {
             .unwrap();
         assert!(RegKey::predef(HKEY_CURRENT_USER)
             .delete_subkey(path)
+            .is_ok());
+    }
+
+    #[test]
+    fn test_delete_subkey_with_flags() {
+        let path = "Software\\Classes\\WinRegRsTestDeleteSubkeyWithFlags";
+        RegKey::predef(HKEY_CURRENT_USER)
+            .create_subkey_with_flags(path, KEY_WOW64_32KEY)
+            .unwrap();
+        assert!(RegKey::predef(HKEY_CURRENT_USER)
+            .delete_subkey_with_flags(path, KEY_WOW64_32KEY)
             .is_ok());
     }
 
