@@ -1,6 +1,6 @@
 [package]
 name = "winreg"
-version = "0.6.1"
+version = "0.6.2"
 authors = ["Igor Shaula <gentoo90@gmail.com>"]
 license = "MIT"
 description = "Rust bindings to MS Windows Registry API"

@@ -259,6 +259,10 @@ fn main() -> Result<(), Box<Error>> {
 
 ## Changelog
 
+### 0.6.2
+
+* Add `RegKey::delete_subkey_with_flags()` ([#27](https://github.com/gentoo90/winreg-rs/pull/27))
+
 ### 0.6.1
 
 * Add `last_write_time` field to `RegKeyMetadata` (returned by `RegKey::query_info()`) ([#25](https://github.com/gentoo90/winreg-rs/pull/25)).
