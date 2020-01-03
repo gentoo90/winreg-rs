@@ -46,16 +46,7 @@ impl fmt::Display for EncoderError {
     }
 }
 
-impl Error for EncoderError {
-    fn description(&self) -> &str {
-        use self::EncoderError::*;
-        match *self {
-            EncodeNotImplemented(ref s) | SerializerError(ref s) => s,
-            IoError(ref e) => e.description(),
-            NoFieldName => "No field name",
-        }
-    }
-}
+impl Error for EncoderError {}
 
 pub type EncodeResult<T> = Result<T, EncoderError>;
 
