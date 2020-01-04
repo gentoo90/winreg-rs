@@ -654,13 +654,12 @@ impl RegKey {
     /// ```
     pub fn delete_subkey_all<P: AsRef<OsStr>>(&self, path: P) -> io::Result<()> {
         let c_path;
-        let path_ptr;
-        if path.as_ref().is_empty() {
-            path_ptr = ptr::null();
+        let path_ptr = if path.as_ref().is_empty() {
+            ptr::null()
         } else {
             c_path = to_utf16(path);
-            path_ptr = c_path.as_ptr();
-        }
+            c_path.as_ptr()
+        };
         match unsafe {
             winapi_reg::RegDeleteTreeW(
                 self.hkey,
