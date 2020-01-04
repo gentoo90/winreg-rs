@@ -30,6 +30,7 @@ impl FromRegValue for String {
         match val.vtype {
             REG_SZ | REG_EXPAND_SZ | REG_MULTI_SZ => {
                 let words = unsafe {
+                    #[allow(clippy::cast_ptr_alignment)]
                     slice::from_raw_parts(val.bytes.as_ptr() as *const u16, val.bytes.len() / 2)
                 };
                 let mut s = String::from_utf16_lossy(words);
@@ -51,6 +52,7 @@ impl FromRegValue for OsString {
         match val.vtype {
             REG_SZ | REG_EXPAND_SZ | REG_MULTI_SZ => {
                 let words = unsafe {
+                    #[allow(clippy::cast_ptr_alignment)]
                     slice::from_raw_parts(val.bytes.as_ptr() as *const u16, val.bytes.len() / 2)
                 };
                 let s = OsString::from_wide(words);
@@ -64,6 +66,7 @@ impl FromRegValue for OsString {
 impl FromRegValue for u32 {
     fn from_reg_value(val: &RegValue) -> io::Result<u32> {
         match val.vtype {
+            #[allow(clippy::cast_ptr_alignment)]
             REG_DWORD => Ok(unsafe { *(val.bytes.as_ptr() as *const u32) }),
             _ => werr!(winerror::ERROR_BAD_FILE_TYPE),
         }
@@ -73,6 +76,7 @@ impl FromRegValue for u32 {
 impl FromRegValue for u64 {
     fn from_reg_value(val: &RegValue) -> io::Result<u64> {
         match val.vtype {
+            #[allow(clippy::cast_ptr_alignment)]
             REG_QWORD => Ok(unsafe { *(val.bytes.as_ptr() as *const u64) }),
             _ => werr!(winerror::ERROR_BAD_FILE_TYPE),
         }
