@@ -92,7 +92,7 @@ impl Decoder {
 
     fn new(key: RegKey) -> Decoder {
         Decoder {
-            key: key,
+            key,
             f_name: None,
             reading_state: DecoderReadingState::WaitingForKey,
             enumeration_state: DecoderEnumerationState::EnumeratingKeys(0),

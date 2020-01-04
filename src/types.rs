@@ -119,7 +119,7 @@ impl ToRegValue for u32 {
         let bytes: Vec<u8> =
             unsafe { slice::from_raw_parts((self as *const u32) as *const u8, 4).to_vec() };
         RegValue {
-            bytes: bytes,
+            bytes,
             vtype: REG_DWORD,
         }
     }
@@ -130,7 +130,7 @@ impl ToRegValue for u64 {
         let bytes: Vec<u8> =
             unsafe { slice::from_raw_parts((self as *const u64) as *const u8, 8).to_vec() };
         RegValue {
-            bytes: bytes,
+            bytes,
             vtype: REG_QWORD,
         }
     }

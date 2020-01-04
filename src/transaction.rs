@@ -66,7 +66,7 @@ impl Transaction {
             if handle == handleapi::INVALID_HANDLE_VALUE {
                 return Err(io::Error::last_os_error());
             };
-            Ok(Transaction { handle: handle })
+            Ok(Transaction { handle })
         }
     }
 

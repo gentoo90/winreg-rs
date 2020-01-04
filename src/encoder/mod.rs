@@ -84,8 +84,8 @@ impl Encoder {
         let mut keys = Vec::with_capacity(5);
         keys.push(key);
         Encoder {
-            keys: keys,
-            tr: tr,
+            keys,
+            tr,
             state: Start,
         }
     }

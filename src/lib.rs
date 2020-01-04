@@ -244,7 +244,7 @@ impl RegKey {
     /// let hklm = RegKey::predef(HKEY_LOCAL_MACHINE);
     /// ```
     pub fn predef(hkey: HKEY) -> RegKey {
-        RegKey { hkey: hkey }
+        RegKey { hkey }
     }
 
     /// Return inner winapi HKEY of a key:
