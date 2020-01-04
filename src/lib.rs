@@ -1223,7 +1223,7 @@ mod test {
     fn test_u32_value() {
         with_key!(key, "U32Value" => {
             let name = "RustU32Val";
-            let val1 = 1234567890u32;
+            let val1 = 1_234_567_890u32;
             key.set_value(name, &val1).unwrap();
             let val2: u32 = key.get_value(name).unwrap();
             assert_eq!(val1, val2);
@@ -1234,7 +1234,7 @@ mod test {
     fn test_u64_value() {
         with_key!(key, "U64Value" => {
             let name = "RustU64Val";
-            let val1 = 1234567891011121314u64;
+            let val1 = 1_234_567_891_011_121_314u64;
             key.set_value(name, &val1).unwrap();
             let val2: u64 = key.get_value(name).unwrap();
             assert_eq!(val1, val2);
@@ -1337,9 +1337,9 @@ mod test {
             t_bool: false,
             t_u8: 127,
             t_u16: 32768,
-            t_u32: 123456789,
-            t_u64: 123456789101112,
-            t_usize: 1234567891,
+            t_u32: 123_456_789,
+            t_u64: 123_456_789_101_112,
+            t_usize: 1_234_567_891,
             t_struct: Rectangle {
                 x: 55,
                 y: 77,
@@ -1350,10 +1350,10 @@ mod test {
             t_i8: -123,
             t_i16: -2049,
             t_i32: 20100,
-            t_i64: -12345678910,
-            t_isize: -1234567890,
+            t_i64: -12_345_678_910,
+            t_isize: -1_234_567_890,
             t_f64: -0.01,
-            t_f32: 3.14,
+            t_f32: 3.15,
         };
 
         with_key!(key, "Serialization" => {
