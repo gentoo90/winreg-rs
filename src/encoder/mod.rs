@@ -74,7 +74,7 @@ const ENCODER_SAM: DWORD = KEY_CREATE_SUB_KEY | KEY_SET_VALUE;
 
 impl Encoder {
     pub fn from_key(key: &RegKey) -> EncodeResult<Encoder> {
-        let tr = try!(Transaction::new());
+        let tr = Transaction::new()?;
         key.open_subkey_transacted_with_flags("", &tr, ENCODER_SAM)
             .map(|k| Encoder::new(k, tr))
             .map_err(EncoderError::IoError)

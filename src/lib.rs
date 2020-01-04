@@ -877,8 +877,8 @@ impl RegKey {
     /// ```
     #[cfg(feature = "serialization-serde")]
     pub fn encode<T: serde::Serialize>(&self, value: &T) -> encoder::EncodeResult<()> {
-        let mut encoder = try!(encoder::Encoder::from_key(self));
-        try!(value.serialize(&mut encoder));
+        let mut encoder = encoder::Encoder::from_key(self)?;
+        value.serialize(&mut encoder)?;
         encoder.commit()
     }
 
@@ -919,7 +919,7 @@ impl RegKey {
     /// ```
     #[cfg(feature = "serialization-serde")]
     pub fn decode<'de, T: serde::Deserialize<'de>>(&self) -> decoder::DecodeResult<T> {
-        let mut decoder = try!(decoder::Decoder::from_key(self));
+        let mut decoder = decoder::Decoder::from_key(self)?;
         T::deserialize(&mut decoder)
     }
 
