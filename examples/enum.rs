@@ -13,7 +13,7 @@ fn main() -> io::Result<()> {
     for i in RegKey::predef(HKEY_CLASSES_ROOT)
         .enum_keys()
         .map(|x| x.unwrap())
-        .filter(|x| x.starts_with("."))
+        .filter(|x| x.starts_with('.'))
     {
         println!("{}", i);
     }

@@ -47,16 +47,16 @@ struct Test {
     // t_char: char,
 }
 
-fn main() -> Result<(), Box<Error>> {
+fn main() -> Result<(), Box<dyn Error>> {
     let hkcu = winreg::RegKey::predef(HKEY_CURRENT_USER);
     let (key, _disp) = hkcu.create_subkey("Software\\RustEncode")?;
     let v1 = Test {
         t_bool: false,
         t_u8: 127,
         t_u16: 32768,
-        t_u32: 123456789,
-        t_u64: 123456789101112,
-        t_usize: 1234567891,
+        t_u32: 123_456_789,
+        t_u64: 123_456_789_101_112,
+        t_usize: 1_234_567_891,
         t_struct: Rectangle {
             coords: Coords { x: 55, y: 77 },
             size: Size { w: 500, h: 300 },
@@ -65,10 +65,10 @@ fn main() -> Result<(), Box<Error>> {
         t_i8: -123,
         t_i16: -2049,
         t_i32: 20100,
-        t_i64: -12345678910,
-        t_isize: -1234567890,
+        t_i64: -12_345_678_910,
+        t_isize: -1_234_567_890,
         t_f64: -0.01,
-        t_f32: 3.14,
+        t_f32: 3.15,
         // t_char: 'a',
     };
 

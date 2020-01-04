@@ -43,11 +43,11 @@ fn main() -> io::Result<()> {
     key.delete_value("TestSZ")?;
     println!("TestSZ = {}", sz_val);
 
-    key.set_value("TestDWORD", &1234567890u32)?;
+    key.set_value("TestDWORD", &1_234_567_890u32)?;
     let dword_val: u32 = key.get_value("TestDWORD")?;
     println!("TestDWORD = {}", dword_val);
 
-    key.set_value("TestQWORD", &1234567891011121314u64)?;
+    key.set_value("TestQWORD", &1_234_567_891_011_121_314u64)?;
     let qword_val: u64 = key.get_value("TestQWORD")?;
     println!("TestQWORD = {}", qword_val);
 

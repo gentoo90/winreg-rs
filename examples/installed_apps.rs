@@ -44,7 +44,7 @@ fn main() {
     let apps: HashMap<String, InstalledApp> =
         uninstall_key.decode().expect("deserialization failed");
 
-    for (_k, v) in &apps {
+    for v in apps.values() {
         println!("{}", v);
     }
 }
