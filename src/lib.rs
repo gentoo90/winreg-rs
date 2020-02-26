@@ -1031,6 +1031,11 @@ impl<'key> Iterator for EnumKeys<'key> {
             e @ None => e,
         }
     }
+
+    fn nth(&mut self, n: usize) -> Option<Self::Item> {
+        self.index += n as DWORD;
+        self.next()
+    }
 }
 
 /// Iterator over values
@@ -1050,6 +1055,11 @@ impl<'key> Iterator for EnumValues<'key> {
             }
             e @ None => e,
         }
+    }
+
+    fn nth(&mut self, n: usize) -> Option<Self::Item> {
+        self.index += n as DWORD;
+        self.next()
     }
 }
 
