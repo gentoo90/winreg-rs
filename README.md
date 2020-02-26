@@ -33,7 +33,7 @@ Current features:
 ```toml
 # Cargo.toml
 [dependencies]
-winreg = "0.6"
+winreg = "0.7"
 ```
 
 ```rust
@@ -132,7 +132,7 @@ fn main() -> io::Result<()> {
 ```toml
 # Cargo.toml
 [dependencies]
-winreg = { version = "0.6", features = ["transactions"] }
+winreg = { version = "0.7", features = ["transactions"] }
 ```
 
 ```rust
@@ -174,7 +174,7 @@ fn main() -> io::Result<()> {
 ```toml
 # Cargo.toml
 [dependencies]
-winreg = { version = "0.6", features = ["serialization-serde"] }
+winreg = { version = "0.7", features = ["serialization-serde"] }
 serde = "1"
 serde_derive = "1"
 ```
@@ -258,6 +258,11 @@ fn main() -> Result<(), Box<Error>> {
 ```
 
 ## Changelog
+
+### 0.7.0
+
+* Breaking change: remove deprecated `Error::description` ([#28](https://github.com/gentoo90/winreg-rs/pull/28))
+* Optimize `Iterator::nth()` for the `Enum*` iterators ([#29](https://github.com/gentoo90/winreg-rs/pull/29))
 
 ### 0.6.2
 
