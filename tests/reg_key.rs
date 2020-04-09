@@ -1,4 +1,6 @@
 extern crate rand;
+extern crate tempfile;
+extern crate winapi;
 extern crate winreg;
 #[cfg(feature = "serialization-serde")]
 #[macro_use]
@@ -6,6 +8,8 @@ extern crate serde_derive;
 use self::rand::Rng;
 use std::collections::HashMap;
 use std::ffi::{OsStr, OsString};
+use tempfile::tempdir;
+use winapi::shared::winerror;
 use winreg::enums::*;
 use winreg::types::FromRegValue;
 use winreg::{RegKey, RegValue};
@@ -15,6 +19,30 @@ fn test_raw_handle() {
     let hklm = RegKey::predef(HKEY_LOCAL_MACHINE);
     let handle = hklm.raw_handle();
     assert_eq!(HKEY_LOCAL_MACHINE, handle);
+}
+
+#[test]
+fn test_load_appkey() {
+    let val_name = "LoadKeyTest";
+    let dir = tempdir().unwrap();
+    let file_path = dir.path().join("RustLoadAppkeyTest.dat");
+    let val1 = "Test123".to_owned();
+    {
+        let key1 = RegKey::load_app_key(&file_path, true).unwrap();
+        key1.set_value(val_name, &val1).unwrap();
+        // this fails on Windows 7 with ERROR_ALREADY_EXISTS
+        let key_err = RegKey::load_app_key_with_flags(&file_path, KEY_READ, 0).unwrap_err();
+        assert_eq!(
+            key_err.raw_os_error(),
+            Some(winerror::ERROR_SHARING_VIOLATION as i32)
+        );
+    }
+    let val2: String = {
+        // this fails on Windows 7 with ERROR_ALREADY_EXISTS
+        let key2 = RegKey::load_app_key_with_flags(&file_path, KEY_READ, 1).unwrap();
+        key2.get_value(val_name).unwrap()
+    };
+    assert_eq!(val1, val2);
 }
 
 #[test]

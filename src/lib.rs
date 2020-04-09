@@ -258,6 +258,61 @@ impl RegKey {
         RegKey { hkey }
     }
 
+    /// Load a registry hive from a file as an application hive.
+    /// If `lock` is set to `true`, then the hive cannot be loaded again until
+    /// it's unloaded (i.e. all keys from it go out of scope).
+    ///
+    /// # Examples
+    ///
+    /// ```no_run
+    /// # use std::error::Error;
+    /// # use winreg::RegKey;
+    /// # use winreg::enums::*;
+    /// # fn main() -> Result<(), Box<dyn Error>> {
+    /// let handle = RegKey::load_app_key("C:\\myhive.dat", false)?;
+    /// # Ok(())
+    /// # }
+    /// ```
+    pub fn load_app_key<N: AsRef<OsStr>>(filename: N, lock: bool) -> io::Result<RegKey> {
+        let options = if lock {
+            winapi_reg::REG_PROCESS_APPKEY
+        } else {
+            0
+        };
+        RegKey::load_app_key_with_flags(filename, enums::KEY_ALL_ACCESS, options)
+    }
+
+    /// Load a registry hive from a file as an application hive with desired
+    /// permissions and options. If `options` is set to `REG_PROCESS_APPKEY`,
+    /// then the hive cannot be loaded again until it's unloaded (i.e. all keys
+    /// from it go out of scope).
+    /// # Examples
+    ///
+    /// ```no_run
+    /// # use std::error::Error;
+    /// # use winreg::RegKey;
+    /// # use winreg::enums::*;
+    /// # fn main() -> Result<(), Box<dyn Error>> {
+    /// let handle = RegKey::load_app_key_with_flags("C:\\myhive.dat", KEY_READ, 0)?;
+    /// # Ok(())
+    /// # }
+    /// ```
+    pub fn load_app_key_with_flags<N: AsRef<OsStr>>(
+        filename: N,
+        perms: winapi_reg::REGSAM,
+        options: DWORD,
+    ) -> io::Result<RegKey> {
+        let c_filename = to_utf16(filename);
+        let mut new_hkey: HKEY = ptr::null_mut();
+        match unsafe {
+            winapi_reg::RegLoadAppKeyW(c_filename.as_ptr(), &mut new_hkey, perms, options, 0)
+                as DWORD
+        } {
+            0 => Ok(RegKey { hkey: new_hkey }),
+            err => werr!(err),
+        }
+    }
+
     /// Return inner winapi HKEY of a key:
     ///
     /// # Examples

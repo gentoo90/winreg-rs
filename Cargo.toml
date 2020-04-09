@@ -17,6 +17,7 @@ serde = { version = "1", optional = true }
 
 [dev-dependencies]
 rand = "0.3"
+tempfile = "~3.0"
 serde_derive = "1"
 
 [features]
@@ -29,6 +30,9 @@ required-features = ["chrono"]
 
 [[example]]
 name = "enum"
+
+[[example]]
+name = "load_app_key"
 
 [[example]]
 name = "transactions"
