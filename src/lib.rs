@@ -214,6 +214,32 @@ impl fmt::Debug for RegValue {
     }
 }
 
+impl RegValue {
+    /// Convert RegValue to the specified rust type with `FromRegValue`
+    /// implemented (currently `String`, `u32` and `u64`).
+    ///
+    /// # Examples
+    ///
+    /// ```no_run
+    /// use winreg::enums::{HKEY_LOCAL_MACHINE, KEY_READ};
+    ///
+    /// fn main() {
+    ///     let hklm = winreg::RegKey::predef(HKEY_LOCAL_MACHINE);
+    ///     let key = hklm
+    ///         .open_subkey_with_flags(r#"SOFTWARE\Microsoft\Windows\CurrentVersion\Run"#, KEY_READ)
+    ///         .expect("Failed to open subkey Run");
+    ///
+    ///     for (name, value) in key.enum_values().map(|x| x.unwrap()) {
+    ///         let s: String = value.value().unwrap();
+    ///         println!("Description: {}\nCommand line: {}",name, s);
+    ///     }
+    /// }
+    /// ```
+    pub fn value<T: FromRegValue>(&self) -> io::Result<T> {
+        FromRegValue::from_reg_value(&self)
+    }
+}
+
 /// Handle of opened registry key
 #[derive(Debug)]
 pub struct RegKey {
