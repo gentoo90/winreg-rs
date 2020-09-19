@@ -202,7 +202,7 @@ macro_rules! format_reg_value {
     };
 }
 
-impl fmt::Debug for RegValue {
+impl fmt::Display for RegValue {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         let f_val = match self.vtype {
             REG_SZ | REG_EXPAND_SZ | REG_MULTI_SZ => format_reg_value!(self => String),
@@ -210,7 +210,13 @@ impl fmt::Debug for RegValue {
             REG_QWORD => format_reg_value!(self => u64),
             _ => format!("{:?}", self.bytes), //TODO: implement more types
         };
-        write!(f, "RegValue({:?}: {})", self.vtype, f_val)
+        write!(f, "{}", f_val)
+    }
+}
+
+impl fmt::Debug for RegValue {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        write!(f, "RegValue({:?}: {})", self.vtype, self)
     }
 }
 
