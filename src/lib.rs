@@ -243,7 +243,7 @@ impl RegKey {
     /// # use winreg::enums::*;
     /// let hklm = RegKey::predef(HKEY_LOCAL_MACHINE);
     /// ```
-    pub fn predef(hkey: HKEY) -> RegKey {
+    pub const fn predef(hkey: HKEY) -> RegKey {
         RegKey { hkey }
     }
 
@@ -262,7 +262,7 @@ impl RegKey {
     /// # Ok(())
     /// # }
     /// ```
-    pub fn raw_handle(&self) -> HKEY {
+    pub const fn raw_handle(&self) -> HKEY {
         self.hkey
     }
 
@@ -518,7 +518,7 @@ impl RegKey {
     ///     println!("{}", i);
     /// }
     /// ```
-    pub fn enum_keys(&self) -> EnumKeys {
+    pub const fn enum_keys(&self) -> EnumKeys {
         EnumKeys {
             key: self,
             index: 0,
@@ -542,7 +542,7 @@ impl RegKey {
     /// # Ok(())
     /// # }
     /// ```
-    pub fn enum_values(&self) -> EnumValues {
+    pub const fn enum_values(&self) -> EnumValues {
         EnumValues {
             key: self,
             index: 0,
