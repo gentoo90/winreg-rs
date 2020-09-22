@@ -216,6 +216,8 @@ struct Test {
     t_struct: Rectangle,
     t_map: HashMap<String, u32>,
     t_string: String,
+    #[serde(rename = "")] // empty name becomes the (Default) value in the registry
+    t_char: char,
     t_i8: i8,
     t_i16: i16,
     t_i32: i32,
@@ -248,6 +250,7 @@ fn main() -> Result<(), Box<dyn Error>> {
         },
         t_map: map,
         t_string: "test 123!".to_owned(),
+        t_char: 'a',
         t_i8: -123,
         t_i16: -2049,
         t_i32: 20100,

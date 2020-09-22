@@ -74,8 +74,10 @@ impl<'a> Serializer for &'a mut Encoder {
         emit_value!(self, s)
     }
 
-    fn serialize_char(self, _value: char) -> EncodeResult<Self::Ok> {
-        no_impl!("serialize_char")
+    fn serialize_char(self, value: char) -> EncodeResult<Self::Ok> {
+        let mut s = String::new();
+        s.push(value);
+        emit_value!(self, s)
     }
 
     fn serialize_str(self, value: &str) -> EncodeResult<Self::Ok> {

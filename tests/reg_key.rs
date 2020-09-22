@@ -264,6 +264,7 @@ fn test_serialization() {
         t_isize: isize,
         t_f64: f64,
         t_f32: f32,
+        t_char: char,
     }
 
     let mut k1 = HashMap::new();
@@ -302,6 +303,7 @@ fn test_serialization() {
         t_isize: -1_234_567_890,
         t_f64: -0.01,
         t_f32: 3.15,
+        t_char: 'a',
     };
 
     with_key!(key, "Serialization" => {
