@@ -107,6 +107,9 @@
 //!}
 //!```
 //!
+
+#![cfg(windows)]
+
 #[cfg(feature = "chrono")]
 extern crate chrono;
 #[cfg(feature = "serialization-serde")]
