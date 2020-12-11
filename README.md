@@ -33,7 +33,7 @@ Current features:
 ```toml
 # Cargo.toml
 [dependencies]
-winreg = "0.7"
+winreg = "0.8"
 ```
 
 ```rust
@@ -132,7 +132,7 @@ fn main() -> io::Result<()> {
 ```toml
 # Cargo.toml
 [dependencies]
-winreg = { version = "0.7", features = ["transactions"] }
+winreg = { version = "0.8", features = ["transactions"] }
 ```
 
 ```rust
@@ -174,7 +174,7 @@ fn main() -> io::Result<()> {
 ```toml
 # Cargo.toml
 [dependencies]
-winreg = { version = "0.7", features = ["serialization-serde"] }
+winreg = { version = "0.8", features = ["serialization-serde"] }
 serde = "1"
 serde_derive = "1"
 ```
@@ -271,6 +271,14 @@ fn main() -> Result<(), Box<dyn Error>> {
 ```
 
 ## Changelog
+
+### 0.8.0
+
+* Implement serialization of `char` and maps
+* Implement `std::fmt::Display` for `RegValue`
+* Make `RegKey::{predef,raw_handle,enum_keys,enum_values}` functions `const`
+* Give a better error message when compiling on platforms other than Windows ([#38](https://github.com/gentoo90/winreg-rs/pull/38))
+* Tests are moved from `src/lib.rs` to `tests/reg_key.rs`
 
 ### 0.7.0
 
