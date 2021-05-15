@@ -105,16 +105,25 @@ fn test_long_value() {
     });
 }
 
-#[test]
-fn test_string_value() {
-    with_key!(key, "StringValue" => {
-        let name = "RustStringVal";
-        let val1 = "Test123 \n$%^&|+-*/\\()".to_owned();
-        key.set_value(name, &val1).unwrap();
-        let val2: String = key.get_value(name).unwrap();
-        assert_eq!(val1, val2);
-    });
+macro_rules! test_value_sz {
+    ($fname:ident, $kname:expr, $conv:expr => $tout:ty) => {
+        #[test]
+        fn $fname() {
+            with_key!(key, $kname => {
+                let name = "RustSzVal";
+                let val1 = $conv("Test123 \n$%^&|+-*/\\()");
+                key.set_value(name, &val1).unwrap();
+                let val2: $tout = key.get_value(name).unwrap();
+                assert_eq!(val1, val2);
+            });
+        }
+    }
 }
+
+test_value_sz!(test_string_value, "StringValue", str::to_owned => String);
+test_value_sz!(test_str_value, "StrValue", |x|x => String);
+test_value_sz!(test_os_string_value, "OsStringValue", OsString::from => OsString);
+test_value_sz!(test_os_str_value, "OsStrValue", OsStr::new => OsString);
 
 #[test]
 fn test_long_string_value() {
@@ -123,17 +132,6 @@ fn test_long_string_value() {
         let val1 : String = rand::thread_rng().gen_ascii_chars().take(7000).collect();
         key.set_value(name, &val1).unwrap();
         let val2: String = key.get_value(name).unwrap();
-        assert_eq!(val1, val2);
-    });
-}
-
-#[test]
-fn test_os_string_value() {
-    with_key!(key, "OsStringValue" => {
-        let name = "RustOsStringVal";
-        let val1 = OsStr::new("Test123 \n$%^&|+-*/\\()");
-        key.set_value(name, &val1).unwrap();
-        let val2: OsString = key.get_value(name).unwrap();
         assert_eq!(val1, val2);
     });
 }

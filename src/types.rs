@@ -92,32 +92,23 @@ pub trait ToRegValue {
     fn to_reg_value(&self) -> RegValue;
 }
 
-impl ToRegValue for String {
-    fn to_reg_value(&self) -> RegValue {
-        RegValue {
-            bytes: v16_to_v8(&to_utf16(self)),
-            vtype: REG_SZ,
+macro_rules! to_reg_value_sz {
+    ($t:ty$(, $l:lifetime)*) => {
+        impl<$($l,)*> ToRegValue for $t {
+            fn to_reg_value(&self) -> RegValue {
+                RegValue {
+                    bytes: v16_to_v8(&to_utf16(self)),
+                    vtype: REG_SZ,
+                }
+            }
         }
     }
 }
 
-impl<'a> ToRegValue for &'a str {
-    fn to_reg_value(&self) -> RegValue {
-        RegValue {
-            bytes: v16_to_v8(&to_utf16(self)),
-            vtype: REG_SZ,
-        }
-    }
-}
-
-impl<'a> ToRegValue for &'a OsStr {
-    fn to_reg_value(&self) -> RegValue {
-        RegValue {
-            bytes: v16_to_v8(&to_utf16(self)),
-            vtype: REG_SZ,
-        }
-    }
-}
+to_reg_value_sz!(String);
+to_reg_value_sz!(&'a str, 'a);
+to_reg_value_sz!(OsString);
+to_reg_value_sz!(&'a OsStr, 'a);
 
 impl ToRegValue for u32 {
     fn to_reg_value(&self) -> RegValue {
