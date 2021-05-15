@@ -11,16 +11,15 @@ use super::RegValue;
 use super::{to_utf16, v16_to_v8};
 use std::ffi::{OsStr, OsString};
 use std::io;
-use std::os::windows::ffi::{OsStrExt, OsStringExt};
+use std::os::windows::ffi::OsStringExt;
 use std::slice;
 
 /// A trait for types that can be loaded from registry values.
 ///
 /// **NOTE:** Uses `from_utf16_lossy` when converting to `String`.
 ///
-/// **NOTE:** When converting to `String`, trailing `NULL` characters are trimmed
+/// **NOTE:** When converting to `String` or `OsString`, trailing `NULL` characters are trimmed
 /// and line separating `NULL` characters in `REG_MULTI_SZ` are replaced by `\n`.
-/// When converting to `OsString`, all `NULL` characters are left as is.
 pub trait FromRegValue: Sized {
     fn from_reg_value(val: &RegValue) -> io::Result<Self>;
 }
@@ -51,10 +50,13 @@ impl FromRegValue for OsString {
     fn from_reg_value(val: &RegValue) -> io::Result<OsString> {
         match val.vtype {
             REG_SZ | REG_EXPAND_SZ | REG_MULTI_SZ => {
-                let words = unsafe {
+                let mut words = unsafe {
                     #[allow(clippy::cast_ptr_alignment)]
                     slice::from_raw_parts(val.bytes.as_ptr() as *const u16, val.bytes.len() / 2)
                 };
+                while let Some(0) = words.last() {
+                    words = &words[0..words.len() - 1];
+                }
                 let s = OsString::from_wide(words);
                 Ok(s)
             }
@@ -85,8 +87,7 @@ impl FromRegValue for u64 {
 
 /// A trait for types that can be written into registry values.
 ///
-/// **NOTE:** Adds trailing `NULL` character to `str` and `String` values
-/// but **not** to `OsStr` values.
+/// **NOTE:** Adds trailing `NULL` character to `str`, `String`, `OsStr` and `OsString` values
 pub trait ToRegValue {
     fn to_reg_value(&self) -> RegValue;
 }
@@ -112,7 +113,7 @@ impl<'a> ToRegValue for &'a str {
 impl<'a> ToRegValue for &'a OsStr {
     fn to_reg_value(&self) -> RegValue {
         RegValue {
-            bytes: v16_to_v8(&(self.encode_wide().collect::<Vec<_>>())),
+            bytes: v16_to_v8(&to_utf16(self)),
             vtype: REG_SZ,
         }
     }
