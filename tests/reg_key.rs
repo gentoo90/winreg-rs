@@ -148,6 +148,31 @@ fn test_long_os_string_value() {
     });
 }
 
+macro_rules! test_value_multi_sz {
+    ($fname:ident, $kname:expr, $conv:expr => $tout:ty) => {
+        #[test]
+        fn $fname() {
+            with_key!(key, $kname => {
+                let name = "RustMultiSzVal";
+
+                let val1 = vec![
+                    $conv("lorem ipsum\ndolor"),
+                    $conv("sit amet")
+                ];
+                key.set_value(name, &val1).unwrap();
+                let val2: Vec<$tout> = key.get_value(name).unwrap();
+
+                assert_eq!(val1, val2);
+            });
+        }
+    }
+}
+
+test_value_multi_sz!(test_vec_string_value, "StringVectorValue", str::to_owned => String);
+test_value_multi_sz!(test_vec_str_value, "StrVectorValue", |x|x => String);
+test_value_multi_sz!(test_vec_os_string_value, "OsStringVectorValue", OsString::from => OsString);
+test_value_multi_sz!(test_vec_os_str_value, "OsStrVectorValue", OsStr::new => OsString);
+
 #[test]
 fn test_u32_value() {
     with_key!(key, "U32Value" => {
