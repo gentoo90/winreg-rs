@@ -261,7 +261,7 @@ impl RegKey {
     /// # use std::error::Error;
     /// # use winreg::RegKey;
     /// # use winreg::enums::*;
-    /// # fn main() -> Result<(), Box<Error>> {
+    /// # fn main() -> Result<(), Box<dyn Error>> {
     /// let hklm = RegKey::predef(HKEY_LOCAL_MACHINE);
     /// let soft = hklm.open_subkey("SOFTWARE")?;
     /// let handle = soft.raw_handle();
@@ -283,7 +283,7 @@ impl RegKey {
     /// # use std::error::Error;
     /// # use winreg::RegKey;
     /// # use winreg::enums::*;
-    /// # fn main() -> Result<(), Box<Error>> {
+    /// # fn main() -> Result<(), Box<dyn Error>> {
     /// let soft = RegKey::predef(HKEY_CURRENT_USER)
     ///     .open_subkey("Software")?;
     /// # Ok(())
@@ -302,7 +302,7 @@ impl RegKey {
     /// # use std::error::Error;
     /// # use winreg::RegKey;
     /// # use winreg::enums::*;
-    /// # fn main() -> Result<(), Box<Error>> {
+    /// # fn main() -> Result<(), Box<dyn Error>> {
     /// let hklm = RegKey::predef(HKEY_LOCAL_MACHINE);
     /// hklm.open_subkey_with_flags("SOFTWARE\\Microsoft", KEY_READ)?;
     /// # Ok(())
@@ -373,7 +373,7 @@ impl RegKey {
     /// # use std::error::Error;
     /// # use winreg::RegKey;
     /// use winreg::enums::*;
-    /// # fn main() -> Result<(), Box<Error>> {
+    /// # fn main() -> Result<(), Box<dyn Error>> {
     /// let hkcu = RegKey::predef(HKEY_CURRENT_USER);
     /// let (settings, disp) = hkcu.create_subkey("Software\\MyProduct\\Settings")?;
     ///
@@ -470,7 +470,7 @@ impl RegKey {
     /// # use std::error::Error;
     /// # use winreg::RegKey;
     /// # use winreg::enums::*;
-    /// # fn main() -> Result<(), Box<Error>> {
+    /// # fn main() -> Result<(), Box<dyn Error>> {
     /// let hkcu = RegKey::predef(HKEY_CURRENT_USER);
     /// let src = hkcu.open_subkey_with_flags("Software\\MyProduct", KEY_READ)?;
     /// let (dst, dst_disp) = hkcu.create_subkey("Software\\MyProduct\\Section2")?;
@@ -539,7 +539,7 @@ impl RegKey {
     /// # use std::error::Error;
     /// # use winreg::RegKey;
     /// # use winreg::enums::*;
-    /// # fn main() -> Result<(), Box<Error>> {
+    /// # fn main() -> Result<(), Box<dyn Error>> {
     /// let system = RegKey::predef(HKEY_LOCAL_MACHINE)
     ///     .open_subkey_with_flags("HARDWARE\\DESCRIPTION\\System", KEY_READ)?;
     /// for (name, value) in system.enum_values().map(|x| x.unwrap()) {
@@ -565,7 +565,7 @@ impl RegKey {
     /// # use std::error::Error;
     /// # use winreg::RegKey;
     /// # use winreg::enums::*;
-    /// # fn main() -> Result<(), Box<Error>> {
+    /// # fn main() -> Result<(), Box<dyn Error>> {
     /// RegKey::predef(HKEY_CURRENT_USER)
     ///     .delete_subkey(r"Software\MyProduct\History")?;
     /// # Ok(())
@@ -583,7 +583,7 @@ impl RegKey {
     /// # use std::error::Error;
     /// # use winreg::RegKey;
     /// # use winreg::enums::*;
-    /// # fn main() -> Result<(), Box<Error>> {
+    /// # fn main() -> Result<(), Box<dyn Error>> {
     /// // delete the key from the 32-bit registry view
     /// RegKey::predef(HKEY_LOCAL_MACHINE)
     ///     .delete_subkey_with_flags(r"Software\MyProduct\History", KEY_WOW64_32KEY)?;
@@ -652,7 +652,7 @@ impl RegKey {
     /// # use std::error::Error;
     /// # use winreg::RegKey;
     /// # use winreg::enums::*;
-    /// # fn main() -> Result<(), Box<Error>> {
+    /// # fn main() -> Result<(), Box<dyn Error>> {
     /// RegKey::predef(HKEY_CURRENT_USER)
     ///     .delete_subkey_all("Software\\MyProduct")?;
     /// # Ok(())
@@ -687,7 +687,7 @@ impl RegKey {
     /// # use std::error::Error;
     /// # use winreg::RegKey;
     /// # use winreg::enums::*;
-    /// # fn main() -> Result<(), Box<Error>> {
+    /// # fn main() -> Result<(), Box<dyn Error>> {
     /// let hkcu = RegKey::predef(HKEY_CURRENT_USER);
     /// let settings = hkcu.open_subkey("Software\\MyProduct\\Settings")?;
     /// let server: String = settings.get_value("server")?;
@@ -711,7 +711,7 @@ impl RegKey {
     /// # use std::error::Error;
     /// # use winreg::RegKey;
     /// # use winreg::enums::*;
-    /// # fn main() -> Result<(), Box<Error>> {
+    /// # fn main() -> Result<(), Box<dyn Error>> {
     /// let hkcu = RegKey::predef(HKEY_CURRENT_USER);
     /// let settings = hkcu.open_subkey("Software\\MyProduct\\Settings")?;
     /// let data = settings.get_raw_value("data")?;
@@ -767,7 +767,7 @@ impl RegKey {
     /// # use std::error::Error;
     /// # use winreg::RegKey;
     /// # use winreg::enums::*;
-    /// # fn main() -> Result<(), Box<Error>> {
+    /// # fn main() -> Result<(), Box<dyn Error>> {
     /// let hkcu = RegKey::predef(HKEY_CURRENT_USER);
     /// let (settings, disp) = hkcu.create_subkey("Software\\MyProduct\\Settings")?;
     /// settings.set_value("server", &"www.example.com")?;
@@ -788,7 +788,7 @@ impl RegKey {
     /// # use std::error::Error;
     /// use winreg::{RegKey, RegValue};
     /// use winreg::enums::*;
-    /// # fn main() -> Result<(), Box<Error>> {
+    /// # fn main() -> Result<(), Box<dyn Error>> {
     /// let hkcu = RegKey::predef(HKEY_CURRENT_USER);
     /// let settings = hkcu.open_subkey("Software\\MyProduct\\Settings")?;
     /// let bytes: Vec<u8> = vec![1, 2, 3, 5, 8, 13, 21, 34, 55, 89];
@@ -825,7 +825,7 @@ impl RegKey {
     /// # use std::error::Error;
     /// # use winreg::RegKey;
     /// # use winreg::enums::*;
-    /// # fn main() -> Result<(), Box<Error>> {
+    /// # fn main() -> Result<(), Box<dyn Error>> {
     /// let hkcu = RegKey::predef(HKEY_CURRENT_USER);
     /// let settings = hkcu.open_subkey("Software\\MyProduct\\Settings")?;
     /// settings.delete_value("data")?;
@@ -868,7 +868,7 @@ impl RegKey {
     ///     show_in_tray: bool,
     /// }
     ///
-    /// # fn main() -> Result<(), Box<Error>> {
+    /// # fn main() -> Result<(), Box<dyn Error>> {
     /// let s: Settings = Settings{
     ///     current_dir: "C:\\".to_owned(),
     ///     window_pos: Rectangle{ x:200, y: 100, w: 800, h: 500 },
@@ -915,7 +915,7 @@ impl RegKey {
     ///     show_in_tray: bool,
     /// }
     ///
-    /// # fn main() -> Result<(), Box<Error>> {
+    /// # fn main() -> Result<(), Box<dyn Error>> {
     /// let s_key = RegKey::predef(HKEY_CURRENT_USER)
     ///     .open_subkey("Software\\MyProduct\\Settings")?;
     /// let s: Settings = s_key.decode()?;
