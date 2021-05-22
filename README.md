@@ -19,7 +19,9 @@ Current features:
     * read and write values
     * seamless conversion between `REG_*` types and rust primitives
         * `String` and `OsString` <= `REG_SZ`, `REG_EXPAND_SZ` or `REG_MULTI_SZ`
-        * `String`, `&str` and `OsStr` => `REG_SZ`
+        * `String`, `&str`, `OsString`, `&OsStr` => `REG_SZ`
+        * `Vec<String>`, `Vec<OsString>` <= `REG_MULTI_SZ`
+        * `Vec<String>`, `Vec<&str>`, `Vec<OsString>`, `Vec<&OsStr>` => `REG_MULTI_SZ`
         * `u32` <=> `REG_DWORD`
         * `u64` <=> `REG_QWORD`
 * Iteration through key names and through values
@@ -78,6 +80,11 @@ fn main() -> io::Result<()> {
     let sz_val: String = key.get_value("TestSZ")?;
     key.delete_value("TestSZ")?;
     println!("TestSZ = {}", sz_val);
+
+    key.set_value("TestMultiSZ", &vec!["written", "by", "Rust"])?;
+    let multi_sz_val: Vec<String> = key.get_value("TestMultiSZ")?;
+    key.delete_value("TestMultiSZ")?;
+    println!("TestMultiSZ = {:?}", multi_sz_val);
 
     key.set_value("TestDWORD", &1234567890u32)?;
     let dword_val: u32 = key.get_value("TestDWORD")?;
