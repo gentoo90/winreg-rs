@@ -33,7 +33,7 @@ Current features:
 ```toml
 # Cargo.toml
 [dependencies]
-winreg = "0.8"
+winreg = "0.9"
 ```
 
 ```rust
@@ -132,7 +132,7 @@ fn main() -> io::Result<()> {
 ```toml
 # Cargo.toml
 [dependencies]
-winreg = { version = "0.8", features = ["transactions"] }
+winreg = { version = "0.9", features = ["transactions"] }
 ```
 
 ```rust
@@ -174,7 +174,7 @@ fn main() -> io::Result<()> {
 ```toml
 # Cargo.toml
 [dependencies]
-winreg = { version = "0.8", features = ["serialization-serde"] }
+winreg = { version = "0.9", features = ["serialization-serde"] }
 serde = "1"
 serde_derive = "1"
 ```
@@ -271,6 +271,16 @@ fn main() -> Result<(), Box<dyn Error>> {
 ```
 
 ## Changelog
+
+### 0.9.0
+
+* Breaking change: `OsStr` and `OsString` registry values are not `NULL`-terminated any more ([#34](https://github.com/gentoo90/winreg-rs/issues/34), [#42](https://github.com/gentoo90/winreg-rs/issues/42))
+* Refactoring: use macros for `ToRegValue` impls and tests for string values
+* Fix `bare_trait_objects` warning in the doctests
+* Add `impl ToRegValue for OsString`
+* Add conversion between `REG_MULTI_SZ` and vectors of strings ([#16](https://github.com/gentoo90/winreg-rs/issues/16))
+* Fix: set minimal `winapi` version to 0.3.7 (earlier versions don't have `impl-default` and `impl-debug` features which we use)
+* Appveyor now checks the crate against `rust-1.31.1` too
 
 ### 0.8.0
 
