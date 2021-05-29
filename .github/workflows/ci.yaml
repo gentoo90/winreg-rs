@@ -13,6 +13,16 @@ jobs:
           toolchain: stable
           profile: minimal
           override: true
+      - name: Cache cargo registry
+        uses: actions/cache@v2
+        continue-on-error: true
+        with:
+          path: |
+            ~/.cargo/registry
+            ~/.cargo/git
+          key: ${{ runner.os }}-cargo-
+          restore-keys: |
+            ${{ runner.os }}-cargo-
       - name: run tests
         uses: actions-rs/cargo@v1
         with:
