@@ -5,12 +5,18 @@ jobs:
   tests:
     name: CI
     runs-on: windows-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        channel: [1.31.1, stable]
+    env:
+      RUST_BACKTRACE: full
     steps:
       - uses: actions/checkout@v2
       - name: Install Rust Stable
         uses: actions-rs/toolchain@v1
         with:
-          toolchain: stable
+          toolchain: ${{ matrix.channel }}
           profile: minimal
           override: true
       - name: Cache cargo registry
