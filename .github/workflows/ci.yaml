@@ -1,0 +1,20 @@
+name: CI
+on:
+  - push
+jobs:
+  tests:
+    name: CI
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v2
+      - name: Install Rust Stable
+        uses: actions-rs/toolchain@v1
+        with:
+          toolchain: stable
+          profile: minimal
+          override: true
+      - name: run tests
+        uses: actions-rs/cargo@v1
+        with:
+          command: test
+          args: --release --no-default-features
