@@ -208,7 +208,7 @@ fn test_delete_value() {
 fn test_enum_keys() {
     with_key!(key, "EnumKeys" => {
         let mut keys1 = vec!("qwerty", "asdf", "1", "2", "3", "5", "8", "йцукен");
-        keys1.sort();
+        keys1.sort_unstable();
         for i in &keys1 {
             key.create_subkey(i).unwrap();
         }
@@ -221,7 +221,7 @@ fn test_enum_keys() {
 fn test_enum_values() {
     with_key!(key, "EnumValues" => {
         let mut vals1 = vec!("qwerty", "asdf", "1", "2", "3", "5", "8", "йцукен");
-        vals1.sort();
+        vals1.sort_unstable();
         for i in &vals1 {
             key.set_value(i,i).unwrap();
         }

@@ -946,6 +946,7 @@ impl RegKey {
 
     fn enum_key(&self, index: DWORD) -> Option<io::Result<String>> {
         let mut name_len = 2048;
+        #[allow(clippy::unnecessary_cast)]
         let mut name = [0 as WCHAR; 2048];
         match unsafe {
             winapi_reg::RegEnumKeyExW(
@@ -970,6 +971,7 @@ impl RegKey {
 
     fn enum_value(&self, index: DWORD) -> Option<io::Result<(String, RegValue)>> {
         let mut name_len = 2048;
+        #[allow(clippy::unnecessary_cast)]
         let mut name = [0 as WCHAR; 2048];
 
         let mut buf_len: DWORD = 2048;

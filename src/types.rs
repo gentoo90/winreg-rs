@@ -60,7 +60,7 @@ impl FromRegValue for Vec<String> {
                     s.pop();
                 }
                 let v: Vec<String> = s.split('\u{0}').map(|x| x.to_owned()).collect();
-                return Ok(v);
+                Ok(v)
             }
             _ => werr!(winerror::ERROR_BAD_FILE_TYPE),
         }
@@ -100,7 +100,7 @@ impl FromRegValue for Vec<OsString> {
                     .split(|ch| *ch == 0u16)
                     .map(|x| OsString::from_wide(x))
                     .collect();
-                return Ok(v);
+                Ok(v)
             }
             _ => werr!(winerror::ERROR_BAD_FILE_TYPE),
         }
@@ -158,7 +158,7 @@ macro_rules! to_reg_value_multi_sz {
             fn to_reg_value(&self) -> RegValue {
                 let mut os_strings = self
                     .into_iter()
-                    .map(|x| to_utf16(x))
+                    .map(to_utf16)
                     .collect::<Vec<_>>()
                     .concat();
                 os_strings.push(0);
