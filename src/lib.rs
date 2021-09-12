@@ -13,7 +13,7 @@
 //!```toml,ignore
 //!# Cargo.toml
 //![dependencies]
-//!winreg = "0.9"
+//!winreg = "0.10"
 //!```
 //!
 //!```no_run

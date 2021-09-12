@@ -16,6 +16,7 @@ Rust bindings to MS Windows Registry API. Work in progress.
 Current features:
 * Basic registry operations:
     * open/create/delete keys
+    * load application hive from a file
     * read and write values
     * seamless conversion between `REG_*` types and rust primitives
         * `String` and `OsString` <= `REG_SZ`, `REG_EXPAND_SZ` or `REG_MULTI_SZ`
@@ -35,7 +36,7 @@ Current features:
 ```toml
 # Cargo.toml
 [dependencies]
-winreg = "0.9"
+winreg = "0.10"
 ```
 
 ```rust
@@ -139,7 +140,7 @@ fn main() -> io::Result<()> {
 ```toml
 # Cargo.toml
 [dependencies]
-winreg = { version = "0.9", features = ["transactions"] }
+winreg = { version = "0.10", features = ["transactions"] }
 ```
 
 ```rust
@@ -181,7 +182,7 @@ fn main() -> io::Result<()> {
 ```toml
 # Cargo.toml
 [dependencies]
-winreg = { version = "0.9", features = ["serialization-serde"] }
+winreg = { version = "0.10", features = ["serialization-serde"] }
 serde = "1"
 serde_derive = "1"
 ```
@@ -278,6 +279,13 @@ fn main() -> Result<(), Box<dyn Error>> {
 ```
 
 ## Changelog
+
+### 0.10.0
+
+* Add `RegKey::load_app_key()` and `RegKey::load_app_key_with_flags()` ([#30](https://github.com/gentoo90/winreg-rs/issues/30))
+* Update dev dependency `rand` to `0.8`
+* Add Github actions
+* Fix some clippy warnings
 
 ### 0.9.0
 
