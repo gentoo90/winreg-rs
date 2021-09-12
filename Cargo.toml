@@ -1,6 +1,6 @@
 [package]
 name = "winreg"
-version = "0.10.0"
+version = "0.10.1"
 authors = ["Igor Shaula <gentoo90@gmail.com>"]
 license = "MIT"
 description = "Rust bindings to MS Windows Registry API"
@@ -11,7 +11,7 @@ keywords = ["Windows", "WinSDK", "Registry"]
 categories = ["api-bindings", "os::windows-apis"]
 
 [dependencies]
-winapi = { version = "0.3.7", features = ["impl-default", "impl-debug", "minwindef", "minwinbase", "timezoneapi", "winerror", "winnt", "winreg", "handleapi"] }
+winapi = { version = "0.3.9", features = ["impl-default", "impl-debug", "minwindef", "minwinbase", "timezoneapi", "winerror", "winnt", "winreg", "handleapi"] }
 chrono = { version = "0.4.6", optional = true }
 serde = { version = "1", optional = true }
 

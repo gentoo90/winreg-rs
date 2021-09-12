@@ -5,6 +5,7 @@
 // except according to those terms.
 extern crate winreg;
 use std::io;
+use winreg::enums::*;
 use winreg::RegKey;
 
 fn main() -> io::Result<()> {
@@ -16,7 +17,8 @@ fn main() -> io::Result<()> {
     }
     let answer: u32 = {
         // NOTE: on Windows 7 this fails with ERROR_ALREADY_EXISTS
-        let app_key_2 = RegKey::load_app_key("myhive.dat", true)?;
+        let app_key_2 =
+            RegKey::load_app_key_with_flags("myhive.dat", KEY_READ, REG_PROCESS_APPKEY)?;
         app_key_2.get_value("answer")?
     };
     println!("The Answer is {}", answer);
