@@ -116,7 +116,8 @@
 extern crate chrono;
 #[cfg(feature = "serialization-serde")]
 extern crate serde;
-extern crate winapi;
+extern crate windows;
+
 use enums::*;
 use std::default::Default;
 use std::ffi::OsStr;
@@ -129,17 +130,24 @@ use std::slice;
 #[cfg(feature = "transactions")]
 use transaction::Transaction;
 use types::{FromRegValue, ToRegValue};
-pub use winapi::shared::minwindef::HKEY;
-use winapi::shared::minwindef::{BYTE, DWORD, FILETIME, LPBYTE};
-use winapi::shared::winerror;
-use winapi::um::minwinbase::SYSTEMTIME;
-use winapi::um::timezoneapi::FileTimeToSystemTime;
-use winapi::um::winnt::{self, WCHAR};
-use winapi::um::winreg as winapi_reg;
+use windows::core::{PCWSTR, PWSTR};
+use windows::Win32::Foundation;
+use windows::Win32::Foundation as winerror;
+use windows::Win32::Foundation::SYSTEMTIME;
+use windows::Win32::Foundation::{FILETIME, WIN32_ERROR};
+use windows::Win32::System::Registry as winapi_reg;
+use windows::Win32::System::Registry as winnt;
+pub use windows::Win32::System::Registry::HKEY;
+use windows::Win32::System::Registry::{REG_CREATE_KEY_DISPOSITION, REG_SAM_FLAGS, REG_VALUE_TYPE};
+use windows::Win32::System::Time::FileTimeToSystemTime;
+type BYTE = u8;
+type DWORD = u32;
+type LPBYTE = *mut u8;
+type WCHAR = u16;
 
 macro_rules! werr {
     ($e:expr) => {
-        Err(io::Error::from_raw_os_error($e as i32))
+        Err(io::Error::from_raw_os_error($e.0 as i32))
     };
 }
 
@@ -170,7 +178,7 @@ pub struct RegKeyMetadata {
 impl RegKeyMetadata {
     /// Returns `last_write_time` field as `winapi::um::minwinbase::SYSTEMTIME`
     pub fn get_last_write_time_system(&self) -> SYSTEMTIME {
-        let mut st: SYSTEMTIME = unsafe { ::std::mem::zeroed() };
+        let mut st: SYSTEMTIME = unsafe { std::mem::zeroed() };
         unsafe {
             FileTimeToSystemTime(&self.last_write_time, &mut st);
         }
@@ -183,11 +191,10 @@ impl RegKeyMetadata {
     pub fn get_last_write_time_chrono(&self) -> chrono::NaiveDateTime {
         let st = self.get_last_write_time_system();
 
-        chrono::NaiveDate::from_ymd(st.wYear.into(), st.wMonth.into(), st.wDay.into()).and_hms(
-            st.wHour.into(),
-            st.wMinute.into(),
-            st.wSecond.into(),
-        )
+        chrono::NaiveDate::from_ymd_opt(st.wYear.into(), st.wMonth.into(), st.wDay.into())
+            .expect("unable to write time")
+            .and_hms_opt(st.wHour.into(), st.wMinute.into(), st.wSecond.into())
+            .expect("unable to write time")
     }
 }
 
@@ -279,7 +286,7 @@ impl RegKey {
         } else {
             0
         };
-        RegKey::load_app_key_with_flags(filename, enums::KEY_ALL_ACCESS, options)
+        RegKey::load_app_key_with_flags(filename, enums::KEY_ALL_ACCESS.0, options)
     }
 
     /// Load a registry hive from a file as an application hive with desired
@@ -293,22 +300,27 @@ impl RegKey {
     /// # use winreg::RegKey;
     /// # use winreg::enums::*;
     /// # fn main() -> Result<(), Box<dyn Error>> {
-    /// let handle = RegKey::load_app_key_with_flags("C:\\myhive.dat", KEY_READ, 0)?;
+    /// let handle = RegKey::load_app_key_with_flags("C:\\myhive.dat", KEY_READ.0, 0)?;
     /// # Ok(())
     /// # }
     /// ```
     pub fn load_app_key_with_flags<N: AsRef<OsStr>>(
         filename: N,
-        perms: winapi_reg::REGSAM,
+        perms: u32,
         options: DWORD,
     ) -> io::Result<RegKey> {
         let c_filename = to_utf16(filename);
-        let mut new_hkey: HKEY = ptr::null_mut();
+        let mut new_hkey: HKEY = HKEY::default();
         match unsafe {
-            winapi_reg::RegLoadAppKeyW(c_filename.as_ptr(), &mut new_hkey, perms, options, 0)
-                as DWORD
+            winapi_reg::RegLoadAppKeyW(
+                PCWSTR::from_raw(c_filename.as_ptr()),
+                &mut new_hkey,
+                perms,
+                options,
+                0,
+            )
         } {
-            0 => Ok(RegKey { hkey: new_hkey }),
+            winerror::ERROR_SUCCESS => Ok(RegKey { hkey: new_hkey }),
             err => werr!(err),
         }
     }
@@ -371,14 +383,20 @@ impl RegKey {
     pub fn open_subkey_with_flags<P: AsRef<OsStr>>(
         &self,
         path: P,
-        perms: winapi_reg::REGSAM,
+        perms: winapi_reg::REG_SAM_FLAGS,
     ) -> io::Result<RegKey> {
         let c_path = to_utf16(path);
-        let mut new_hkey: HKEY = ptr::null_mut();
+        let mut new_hkey: HKEY = HKEY::default();
         match unsafe {
-            winapi_reg::RegOpenKeyExW(self.hkey, c_path.as_ptr(), 0, perms, &mut new_hkey) as DWORD
+            winapi_reg::RegOpenKeyExW(
+                self.hkey,
+                PCWSTR::from_raw(c_path.as_ptr()),
+                0,
+                perms,
+                &mut new_hkey,
+            )
         } {
-            0 => Ok(RegKey { hkey: new_hkey }),
+            winerror::ERROR_SUCCESS => Ok(RegKey { hkey: new_hkey }),
             err => werr!(err),
         }
     }
@@ -399,22 +417,22 @@ impl RegKey {
         &self,
         path: P,
         t: &Transaction,
-        perms: winapi_reg::REGSAM,
+        perms: winapi_reg::REG_SAM_FLAGS,
     ) -> io::Result<RegKey> {
         let c_path = to_utf16(path);
-        let mut new_hkey: HKEY = ptr::null_mut();
+        let mut new_hkey: HKEY = HKEY::default();
         match unsafe {
             winapi_reg::RegOpenKeyTransactedW(
                 self.hkey,
-                c_path.as_ptr(),
+                PCWSTR::from_raw(c_path.as_ptr()),
                 0,
                 perms,
                 &mut new_hkey,
                 t.handle,
-                ptr::null_mut(),
-            ) as DWORD
+                None,
+            )
         } {
-            0 => Ok(RegKey { hkey: new_hkey }),
+            winerror::ERROR_SUCCESS => Ok(RegKey { hkey: new_hkey }),
             err => werr!(err),
         }
     }
@@ -451,26 +469,26 @@ impl RegKey {
     pub fn create_subkey_with_flags<P: AsRef<OsStr>>(
         &self,
         path: P,
-        perms: winapi_reg::REGSAM,
+        perms: winapi_reg::REG_SAM_FLAGS,
     ) -> io::Result<(RegKey, RegDisposition)> {
         let c_path = to_utf16(path);
-        let mut new_hkey: HKEY = ptr::null_mut();
-        let mut disp_buf: DWORD = 0;
+        let mut new_hkey: HKEY = HKEY::default();
+        let mut disp_buf: REG_CREATE_KEY_DISPOSITION = REG_CREATE_KEY_DISPOSITION(0);
         match unsafe {
             winapi_reg::RegCreateKeyExW(
                 self.hkey,
-                c_path.as_ptr(),
+                PCWSTR::from_raw(c_path.as_ptr()),
                 0,
-                ptr::null_mut(),
+                PCWSTR::null(),
                 winnt::REG_OPTION_NON_VOLATILE,
                 perms,
-                ptr::null_mut(),
+                None,
                 &mut new_hkey,
-                &mut disp_buf,
+                Some(&mut disp_buf),
             )
         } {
-            0 => {
-                let disp: RegDisposition = unsafe { transmute(disp_buf as u8) };
+            winerror::ERROR_SUCCESS => {
+                let disp: RegDisposition = unsafe { transmute(disp_buf.0 as u8) };
                 Ok((RegKey { hkey: new_hkey }, disp))
             }
             err => werr!(err),
@@ -493,28 +511,28 @@ impl RegKey {
         &self,
         path: P,
         t: &Transaction,
-        perms: winapi_reg::REGSAM,
+        perms: winapi_reg::REG_SAM_FLAGS,
     ) -> io::Result<(RegKey, RegDisposition)> {
-        let c_path = to_utf16(path);
-        let mut new_hkey: HKEY = ptr::null_mut();
-        let mut disp_buf: DWORD = 0;
+        let mut c_path = to_utf16(path);
+        let mut new_hkey: HKEY = HKEY::default();
+        let mut disp_buf: REG_CREATE_KEY_DISPOSITION = REG_CREATE_KEY_DISPOSITION(0);
         match unsafe {
             winapi_reg::RegCreateKeyTransactedW(
                 self.hkey,
-                c_path.as_ptr(),
+                PCWSTR::from_raw(c_path.as_mut_ptr()),
                 0,
-                ptr::null_mut(),
+                PCWSTR::null(),
                 winnt::REG_OPTION_NON_VOLATILE,
                 perms,
-                ptr::null_mut(),
+                None,
                 &mut new_hkey,
-                &mut disp_buf,
+                Some(&mut disp_buf),
                 t.handle,
-                ptr::null_mut(),
-            ) as DWORD
+                None,
+            )
         } {
-            0 => {
-                let disp: RegDisposition = unsafe { transmute(disp_buf as u8) };
+            winerror::ERROR_SUCCESS => {
+                let disp: RegDisposition = unsafe { transmute(disp_buf.0 as u8) };
                 Ok((RegKey { hkey: new_hkey }, disp))
             }
             err => werr!(err),
@@ -540,8 +558,10 @@ impl RegKey {
     /// ```
     pub fn copy_tree<P: AsRef<OsStr>>(&self, path: P, dest: &RegKey) -> io::Result<()> {
         let c_path = to_utf16(path);
-        match unsafe { winapi_reg::RegCopyTreeW(self.hkey, c_path.as_ptr(), dest.hkey) } {
-            0 => Ok(()),
+        match unsafe {
+            winapi_reg::RegCopyTreeW(self.hkey, PCWSTR::from_raw(c_path.as_ptr()), dest.hkey)
+        } {
+            winerror::ERROR_SUCCESS => Ok(()),
             err => werr!(err),
         }
     }
@@ -551,20 +571,20 @@ impl RegKey {
         match unsafe {
             winapi_reg::RegQueryInfoKeyW(
                 self.hkey,
-                ptr::null_mut(), // Class: winapi::LPWSTR,
-                ptr::null_mut(), // ClassLen: DWORD,
-                ptr::null_mut(), // Reserved
-                &mut info.sub_keys,
-                &mut info.max_sub_key_len,
-                &mut info.max_class_len,
-                &mut info.values,
-                &mut info.max_value_name_len,
-                &mut info.max_value_len,
-                ptr::null_mut(), // lpcbSecurityDescriptor: winapi::LPDWORD,
-                &mut info.last_write_time,
-            ) as DWORD
+                PWSTR::null(), // Class: winapi::LPWSTR,
+                None,          // ClassLen: DWORD,
+                None,          // Reserved
+                Some(&mut info.sub_keys),
+                Some(&mut info.max_sub_key_len),
+                Some(&mut info.max_class_len),
+                Some(&mut info.values),
+                Some(&mut info.max_value_name_len),
+                Some(&mut info.max_value_len),
+                None, // lpcbSecurityDescriptor: winapi::LPDWORD,
+                Some(&mut info.last_write_time),
+            )
         } {
-            0 => Ok(info),
+            winerror::ERROR_SUCCESS => Ok(info),
             err => werr!(err),
         }
     }
@@ -646,25 +666,21 @@ impl RegKey {
     /// # fn main() -> Result<(), Box<dyn Error>> {
     /// // delete the key from the 32-bit registry view
     /// RegKey::predef(HKEY_LOCAL_MACHINE)
-    ///     .delete_subkey_with_flags(r"Software\MyProduct\History", KEY_WOW64_32KEY)?;
+    ///     .delete_subkey_with_flags(r"Software\MyProduct\History", KEY_WOW64_32KEY.0)?;
     /// # Ok(())
     /// # }
     /// ```
-    pub fn delete_subkey_with_flags<P: AsRef<OsStr>>(
-        &self,
-        path: P,
-        perms: winapi_reg::REGSAM,
-    ) -> io::Result<()> {
+    pub fn delete_subkey_with_flags<P: AsRef<OsStr>>(&self, path: P, perms: u32) -> io::Result<()> {
         let c_path = to_utf16(path);
         match unsafe {
             winapi_reg::RegDeleteKeyExW(
                 self.hkey,
-                c_path.as_ptr(), // This parameter cannot be NULL.
+                PCWSTR::from_raw(c_path.as_ptr()), // This parameter cannot be NULL.
                 perms,
                 0,
             )
         } {
-            0 => Ok(()),
+            winerror::ERROR_SUCCESS => Ok(()),
             err => werr!(err),
         }
     }
@@ -685,20 +701,20 @@ impl RegKey {
         &self,
         path: P,
         t: &Transaction,
-        perms: winapi_reg::REGSAM,
+        perms: u32,
     ) -> io::Result<()> {
-        let c_path = to_utf16(path);
+        let mut c_path = to_utf16(path);
         match unsafe {
             winapi_reg::RegDeleteKeyTransactedW(
                 self.hkey,
-                c_path.as_ptr(), // This parameter cannot be NULL.
+                PCWSTR::from_raw(c_path.as_mut_ptr()), // This parameter cannot be NULL.
                 perms,
                 0,
                 t.handle,
-                ptr::null_mut(),
+                None,
             )
         } {
-            0 => Ok(()),
+            winerror::ERROR_SUCCESS => Ok(()),
             err => werr!(err),
         }
     }
@@ -729,10 +745,10 @@ impl RegKey {
         match unsafe {
             winapi_reg::RegDeleteTreeW(
                 self.hkey,
-                path_ptr, //If this parameter is NULL, the subkeys and values of this key are deleted.
-            ) as DWORD
+                PCWSTR::from_raw(path_ptr), //If this parameter is NULL, the subkeys and values of this key are deleted.
+            )
         } {
-            0 => Ok(()),
+            winerror::ERROR_SUCCESS => Ok(()),
             err => werr!(err),
         }
     }
@@ -788,19 +804,19 @@ impl RegKey {
             match unsafe {
                 winapi_reg::RegQueryValueExW(
                     self.hkey,
-                    c_name.as_ptr() as *const u16,
-                    ptr::null_mut(),
-                    &mut buf_type,
-                    buf.as_mut_ptr() as LPBYTE,
-                    &mut buf_len,
-                ) as DWORD
+                    PCWSTR::from_raw(c_name.as_ptr() as *const u16),
+                    None,
+                    Some(&mut REG_VALUE_TYPE(buf_type)),
+                    Some(buf.as_mut_ptr() as LPBYTE),
+                    Some(&mut buf_len),
+                )
             } {
-                0 => {
+                winerror::ERROR_SUCCESS => {
                     unsafe {
                         buf.set_len(buf_len as usize);
                     }
                     // minimal check before transmute to RegType
-                    if buf_type > winnt::REG_QWORD {
+                    if buf_type > winnt::REG_QWORD.0 {
                         return werr!(winerror::ERROR_BAD_FILE_TYPE);
                     }
                     let t: RegType = unsafe { transmute(buf_type as u8) };
@@ -864,14 +880,13 @@ impl RegKey {
         match unsafe {
             winapi_reg::RegSetValueExW(
                 self.hkey,
-                c_name.as_ptr(),
+                PCWSTR::from_raw(c_name.as_ptr()),
                 0,
-                t,
-                value.bytes.as_ptr() as *const BYTE,
-                value.bytes.len() as u32,
-            ) as DWORD
+                REG_VALUE_TYPE(t),
+                Some(&value.bytes),
+            )
         } {
-            0 => Ok(()),
+            winerror::ERROR_SUCCESS => Ok(()),
             err => werr!(err),
         }
     }
@@ -894,8 +909,8 @@ impl RegKey {
     /// ```
     pub fn delete_value<N: AsRef<OsStr>>(&self, name: N) -> io::Result<()> {
         let c_name = to_utf16(name);
-        match unsafe { winapi_reg::RegDeleteValueW(self.hkey, c_name.as_ptr()) as DWORD } {
-            0 => Ok(()),
+        match unsafe { winapi_reg::RegDeleteValueW(self.hkey, PCWSTR::from_raw(c_name.as_ptr())) } {
+            winerror::ERROR_SUCCESS => Ok(()),
             err => werr!(err),
         }
     }
@@ -990,11 +1005,11 @@ impl RegKey {
 
     fn close_(&mut self) -> io::Result<()> {
         // don't try to close predefined keys
-        if self.hkey >= enums::HKEY_CLASSES_ROOT {
+        if self.hkey.0 >= enums::HKEY_CLASSES_ROOT.0 {
             return Ok(());
         };
-        match unsafe { winapi_reg::RegCloseKey(self.hkey) as DWORD } {
-            0 => Ok(()),
+        match unsafe { winapi_reg::RegCloseKey(self.hkey) } {
+            winerror::ERROR_SUCCESS => Ok(()),
             err => werr!(err),
         }
     }
@@ -1007,15 +1022,15 @@ impl RegKey {
             winapi_reg::RegEnumKeyExW(
                 self.hkey,
                 index,
-                name.as_mut_ptr(),
+                PWSTR(name.as_mut_ptr()),
                 &mut name_len,
-                ptr::null_mut(), // reserved
-                ptr::null_mut(), // lpClass: LPWSTR,
-                ptr::null_mut(), // lpcClass: LPDWORD,
-                ptr::null_mut(), // lpftLastWriteTime: PFILETIME,
-            ) as DWORD
+                None,          // reserved
+                PWSTR::null(), // lpClass: LPWSTR,
+                None,          // lpcClass: LPDWORD,
+                None,          // lpftLastWriteTime: PFILETIME,
+            )
         } {
-            0 => match String::from_utf16(&name[..name_len as usize]) {
+            winerror::ERROR_SUCCESS => match String::from_utf16(&name[..name_len as usize]) {
                 Ok(s) => Some(Ok(s)),
                 Err(_) => Some(werr!(winerror::ERROR_INVALID_BLOCK)),
             },
@@ -1037,15 +1052,15 @@ impl RegKey {
                 winapi_reg::RegEnumValueW(
                     self.hkey,
                     index,
-                    name.as_mut_ptr(),
+                    PWSTR(name.as_mut_ptr()),
                     &mut name_len,
-                    ptr::null_mut(), // reserved
-                    &mut buf_type,
-                    buf.as_mut_ptr() as LPBYTE,
-                    &mut buf_len,
-                ) as DWORD
+                    None, // reserved
+                    Some(&mut buf_type),
+                    Some(buf.as_mut_ptr() as LPBYTE),
+                    Some(&mut buf_len),
+                )
             } {
-                0 => {
+                winerror::ERROR_SUCCESS => {
                     let name = match String::from_utf16(&name[..name_len as usize]) {
                         Ok(s) => s,
                         Err(_) => return Some(werr!(winerror::ERROR_INVALID_DATA)),
@@ -1054,7 +1069,7 @@ impl RegKey {
                         buf.set_len(buf_len as usize);
                     }
                     // minimal check before transmute to RegType
-                    if buf_type > winnt::REG_QWORD {
+                    if buf_type > winnt::REG_QWORD.0 {
                         return Some(werr!(winerror::ERROR_BAD_FILE_TYPE));
                     }
                     let t: RegType = unsafe { transmute(buf_type as u8) };

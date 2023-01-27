@@ -145,6 +145,7 @@ winreg = { version = "0.10", features = ["transactions"] }
 
 ```rust
 extern crate winreg;
+
 use std::io;
 use winreg::RegKey;
 use winreg::enums::*;
@@ -164,8 +165,7 @@ fn main() -> io::Result<()> {
     if input == "y" || input == "Y" {
         t.commit()?;
         println!("Transaction committed.");
-    }
-    else {
+    } else {
         // this is optional, if transaction wasn't committed,
         // it will be rolled back on disposal
         t.rollback()?;
@@ -282,14 +282,14 @@ fn main() -> Result<(), Box<dyn Error>> {
 
 ### 0.10.1
 
-* Bump minimal required version of `winapi` to `0.3.9` (required for `load_app_key`)
+* Bump the minimal required version of `winapi` to `0.3.9` (required for `load_app_key`)
 * Reexport `REG_PROCESS_APPKEY` and use it in the `load_app_key` example
 
 ### 0.10.0
 
 * Add `RegKey::load_app_key()` and `RegKey::load_app_key_with_flags()` ([#30](https://github.com/gentoo90/winreg-rs/issues/30))
 * Update dev dependency `rand` to `0.8`
-* Add Github actions
+* Add GitHub actions
 * Fix some clippy warnings
 
 ### 0.9.0
@@ -339,7 +339,7 @@ which can be `REG_CREATED_NEW_KEY` or `REG_OPENED_EXISTING_KEY` ([#21](https://g
 ### 0.5.0
 
 * Breaking change: `open_subkey` now opens a key with readonly permissions.
-Use `create_subkey` or `open_subkey_with_flags` to open with read-write permissins.
+Use `create_subkey` or `open_subkey_with_flags` to open with read-write permissions.
 * Breaking change: features `transactions` and `serialization-serde` are now disabled by default.
 * Breaking change: serialization now uses `serde` instead of `rustc-serialize`.
 * `winapi` updated to `0.3`.
@@ -348,7 +348,7 @@ Use `create_subkey` or `open_subkey_with_flags` to open with read-write permissi
 ### 0.4.0
 
 * Make transactions and serialization otional features
-* Update dependensies + minor fixes ([#12](https://github.com/gentoo90/winreg-rs/pull/12))
+* Update dependencies + minor fixes ([#12](https://github.com/gentoo90/winreg-rs/pull/12))
 
 ### 0.3.5
 
@@ -377,5 +377,5 @@ Use `create_subkey` or `open_subkey_with_flags` to open with read-write permissi
 
 ### 0.3.0
 
-* Add transactions support and make serialization transacted
+* Add `transactions` support and make serialization transacted
 * Breaking change: use `std::io::{Error,Result}` instead of own `RegError` and `RegResult`

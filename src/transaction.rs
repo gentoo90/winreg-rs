@@ -41,9 +41,10 @@
 #![cfg(feature = "transactions")]
 use std::io;
 use std::ptr;
-use winapi::um::handleapi;
-use winapi::um::ktmw32;
-use winapi::um::winnt;
+use windows::core::PCWSTR;
+use windows::Win32::Foundation as handleapi;
+use windows::Win32::Foundation as winnt;
+use windows::Win32::Storage::FileSystem as ktmw32;
 
 #[derive(Debug)]
 pub struct Transaction {
@@ -61,8 +62,10 @@ impl Transaction {
                 0,
                 0,
                 0,
-                ptr::null_mut(),
-            );
+                PCWSTR::null(),
+            )
+            .ok()
+            .unwrap();
             if handle == handleapi::INVALID_HANDLE_VALUE {
                 return Err(io::Error::last_os_error());
             };
@@ -72,7 +75,7 @@ impl Transaction {
 
     pub fn commit(&self) -> io::Result<()> {
         unsafe {
-            match ktmw32::CommitTransaction(self.handle) {
+            match ktmw32::CommitTransaction(self.handle).0 {
                 0 => Err(io::Error::last_os_error()),
                 _ => Ok(()),
             }
@@ -81,7 +84,7 @@ impl Transaction {
 
     pub fn rollback(&self) -> io::Result<()> {
         unsafe {
-            match ktmw32::RollbackTransaction(self.handle) {
+            match ktmw32::RollbackTransaction(self.handle).0 {
                 0 => Err(io::Error::last_os_error()),
                 _ => Ok(()),
             }
@@ -90,7 +93,7 @@ impl Transaction {
 
     fn close_(&mut self) -> io::Result<()> {
         unsafe {
-            match handleapi::CloseHandle(self.handle) {
+            match handleapi::CloseHandle(self.handle).0 {
                 0 => Err(io::Error::last_os_error()),
                 _ => Ok(()),
             }

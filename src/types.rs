@@ -6,7 +6,7 @@
 
 //! Traits for loading/saving Registry values
 use super::enums::*;
-use super::winapi::shared::winerror;
+use super::windows::Win32::Foundation as winerror;
 use super::RegValue;
 use super::{to_utf16, v16_to_v8};
 use std::ffi::{OsStr, OsString};

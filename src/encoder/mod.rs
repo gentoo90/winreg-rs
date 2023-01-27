@@ -10,7 +10,9 @@ use super::RegKey;
 use std::error::Error;
 use std::fmt;
 use std::io;
-use winapi::shared::minwindef::DWORD;
+use windows::Win32::System::Registry::REG_SAM_FLAGS;
+
+type DWORD = u32;
 
 macro_rules! emit_value {
     ($s:ident, $v:ident) => {
@@ -71,12 +73,10 @@ pub struct Encoder {
     state: EncoderState,
 }
 
-const ENCODER_SAM: DWORD = KEY_CREATE_SUB_KEY | KEY_SET_VALUE;
-
 impl Encoder {
     pub fn from_key(key: &RegKey) -> EncodeResult<Encoder> {
         let tr = Transaction::new()?;
-        key.open_subkey_transacted_with_flags("", &tr, ENCODER_SAM)
+        key.open_subkey_transacted_with_flags("", &tr, KEY_CREATE_SUB_KEY | KEY_SET_VALUE)
             .map(|k| Encoder::new(k, tr))
             .map_err(EncoderError::IoError)
     }

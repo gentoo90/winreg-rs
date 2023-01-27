@@ -18,7 +18,7 @@ fn main() -> io::Result<()> {
     let answer: u32 = {
         // NOTE: on Windows 7 this fails with ERROR_ALREADY_EXISTS
         let app_key_2 =
-            RegKey::load_app_key_with_flags("myhive.dat", KEY_READ, REG_PROCESS_APPKEY)?;
+            RegKey::load_app_key_with_flags("myhive.dat", KEY_READ.0, REG_PROCESS_APPKEY)?;
         app_key_2.get_value("answer")?
     };
     println!("The Answer is {}", answer);

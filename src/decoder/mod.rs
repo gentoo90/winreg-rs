@@ -8,7 +8,9 @@ use super::RegKey;
 use std::error::Error;
 use std::fmt;
 use std::io;
-use winapi::shared::minwindef::DWORD;
+use windows::Win32::System::Registry::REG_SAM_FLAGS;
+
+type DWORD = u32;
 
 macro_rules! read_value {
     ($s:ident) => {
@@ -81,11 +83,9 @@ pub struct Decoder {
     enumeration_state: DecoderEnumerationState,
 }
 
-const DECODER_SAM: DWORD = KEY_QUERY_VALUE | KEY_ENUMERATE_SUB_KEYS;
-
 impl Decoder {
     pub fn from_key(key: &RegKey) -> DecodeResult<Decoder> {
-        key.open_subkey_with_flags("", DECODER_SAM)
+        key.open_subkey_with_flags("", KEY_QUERY_VALUE | KEY_ENUMERATE_SUB_KEYS)
             .map(Decoder::new)
             .map_err(DecoderError::IoError)
     }

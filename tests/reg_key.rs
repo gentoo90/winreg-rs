@@ -1,6 +1,6 @@
 extern crate rand;
 extern crate tempfile;
-extern crate winapi;
+extern crate windows;
 extern crate winreg;
 #[cfg(feature = "serialization-serde")]
 #[macro_use]
@@ -9,7 +9,7 @@ use self::rand::Rng;
 use std::collections::HashMap;
 use std::ffi::{OsStr, OsString};
 use tempfile::tempdir;
-use winapi::shared::winerror;
+use windows::Win32::Foundation as winerror;
 use winreg::enums::*;
 use winreg::types::FromRegValue;
 use winreg::{RegKey, RegValue};
@@ -31,15 +31,15 @@ fn test_load_appkey() {
         let key1 = RegKey::load_app_key(&file_path, true).unwrap();
         key1.set_value(val_name, &val1).unwrap();
         // this fails on Windows 7 with ERROR_ALREADY_EXISTS
-        let key_err = RegKey::load_app_key_with_flags(&file_path, KEY_READ, 0).unwrap_err();
+        let key_err = RegKey::load_app_key_with_flags(&file_path, KEY_READ.0, 0).unwrap_err();
         assert_eq!(
             key_err.raw_os_error(),
-            Some(winerror::ERROR_SHARING_VIOLATION as i32)
+            Some(winerror::ERROR_SHARING_VIOLATION.0 as i32)
         );
     }
     let val2: String = {
         // this fails on Windows 7 with ERROR_ALREADY_EXISTS
-        let key2 = RegKey::load_app_key_with_flags(&file_path, KEY_READ, 1).unwrap();
+        let key2 = RegKey::load_app_key_with_flags(&file_path, KEY_READ.0, 1).unwrap();
         key2.get_value(val_name).unwrap()
     };
     assert_eq!(val1, val2);
@@ -106,7 +106,7 @@ fn test_delete_subkey_with_flags() {
         .create_subkey_with_flags(path, KEY_WOW64_32KEY)
         .unwrap();
     assert!(RegKey::predef(HKEY_CURRENT_USER)
-        .delete_subkey_with_flags(path, KEY_WOW64_32KEY)
+        .delete_subkey_with_flags(path, KEY_WOW64_32KEY.0)
         .is_ok());
 }
 
