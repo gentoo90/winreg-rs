@@ -8,7 +8,8 @@ use super::RegKey;
 use std::error::Error;
 use std::fmt;
 use std::io;
-use winapi::shared::minwindef::DWORD;
+
+type DWORD = u32;
 
 macro_rules! read_value {
     ($s:ident) => {

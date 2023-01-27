@@ -5,22 +5,22 @@
 // except according to those terms.
 extern crate winreg;
 use std::io;
-use winreg::enums::*;
+use winreg::enums::{HKEY_CLASSES_ROOT, HKEY_LOCAL_MACHINE};
 use winreg::RegKey;
 
 fn main() -> io::Result<()> {
     println!("File extensions, registered in system:");
     for i in RegKey::predef(HKEY_CLASSES_ROOT)
         .enum_keys()
-        .map(|x| x.unwrap())
+        .map(std::result::Result::unwrap)
         .filter(|x| x.starts_with('.'))
     {
-        println!("{}", i);
+        println!("{i}");
     }
 
     let system = RegKey::predef(HKEY_LOCAL_MACHINE).open_subkey("HARDWARE\\DESCRIPTION\\System")?;
-    for (name, value) in system.enum_values().map(|x| x.unwrap()) {
-        println!("{} = {:?}", name, value);
+    for (name, value) in system.enum_values().map(std::result::Result::unwrap) {
+        println!("{name} = {value:?}");
     }
 
     Ok(())

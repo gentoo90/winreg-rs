@@ -9,13 +9,15 @@
 //!
 //!```no_run
 //!extern crate winreg;
+//!extern crate windows_sys;
 //!use std::io;
 //!use winreg::RegKey;
 //!use winreg::enums::*;
 //!use winreg::transaction::Transaction;
 //!
 //!fn main() {
-//!    let t = Transaction::new().unwrap();
+//!    use windows_sys::Win32::System::Registry::HKEY_CURRENT_USER;
+//! let t = Transaction::new().unwrap();
 //!    let hkcu = RegKey::predef(HKEY_CURRENT_USER);
 //!    let (key, _disp) = hkcu.create_subkey_transacted("Software\\RustTransaction", &t).unwrap();
 //!    key.set_value("TestQWORD", &1234567891011121314u64).unwrap();
@@ -41,9 +43,9 @@
 #![cfg(feature = "transactions")]
 use std::io;
 use std::ptr;
-use winapi::um::handleapi;
-use winapi::um::ktmw32;
-use winapi::um::winnt;
+use windows_sys::Win32::Foundation as handleapi;
+use windows_sys::Win32::Foundation as winnt;
+use windows_sys::Win32::Storage::FileSystem as ktmw32;
 
 #[derive(Debug)]
 pub struct Transaction {

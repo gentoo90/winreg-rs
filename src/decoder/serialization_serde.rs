@@ -51,34 +51,6 @@ impl<'de, 'a> Deserializer<'de> for &'a mut Decoder {
         visitor.visit_bool(read_value!(self).map(|v: u32| v > 0)?)
     }
 
-    fn deserialize_u8<V>(self, visitor: V) -> DecodeResult<V::Value>
-    where
-        V: Visitor<'de>,
-    {
-        self.deserialize_u32(visitor)
-    }
-
-    fn deserialize_u16<V>(self, visitor: V) -> DecodeResult<V::Value>
-    where
-        V: Visitor<'de>,
-    {
-        self.deserialize_u32(visitor)
-    }
-
-    fn deserialize_u32<V>(self, visitor: V) -> DecodeResult<V::Value>
-    where
-        V: Visitor<'de>,
-    {
-        visitor.visit_u32(read_value!(self)?)
-    }
-
-    fn deserialize_u64<V>(self, visitor: V) -> DecodeResult<V::Value>
-    where
-        V: Visitor<'de>,
-    {
-        visitor.visit_u64(read_value!(self)?)
-    }
-
     fn deserialize_i8<V>(self, visitor: V) -> DecodeResult<V::Value>
     where
         V: Visitor<'de>,
@@ -105,6 +77,34 @@ impl<'de, 'a> Deserializer<'de> for &'a mut Decoder {
         V: Visitor<'de>,
     {
         visitor.visit_i64(parse_string!(self)?)
+    }
+
+    fn deserialize_u8<V>(self, visitor: V) -> DecodeResult<V::Value>
+    where
+        V: Visitor<'de>,
+    {
+        self.deserialize_u32(visitor)
+    }
+
+    fn deserialize_u16<V>(self, visitor: V) -> DecodeResult<V::Value>
+    where
+        V: Visitor<'de>,
+    {
+        self.deserialize_u32(visitor)
+    }
+
+    fn deserialize_u32<V>(self, visitor: V) -> DecodeResult<V::Value>
+    where
+        V: Visitor<'de>,
+    {
+        visitor.visit_u32(read_value!(self)?)
+    }
+
+    fn deserialize_u64<V>(self, visitor: V) -> DecodeResult<V::Value>
+    where
+        V: Visitor<'de>,
+    {
+        visitor.visit_u64(read_value!(self)?)
     }
 
     fn deserialize_f32<V>(self, visitor: V) -> DecodeResult<V::Value>
@@ -247,13 +247,6 @@ impl<'de, 'a> Deserializer<'de> for &'a mut Decoder {
         visitor.visit_map(self)
     }
 
-    fn deserialize_identifier<V>(self, visitor: V) -> DecodeResult<V::Value>
-    where
-        V: Visitor<'de>,
-    {
-        self.deserialize_string(visitor)
-    }
-
     fn deserialize_enum<V>(
         self,
         _name: &'static str,
@@ -264,6 +257,13 @@ impl<'de, 'a> Deserializer<'de> for &'a mut Decoder {
         V: Visitor<'de>,
     {
         no_impl!("deserialize_enum")
+    }
+
+    fn deserialize_identifier<V>(self, visitor: V) -> DecodeResult<V::Value>
+    where
+        V: Visitor<'de>,
+    {
+        self.deserialize_string(visitor)
     }
 
     fn deserialize_ignored_any<V>(self, visitor: V) -> DecodeResult<V::Value>

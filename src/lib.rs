@@ -116,26 +116,35 @@
 extern crate chrono;
 #[cfg(feature = "serialization-serde")]
 extern crate serde;
-extern crate winapi;
-use enums::*;
+extern crate windows_sys;
+
+use enums::{RegDisposition, RegType, REG_DWORD, REG_EXPAND_SZ, REG_MULTI_SZ, REG_QWORD, REG_SZ};
 use std::default::Default;
 use std::ffi::OsStr;
 use std::fmt;
+use std::fmt::{Debug, Formatter};
 use std::io;
 use std::mem::transmute;
+use std::ops::Deref;
 use std::os::windows::ffi::OsStrExt;
 use std::ptr;
 use std::slice;
 #[cfg(feature = "transactions")]
 use transaction::Transaction;
 use types::{FromRegValue, ToRegValue};
-pub use winapi::shared::minwindef::HKEY;
-use winapi::shared::minwindef::{BYTE, DWORD, FILETIME, LPBYTE};
-use winapi::shared::winerror;
-use winapi::um::minwinbase::SYSTEMTIME;
-use winapi::um::timezoneapi::FileTimeToSystemTime;
-use winapi::um::winnt::{self, WCHAR};
-use winapi::um::winreg as winapi_reg;
+
+use windows_sys::Win32::Foundation as winerror;
+use windows_sys::Win32::Foundation::FILETIME;
+use windows_sys::Win32::Foundation::SYSTEMTIME;
+use windows_sys::Win32::System::Registry as winapi_reg;
+use windows_sys::Win32::System::Registry as winnt;
+pub use windows_sys::Win32::System::Registry::HKEY;
+
+use windows_sys::Win32::System::Time::FileTimeToSystemTime;
+type BYTE = u8;
+type DWORD = u32;
+type LPBYTE = *mut u8;
+type WCHAR = u16;
 
 macro_rules! werr {
     ($e:expr) => {
@@ -164,15 +173,44 @@ pub struct RegKeyMetadata {
     pub max_value_name_len: DWORD,
     pub max_value_len: DWORD,
     // pub SecurityDescriptor: DWORD,
-    pub last_write_time: FILETIME,
+    pub last_write_time: FileTime,
+}
+
+pub struct FileTime(FILETIME);
+
+impl Default for FileTime {
+    fn default() -> Self {
+        Self(FILETIME {
+            dwLowDateTime: 0,
+            dwHighDateTime: 0,
+        })
+    }
+}
+
+impl Debug for FileTime {
+    fn fmt(&self, f: &mut Formatter<'_>) -> fmt::Result {
+        f.debug_struct("FILETIME")
+            .field("dwLowDateTime", &self.dwLowDateTime)
+            .field("dwHighDateTime", &self.dwHighDateTime)
+            .finish()
+    }
+}
+
+impl Deref for FileTime {
+    type Target = FILETIME;
+
+    fn deref(&self) -> &Self::Target {
+        &self.0
+    }
 }
 
 impl RegKeyMetadata {
     /// Returns `last_write_time` field as `winapi::um::minwinbase::SYSTEMTIME`
+    #[must_use]
     pub fn get_last_write_time_system(&self) -> SYSTEMTIME {
         let mut st: SYSTEMTIME = unsafe { ::std::mem::zeroed() };
         unsafe {
-            FileTimeToSystemTime(&self.last_write_time, &mut st);
+            FileTimeToSystemTime(&self.last_write_time.0, &mut st);
         }
         st
     }
@@ -215,7 +253,7 @@ impl fmt::Display for RegValue {
             REG_QWORD => format_reg_value!(self => u64),
             _ => format!("{:?}", self.bytes), //TODO: implement more types
         };
-        write!(f, "{}", f_val)
+        write!(f, "{f_val}")
     }
 }
 
@@ -254,6 +292,7 @@ impl RegKey {
     /// # use winreg::enums::*;
     /// let hklm = RegKey::predef(HKEY_LOCAL_MACHINE);
     /// ```
+    #[must_use]
     pub const fn predef(hkey: HKEY) -> RegKey {
         RegKey { hkey }
     }
@@ -299,11 +338,11 @@ impl RegKey {
     /// ```
     pub fn load_app_key_with_flags<N: AsRef<OsStr>>(
         filename: N,
-        perms: winapi_reg::REGSAM,
+        perms: u32,
         options: DWORD,
     ) -> io::Result<RegKey> {
         let c_filename = to_utf16(filename);
-        let mut new_hkey: HKEY = ptr::null_mut();
+        let mut new_hkey: HKEY = 0;
         match unsafe {
             winapi_reg::RegLoadAppKeyW(c_filename.as_ptr(), &mut new_hkey, perms, options, 0)
                 as DWORD
@@ -328,6 +367,7 @@ impl RegKey {
     /// # Ok(())
     /// # }
     /// ```
+    #[must_use]
     pub const fn raw_handle(&self) -> HKEY {
         self.hkey
     }
@@ -371,10 +411,10 @@ impl RegKey {
     pub fn open_subkey_with_flags<P: AsRef<OsStr>>(
         &self,
         path: P,
-        perms: winapi_reg::REGSAM,
+        perms: u32,
     ) -> io::Result<RegKey> {
         let c_path = to_utf16(path);
-        let mut new_hkey: HKEY = ptr::null_mut();
+        let mut new_hkey: HKEY = 0;
         match unsafe {
             winapi_reg::RegOpenKeyExW(self.hkey, c_path.as_ptr(), 0, perms, &mut new_hkey) as DWORD
         } {
@@ -399,10 +439,10 @@ impl RegKey {
         &self,
         path: P,
         t: &Transaction,
-        perms: winapi_reg::REGSAM,
+        perms: u32,
     ) -> io::Result<RegKey> {
         let c_path = to_utf16(path);
-        let mut new_hkey: HKEY = ptr::null_mut();
+        let mut new_hkey: HKEY = 0;
         match unsafe {
             winapi_reg::RegOpenKeyTransactedW(
                 self.hkey,
@@ -451,10 +491,10 @@ impl RegKey {
     pub fn create_subkey_with_flags<P: AsRef<OsStr>>(
         &self,
         path: P,
-        perms: winapi_reg::REGSAM,
+        perms: u32,
     ) -> io::Result<(RegKey, RegDisposition)> {
         let c_path = to_utf16(path);
-        let mut new_hkey: HKEY = ptr::null_mut();
+        let mut new_hkey: HKEY = 0;
         let mut disp_buf: DWORD = 0;
         match unsafe {
             winapi_reg::RegCreateKeyExW(
@@ -493,10 +533,10 @@ impl RegKey {
         &self,
         path: P,
         t: &Transaction,
-        perms: winapi_reg::REGSAM,
+        perms: u32,
     ) -> io::Result<(RegKey, RegDisposition)> {
         let c_path = to_utf16(path);
-        let mut new_hkey: HKEY = ptr::null_mut();
+        let mut new_hkey: HKEY = 0;
         let mut disp_buf: DWORD = 0;
         match unsafe {
             winapi_reg::RegCreateKeyTransactedW(
@@ -522,7 +562,7 @@ impl RegKey {
     }
 
     /// Copy all the values and subkeys from `path` to `dest` key.
-    /// WIll copy the content of `self` if `path` is an empty string.
+    /// `WIll` copy the content of `self` if `path` is an empty string.
     ///
     /// # Examples
     ///
@@ -561,7 +601,7 @@ impl RegKey {
                 &mut info.max_value_name_len,
                 &mut info.max_value_len,
                 ptr::null_mut(), // lpcbSecurityDescriptor: winapi::LPDWORD,
-                &mut info.last_write_time,
+                &mut info.last_write_time.0,
             ) as DWORD
         } {
             0 => Ok(info),
@@ -584,6 +624,7 @@ impl RegKey {
     ///     println!("{}", i);
     /// }
     /// ```
+    #[must_use]
     pub const fn enum_keys(&self) -> EnumKeys {
         EnumKeys {
             key: self,
@@ -608,6 +649,7 @@ impl RegKey {
     /// # Ok(())
     /// # }
     /// ```
+    #[must_use]
     pub const fn enum_values(&self) -> EnumValues {
         EnumValues {
             key: self,
@@ -650,11 +692,7 @@ impl RegKey {
     /// # Ok(())
     /// # }
     /// ```
-    pub fn delete_subkey_with_flags<P: AsRef<OsStr>>(
-        &self,
-        path: P,
-        perms: winapi_reg::REGSAM,
-    ) -> io::Result<()> {
+    pub fn delete_subkey_with_flags<P: AsRef<OsStr>>(&self, path: P, perms: u32) -> io::Result<()> {
         let c_path = to_utf16(path);
         match unsafe {
             winapi_reg::RegDeleteKeyExW(
@@ -685,7 +723,7 @@ impl RegKey {
         &self,
         path: P,
         t: &Transaction,
-        perms: winapi_reg::REGSAM,
+        perms: u32,
     ) -> io::Result<()> {
         let c_path = to_utf16(path);
         match unsafe {
@@ -788,10 +826,10 @@ impl RegKey {
             match unsafe {
                 winapi_reg::RegQueryValueExW(
                     self.hkey,
-                    c_name.as_ptr() as *const u16,
+                    c_name.as_ptr().cast::<u16>(),
                     ptr::null_mut(),
                     &mut buf_type,
-                    buf.as_mut_ptr() as LPBYTE,
+                    buf.as_mut_ptr().cast::<u8>(),
                     &mut buf_len,
                 ) as DWORD
             } {
@@ -867,7 +905,7 @@ impl RegKey {
                 c_name.as_ptr(),
                 0,
                 t,
-                value.bytes.as_ptr() as *const BYTE,
+                value.bytes.as_ptr().cast::<u8>(),
                 value.bytes.len() as u32,
             ) as DWORD
         } {
@@ -1041,7 +1079,7 @@ impl RegKey {
                     &mut name_len,
                     ptr::null_mut(), // reserved
                     &mut buf_type,
-                    buf.as_mut_ptr() as LPBYTE,
+                    buf.as_mut_ptr().cast::<u8>(),
                     &mut buf_len,
                 ) as DWORD
             } {
@@ -1139,5 +1177,5 @@ fn to_utf16<P: AsRef<OsStr>>(s: P) -> Vec<u16> {
 }
 
 fn v16_to_v8(v: &[u16]) -> Vec<u8> {
-    unsafe { slice::from_raw_parts(v.as_ptr() as *const u8, v.len() * 2).to_vec() }
+    unsafe { slice::from_raw_parts(v.as_ptr().cast::<u8>(), v.len() * 2).to_vec() }
 }

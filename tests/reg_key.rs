@@ -1,6 +1,6 @@
 extern crate rand;
 extern crate tempfile;
-extern crate winapi;
+extern crate windows_sys;
 extern crate winreg;
 #[cfg(feature = "serialization-serde")]
 #[macro_use]
@@ -9,8 +9,11 @@ use self::rand::Rng;
 use std::collections::HashMap;
 use std::ffi::{OsStr, OsString};
 use tempfile::tempdir;
-use winapi::shared::winerror;
-use winreg::enums::*;
+use windows_sys::Win32::Foundation as winerror;
+use winreg::enums::{
+    HKEY_CURRENT_USER, HKEY_LOCAL_MACHINE, KEY_READ, KEY_WOW64_32KEY, REG_BINARY,
+    REG_CREATED_NEW_KEY, REG_OPENED_EXISTING_KEY,
+};
 use winreg::types::FromRegValue;
 use winreg::{RegKey, RegValue};
 
@@ -73,7 +76,7 @@ fn test_create_subkey_disposition() {
     assert_eq!(disp, REG_CREATED_NEW_KEY);
     let (_subkey2, disp2) = hkcu.create_subkey(path).unwrap();
     assert_eq!(disp2, REG_OPENED_EXISTING_KEY);
-    hkcu.delete_subkey_all(&path).unwrap();
+    hkcu.delete_subkey_all(path).unwrap();
 }
 
 macro_rules! with_key {
@@ -240,7 +243,7 @@ fn test_enum_keys() {
         for i in &keys1 {
             key.create_subkey(i).unwrap();
         }
-        let keys2: Vec<_> = key.enum_keys().map(|x| x.unwrap()).collect();
+        let keys2: Vec<_> = key.enum_keys().map(std::result::Result::unwrap).collect();
         assert_eq!(keys1, keys2);
     });
 }
@@ -256,7 +259,7 @@ fn test_enum_values() {
         let mut vals2: Vec<String> = Vec::with_capacity(vals1.len());
         let mut vals3: Vec<String> = Vec::with_capacity(vals1.len());
         for (name, val) in key.enum_values()
-            .map(|x| x.unwrap())
+            .map(std::result::Result::unwrap)
         {
             vals2.push(name);
             vals3.push(String::from_reg_value(&val).unwrap());
@@ -272,13 +275,13 @@ fn test_enum_long_values() {
         let mut vals = HashMap::with_capacity(3);
 
         for i in &[5500, 9500, 15000] {
-            let name: String = format!("val{}", i);
+            let name: String = format!("val{i}");
             let val = RegValue { vtype: REG_BINARY, bytes: (0..*i).map(|_| rand::random::<u8>()).collect() };
             vals.insert(name, val);
         }
 
         for (name, val) in key.enum_values()
-                              .map(|x| x.unwrap())
+                              .map(std::result::Result::unwrap)
         {
             assert_eq!(val.bytes, vals[&name].bytes);
         }

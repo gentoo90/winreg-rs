@@ -11,17 +11,24 @@ keywords = ["Windows", "WinSDK", "Registry"]
 categories = ["api-bindings", "os::windows-apis"]
 
 [dependencies]
-winapi = { version = "0.3.9", features = ["impl-default", "impl-debug", "minwindef", "minwinbase", "timezoneapi", "winerror", "winnt", "winreg", "handleapi"] }
+windows-sys = {version = "0.45.0", features = [
+    "Win32_Foundation",
+    "Win32_System_Time",
+    "Win32_System_Registry",
+    "Win32_Security",
+    "Win32_Storage_FileSystem",
+    "Win32_System_Diagnostics_Debug"
+]}
 chrono = { version = "0.4.6", optional = true }
 serde = { version = "1", optional = true }
 
 [dev-dependencies]
 rand = "0.3"
-tempfile = "~3.0"
+tempfile = "3.3.0"
 serde_derive = "1"
 
 [features]
-transactions = ["winapi/ktmw32"]
+transactions = []
 serialization-serde = ["transactions", "serde"]
 
 [[example]]

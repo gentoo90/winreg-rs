@@ -282,14 +282,14 @@ fn main() -> Result<(), Box<dyn Error>> {
 
 ### 0.10.1
 
-* Bump minimal required version of `winapi` to `0.3.9` (required for `load_app_key`)
+* Bump the minimal required version of `winapi` to `0.3.9` (required for `load_app_key`)
 * Reexport `REG_PROCESS_APPKEY` and use it in the `load_app_key` example
 
 ### 0.10.0
 
 * Add `RegKey::load_app_key()` and `RegKey::load_app_key_with_flags()` ([#30](https://github.com/gentoo90/winreg-rs/issues/30))
 * Update dev dependency `rand` to `0.8`
-* Add Github actions
+* Add GitHub actions
 * Fix some clippy warnings
 
 ### 0.9.0
@@ -377,5 +377,5 @@ Use `create_subkey` or `open_subkey_with_flags` to open with read-write permissi
 
 ### 0.3.0
 
-* Add transactions support and make serialization transacted
+* Add transaction support and make serialization transacted
 * Breaking change: use `std::io::{Error,Result}` instead of own `RegError` and `RegResult`
