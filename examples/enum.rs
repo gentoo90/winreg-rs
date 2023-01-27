@@ -12,14 +12,14 @@ fn main() -> io::Result<()> {
     println!("File extensions, registered in system:");
     for i in RegKey::predef(HKEY_CLASSES_ROOT)
         .enum_keys()
-        .map(std::result::Result::unwrap)
+        .map(Result::unwrap)
         .filter(|x| x.starts_with('.'))
     {
         println!("{i}");
     }
 
     let system = RegKey::predef(HKEY_LOCAL_MACHINE).open_subkey("HARDWARE\\DESCRIPTION\\System")?;
-    for (name, value) in system.enum_values().map(std::result::Result::unwrap) {
+    for (name, value) in system.enum_values().map(Result::unwrap) {
         println!("{name} = {value:?}");
     }
 

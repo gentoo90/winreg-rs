@@ -266,7 +266,7 @@ impl SerializeTupleVariant for TupleVariantEncoder {
 
 struct MapKeySerializer;
 
-impl serde::Serializer for MapKeySerializer {
+impl Serializer for MapKeySerializer {
     type Ok = String;
     type Error = EncoderError;
 
@@ -277,24 +277,6 @@ impl serde::Serializer for MapKeySerializer {
     type SerializeMap = Impossible<String, EncoderError>;
     type SerializeStruct = Impossible<String, EncoderError>;
     type SerializeStructVariant = Impossible<String, EncoderError>;
-
-    #[inline]
-    fn serialize_unit_variant(
-        self,
-        _name: &'static str,
-        _variant_index: u32,
-        variant: &'static str,
-    ) -> EncodeResult<Self::Ok> {
-        Ok(variant.to_owned())
-    }
-
-    #[inline]
-    fn serialize_newtype_struct<T>(self, _name: &'static str, value: &T) -> EncodeResult<Self::Ok>
-    where
-        T: ?Sized + Serialize,
-    {
-        value.serialize(self)
-    }
 
     fn serialize_bool(self, _value: bool) -> EncodeResult<Self::Ok> {
         Err(EncoderError::KeyMustBeAString)
@@ -358,12 +340,41 @@ impl serde::Serializer for MapKeySerializer {
         Err(EncoderError::KeyMustBeAString)
     }
 
+    fn serialize_none(self) -> EncodeResult<Self::Ok> {
+        Err(EncoderError::KeyMustBeAString)
+    }
+
+    fn serialize_some<T>(self, _value: &T) -> EncodeResult<Self::Ok>
+    where
+        T: ?Sized + Serialize,
+    {
+        Err(EncoderError::KeyMustBeAString)
+    }
+
     fn serialize_unit(self) -> EncodeResult<Self::Ok> {
         Err(EncoderError::KeyMustBeAString)
     }
 
     fn serialize_unit_struct(self, _name: &'static str) -> EncodeResult<Self::Ok> {
         Err(EncoderError::KeyMustBeAString)
+    }
+
+    #[inline]
+    fn serialize_unit_variant(
+        self,
+        _name: &'static str,
+        _variant_index: u32,
+        variant: &'static str,
+    ) -> EncodeResult<Self::Ok> {
+        Ok(variant.to_owned())
+    }
+
+    #[inline]
+    fn serialize_newtype_struct<T>(self, _name: &'static str, value: &T) -> EncodeResult<Self::Ok>
+    where
+        T: ?Sized + Serialize,
+    {
+        value.serialize(self)
     }
 
     fn serialize_newtype_variant<T>(
@@ -373,17 +384,6 @@ impl serde::Serializer for MapKeySerializer {
         _variant: &'static str,
         _value: &T,
     ) -> EncodeResult<Self::Ok>
-    where
-        T: ?Sized + Serialize,
-    {
-        Err(EncoderError::KeyMustBeAString)
-    }
-
-    fn serialize_none(self) -> EncodeResult<Self::Ok> {
-        Err(EncoderError::KeyMustBeAString)
-    }
-
-    fn serialize_some<T>(self, _value: &T) -> EncodeResult<Self::Ok>
     where
         T: ?Sized + Serialize,
     {

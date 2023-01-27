@@ -3,6 +3,7 @@ name = "winreg"
 version = "0.10.1"
 authors = ["Igor Shaula <gentoo90@gmail.com>"]
 license = "MIT"
+edition = "2021"
 description = "Rust bindings to MS Windows Registry API"
 repository = "https://github.com/gentoo90/winreg-rs"
 documentation = "https://docs.rs/winreg"

@@ -29,7 +29,7 @@ impl<'de, 'a> Deserializer<'de> for &'a mut Decoder {
             EnumeratingValues(..) => {
                 let s = self.f_name.as_ref().ok_or(DecoderError::NoFieldName)?;
                 let v = self.key.get_raw_value(s)?;
-                use RegType::*;
+                use crate::RegType::*;
                 match v.vtype {
                     REG_SZ | REG_EXPAND_SZ | REG_MULTI_SZ => {
                         visitor.visit_string(String::from_reg_value(&v)?)

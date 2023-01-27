@@ -118,7 +118,10 @@ extern crate chrono;
 extern crate serde;
 extern crate windows_sys;
 
-use enums::{RegDisposition, RegType, REG_DWORD, REG_EXPAND_SZ, REG_MULTI_SZ, REG_QWORD, REG_SZ};
+use crate::enums::{
+    RegDisposition, RegType, REG_DWORD, REG_EXPAND_SZ, REG_MULTI_SZ, REG_QWORD, REG_SZ,
+};
+use crate::types::{FromRegValue, ToRegValue};
 use std::default::Default;
 use std::ffi::OsStr;
 use std::fmt;
@@ -131,7 +134,6 @@ use std::ptr;
 use std::slice;
 #[cfg(feature = "transactions")]
 use transaction::Transaction;
-use types::{FromRegValue, ToRegValue};
 
 use windows_sys::Win32::Foundation as winerror;
 use windows_sys::Win32::Foundation::FILETIME;
@@ -139,11 +141,8 @@ use windows_sys::Win32::Foundation::SYSTEMTIME;
 use windows_sys::Win32::System::Registry as winapi_reg;
 use windows_sys::Win32::System::Registry as winnt;
 pub use windows_sys::Win32::System::Registry::HKEY;
-
 use windows_sys::Win32::System::Time::FileTimeToSystemTime;
-type BYTE = u8;
 type DWORD = u32;
-type LPBYTE = *mut u8;
 type WCHAR = u16;
 
 macro_rules! werr {
@@ -208,7 +207,7 @@ impl RegKeyMetadata {
     /// Returns `last_write_time` field as `winapi::um::minwinbase::SYSTEMTIME`
     #[must_use]
     pub fn get_last_write_time_system(&self) -> SYSTEMTIME {
-        let mut st: SYSTEMTIME = unsafe { ::std::mem::zeroed() };
+        let mut st: SYSTEMTIME = unsafe { std::mem::zeroed() };
         unsafe {
             FileTimeToSystemTime(&self.last_write_time.0, &mut st);
         }
@@ -221,11 +220,10 @@ impl RegKeyMetadata {
     pub fn get_last_write_time_chrono(&self) -> chrono::NaiveDateTime {
         let st = self.get_last_write_time_system();
 
-        chrono::NaiveDate::from_ymd(st.wYear.into(), st.wMonth.into(), st.wDay.into()).and_hms(
-            st.wHour.into(),
-            st.wMinute.into(),
-            st.wSecond.into(),
-        )
+        chrono::NaiveDate::from_ymd_opt(st.wYear.into(), st.wMonth.into(), st.wDay.into())
+            .expect("out-of-range date, invalid month and/or day")
+            .and_hms_opt(st.wHour.into(), st.wMinute.into(), st.wSecond.into())
+            .expect("invalid hour, minute and/or second")
     }
 }
 
@@ -246,7 +244,7 @@ macro_rules! format_reg_value {
 }
 
 impl fmt::Display for RegValue {
-    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+    fn fmt(&self, f: &mut Formatter) -> fmt::Result {
         let f_val = match self.vtype {
             REG_SZ | REG_EXPAND_SZ | REG_MULTI_SZ => format_reg_value!(self => String),
             REG_DWORD => format_reg_value!(self => u32),
@@ -257,8 +255,8 @@ impl fmt::Display for RegValue {
     }
 }
 
-impl fmt::Debug for RegValue {
-    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+impl Debug for RegValue {
+    fn fmt(&self, f: &mut Formatter) -> fmt::Result {
         write!(f, "RegValue({:?}: {})", self.vtype, self)
     }
 }
@@ -890,7 +888,7 @@ impl RegKey {
     /// let hkcu = RegKey::predef(HKEY_CURRENT_USER);
     /// let settings = hkcu.open_subkey("Software\\MyProduct\\Settings")?;
     /// let bytes: Vec<u8> = vec![1, 2, 3, 5, 8, 13, 21, 34, 55, 89];
-    /// let data = RegValue{ vtype: REG_BINARY, bytes: bytes};
+    /// let data = RegValue{ vtype: REG_BINARY, bytes};
     /// settings.set_raw_value("data", &data)?;
     /// println!("Bytes: {:?}", data.bytes);
     /// # Ok(())

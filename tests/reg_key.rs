@@ -56,7 +56,7 @@ fn test_open_subkey_with_flags_query_info() {
         .unwrap();
 
     let info = win.query_info().unwrap();
-    info.get_last_write_time_system();
+    let _ = info.get_last_write_time_system();
     #[cfg(feature = "chrono")]
     info.get_last_write_time_chrono();
 
