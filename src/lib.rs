@@ -131,14 +131,14 @@ use std::slice;
 use transaction::Transaction;
 use types::{FromRegValue, ToRegValue};
 use windows::core::{PCWSTR, PWSTR};
-use windows::Win32::Foundation;
+
 use windows::Win32::Foundation as winerror;
+use windows::Win32::Foundation::FILETIME;
 use windows::Win32::Foundation::SYSTEMTIME;
-use windows::Win32::Foundation::{FILETIME, WIN32_ERROR};
 use windows::Win32::System::Registry as winapi_reg;
 use windows::Win32::System::Registry as winnt;
 pub use windows::Win32::System::Registry::HKEY;
-use windows::Win32::System::Registry::{REG_CREATE_KEY_DISPOSITION, REG_SAM_FLAGS, REG_VALUE_TYPE};
+use windows::Win32::System::Registry::{REG_CREATE_KEY_DISPOSITION, REG_VALUE_TYPE};
 use windows::Win32::System::Time::FileTimeToSystemTime;
 type BYTE = u8;
 type DWORD = u32;
@@ -222,7 +222,7 @@ impl fmt::Display for RegValue {
             REG_QWORD => format_reg_value!(self => u64),
             _ => format!("{:?}", self.bytes), //TODO: implement more types
         };
-        write!(f, "{}", f_val)
+        write!(f, "{f_val}")
     }
 }
 
@@ -798,7 +798,7 @@ impl RegKey {
     pub fn get_raw_value<N: AsRef<OsStr>>(&self, name: N) -> io::Result<RegValue> {
         let c_name = to_utf16(name);
         let mut buf_len: DWORD = 2048;
-        let mut buf_type: DWORD = 0;
+        let buf_type: DWORD = 0;
         let mut buf: Vec<u8> = Vec::with_capacity(buf_len as usize);
         loop {
             match unsafe {

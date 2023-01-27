@@ -15,12 +15,12 @@ fn main() -> io::Result<()> {
         .map(|x| x.unwrap())
         .filter(|x| x.starts_with('.'))
     {
-        println!("{}", i);
+        println!("{i}");
     }
 
     let system = RegKey::predef(HKEY_LOCAL_MACHINE).open_subkey("HARDWARE\\DESCRIPTION\\System")?;
     for (name, value) in system.enum_values().map(|x| x.unwrap()) {
-        println!("{} = {:?}", name, value);
+        println!("{name} = {value:?}");
     }
 
     Ok(())

@@ -39,7 +39,7 @@ impl FromRegValue for String {
                     s.pop();
                 }
                 if val.vtype == REG_MULTI_SZ {
-                    return Ok(s.replace("\u{0}", "\n"));
+                    return Ok(s.replace('\u{0}', "\n"));
                 }
                 Ok(s)
             }
@@ -98,7 +98,7 @@ impl FromRegValue for Vec<OsString> {
                 }
                 let v: Vec<OsString> = words
                     .split(|ch| *ch == 0u16)
-                    .map(|x| OsString::from_wide(x))
+                    .map(OsString::from_wide)
                     .collect();
                 Ok(v)
             }

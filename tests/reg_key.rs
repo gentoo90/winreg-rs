@@ -73,7 +73,7 @@ fn test_create_subkey_disposition() {
     assert_eq!(disp, REG_CREATED_NEW_KEY);
     let (_subkey2, disp2) = hkcu.create_subkey(path).unwrap();
     assert_eq!(disp2, REG_OPENED_EXISTING_KEY);
-    hkcu.delete_subkey_all(&path).unwrap();
+    hkcu.delete_subkey_all(path).unwrap();
 }
 
 macro_rules! with_key {
@@ -272,7 +272,7 @@ fn test_enum_long_values() {
         let mut vals = HashMap::with_capacity(3);
 
         for i in &[5500, 9500, 15000] {
-            let name: String = format!("val{}", i);
+            let name: String = format!("val{i}");
             let val = RegValue { vtype: REG_BINARY, bytes: (0..*i).map(|_| rand::random::<u8>()).collect() };
             vals.insert(name, val);
         }

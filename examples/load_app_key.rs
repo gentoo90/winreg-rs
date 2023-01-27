@@ -21,6 +21,6 @@ fn main() -> io::Result<()> {
             RegKey::load_app_key_with_flags("myhive.dat", KEY_READ.0, REG_PROCESS_APPKEY)?;
         app_key_2.get_value("answer")?
     };
-    println!("The Answer is {}", answer);
+    println!("The Answer is {answer}");
     Ok(())
 }
