@@ -68,9 +68,9 @@ jobs:
         uses: actions-rs/cargo@v1
         with:
           command: test
-          args: --locked --release --no-default-features
+          args: --locked --release --no-fail-fast --no-default-features
       - name: Run tests (all features)
         uses: actions-rs/cargo@v1
         with:
           command: test
-          args: --locked --release --all-features
+          args: --locked --release --no-fail-fast --all-features
