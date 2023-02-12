@@ -5,6 +5,8 @@
 // except according to those terms.
 use super::EncoderState::*;
 use super::{EncodeResult, Encoder, EncoderError, ENCODER_SAM};
+use crate::enums::RegType;
+use crate::RegValue;
 use serde::ser::*;
 use std::fmt;
 use std::mem;
@@ -84,8 +86,22 @@ impl<'a> Serializer for &'a mut Encoder {
         emit_value!(self, value)
     }
 
-    fn serialize_bytes(self, _value: &[u8]) -> EncodeResult<Self::Ok> {
-        no_impl!("serialize_bytes")
+    fn serialize_bytes(self, value: &[u8]) -> EncodeResult<Self::Ok> {
+        match mem::replace(&mut self.state, Start) {
+            NextKey(ref s) => {
+                let vec = Vec::from(value);
+                self.keys[self.keys.len() - 1]
+                    .set_raw_value(
+                        s,
+                        &RegValue {
+                            bytes: vec,
+                            vtype: RegType::REG_BINARY,
+                        },
+                    )
+                    .map_err(EncoderError::IoError)
+            }
+            Start => Err(EncoderError::NoFieldName),
+        }
     }
 
     fn serialize_none(self) -> EncodeResult<Self::Ok> {

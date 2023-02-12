@@ -5,6 +5,7 @@
 // except according to those terms.
 use crate::enums::*;
 use crate::reg_key::RegKey;
+use crate::reg_value::RegValue;
 use crate::types::FromRegValue;
 use std::error::Error;
 use std::fmt;
@@ -93,6 +94,22 @@ impl Decoder {
             FieldVal(index, name) => {
                 self.cursor = DecoderCursor::Field(index + 1);
                 self.key.get_value(name).map_err(DecoderError::IoError)
+            }
+            _ => Err(DecoderError::DeserializerError("Not a value".to_owned())),
+        }
+    }
+
+    fn read_bytes(&mut self) -> Result<Vec<u8>, DecoderError> {
+        use self::DecoderCursor::*;
+        let cursor = self.cursor.clone();
+        match cursor {
+            FieldVal(index, name) => {
+                self.cursor = DecoderCursor::Field(index + 1);
+                let RegValue { bytes, .. } = self
+                    .key
+                    .get_raw_value(name)
+                    .map_err(DecoderError::IoError)?;
+                Ok(bytes)
             }
             _ => Err(DecoderError::DeserializerError("Not a value".to_owned())),
         }

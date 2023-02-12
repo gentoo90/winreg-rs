@@ -35,6 +35,7 @@ impl<'de, 'a> Deserializer<'de> for &'a mut Decoder {
                     }
                     REG_DWORD => visitor.visit_u32(u32::from_reg_value(&v)?),
                     REG_QWORD => visitor.visit_u64(u64::from_reg_value(&v)?),
+                    REG_BINARY => visitor.visit_byte_buf(v.bytes),
                     _ => no_impl!("value type deserialization not implemented"),
                 }
             }
@@ -160,11 +161,11 @@ impl<'de, 'a> Deserializer<'de> for &'a mut Decoder {
         no_impl!("deserialize_bytes")
     }
 
-    fn deserialize_byte_buf<V>(self, _visitor: V) -> DecodeResult<V::Value>
+    fn deserialize_byte_buf<V>(self, visitor: V) -> DecodeResult<V::Value>
     where
         V: Visitor<'de>,
     {
-        no_impl!("deserialize_byte_buf")
+        visitor.visit_byte_buf(self.read_bytes()?)
     }
 
     fn deserialize_option<V>(self, visitor: V) -> DecodeResult<V::Value>

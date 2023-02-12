@@ -46,6 +46,8 @@ struct AllFields {
     t_f64: f64,
     t_f32: f32,
     t_char: char,
+    #[serde(with = "serde_bytes")]
+    t_bytes: Vec<u8>,
 }
 
 impl AllFields {
@@ -85,6 +87,7 @@ impl AllFields {
             t_f64: -0.01,
             t_f32: 3.15,
             t_char: 'a',
+            t_bytes: vec![0xDE, 0xAD, 0xBE, 0xEF],
         }
     }
 }
