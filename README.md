@@ -1,11 +1,11 @@
 winreg
-[![Winreg on Appveyor][appveyor-image]][appveyor]
+[![Github Actions][actions-image]][actions]
 [![Winreg on crates.io][cratesio-image]][cratesio]
 [![Winreg on docs.rs][docsrs-image]][docsrs]
 ======
 
-[appveyor-image]: https://ci.appveyor.com/api/projects/status/f3lwrt67ghrf5omd?svg=true
-[appveyor]: https://ci.appveyor.com/project/gentoo90/winreg-rs
+[actions-image]: https://github.com/gentoo90/winreg-rs/actions/workflows/ci.yaml/badge.svg
+[actions]: https://github.com/gentoo90/winreg-rs/actions
 [cratesio-image]: https://img.shields.io/crates/v/winreg.svg
 [cratesio]: https://crates.io/crates/winreg
 [docsrs-image]: https://docs.rs/winreg/badge.svg
