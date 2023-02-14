@@ -21,6 +21,7 @@ jobs:
             lint: true
           - channel: 1.31.1
             target: x86_64-pc-windows-msvc
+            restrict_deps_versions: true
     env:
       RUST_BACKTRACE: full
     steps:
@@ -38,9 +39,19 @@ jobs:
           path: |
             ~/.cargo/registry
             ~/.cargo/git
-          key: ${{ runner.os }}-cargo-
+          key: ${{ runner.os }}-cargo-${{ matrix.channel }}
           restore-keys: |
-            ${{ runner.os }}-cargo-
+            ${{ runner.os }}-cargo-${{ matrix.channel }}
+      - name: Create Cargo.lock
+        uses: actions-rs/cargo@v1
+        with:
+          command: generate-lockfile
+      - name: Restrict Dependencies Versions
+        if: matrix.restrict_deps_versions
+        uses: actions-rs/cargo@v1
+        with:
+          command: update
+          args: --package chrono --precise 0.4.19
       - name: Check formatting
         if: matrix.lint
         uses: actions-rs/cargo@v1
@@ -57,9 +68,9 @@ jobs:
         uses: actions-rs/cargo@v1
         with:
           command: test
-          args: --release --no-default-features
+          args: --locked --release --no-default-features
       - name: Run tests (all features)
         uses: actions-rs/cargo@v1
         with:
           command: test
-          args: --release --all-features
+          args: --locked --release --all-features
