@@ -5,23 +5,15 @@
 // except according to those terms.
 use crate::enums::*;
 use crate::reg_key::RegKey;
+use crate::types::FromRegValue;
 use std::error::Error;
 use std::fmt;
 use std::io;
 use winapi::shared::minwindef::DWORD;
 
-macro_rules! read_value {
-    ($s:ident) => {
-        match mem::replace(&mut $s.f_name, None) {
-            Some(ref s) => $s.key.get_value(s).map_err(DecoderError::IoError),
-            None => Err(DecoderError::NoFieldName),
-        }
-    };
-}
-
 macro_rules! parse_string {
     ($s:ident) => {{
-        let s: String = read_value!($s)?;
+        let s: String = $s.read_value()?;
         s.parse()
             .map_err(|e| DecoderError::ParseError(format!("{:?}", e)))
     }};
@@ -61,24 +53,21 @@ impl From<io::Error> for DecoderError {
 
 pub type DecodeResult<T> = Result<T, DecoderError>;
 
-#[derive(Debug)]
-enum DecoderReadingState {
-    WaitingForKey,
-    WaitingForValue,
-}
-
-#[derive(Debug)]
-enum DecoderEnumerationState {
-    EnumeratingKeys(DWORD),
-    EnumeratingValues(DWORD),
+#[derive(Debug, Clone)]
+enum DecoderCursor {
+    Start,
+    Key(DWORD),
+    KeyName(DWORD, String),
+    KeyVal(DWORD, String),
+    Field(DWORD),
+    FieldName(DWORD, String),
+    FieldVal(DWORD, String),
 }
 
 #[derive(Debug)]
 pub struct Decoder {
     key: RegKey,
-    f_name: Option<String>,
-    reading_state: DecoderReadingState,
-    enumeration_state: DecoderEnumerationState,
+    cursor: DecoderCursor,
 }
 
 const DECODER_SAM: DWORD = KEY_QUERY_VALUE | KEY_ENUMERATE_SUB_KEYS;
@@ -93,9 +82,19 @@ impl Decoder {
     fn new(key: RegKey) -> Decoder {
         Decoder {
             key,
-            f_name: None,
-            reading_state: DecoderReadingState::WaitingForKey,
-            enumeration_state: DecoderEnumerationState::EnumeratingKeys(0),
+            cursor: DecoderCursor::Start,
+        }
+    }
+
+    fn read_value<T: FromRegValue>(&mut self) -> Result<T, DecoderError> {
+        use self::DecoderCursor::*;
+        let cursor = self.cursor.clone();
+        match cursor {
+            FieldVal(index, name) => {
+                self.cursor = DecoderCursor::Field(index + 1);
+                self.key.get_value(name).map_err(DecoderError::IoError)
+            }
+            _ => Err(DecoderError::DeserializerError("Not a value".to_owned())),
         }
     }
 }
