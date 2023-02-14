@@ -1,4 +1,4 @@
-// Copyright 2015, Igor Shaula
+// Copyright 2023, Igor Shaula
 // Licensed under the MIT License <LICENSE or
 // http://opensource.org/licenses/MIT>. This file
 // may not be copied, modified, or distributed
@@ -8,7 +8,6 @@
 //! Part of `transactions` feature.
 //!
 //!```no_run
-//!extern crate winreg;
 //!use std::io;
 //!use winreg::RegKey;
 //!use winreg::enums::*;

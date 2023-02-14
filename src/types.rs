@@ -1,18 +1,18 @@
-// Copyright 2015, Igor Shaula
+// Copyright 2023, Igor Shaula
 // Licensed under the MIT License <LICENSE or
 // http://opensource.org/licenses/MIT>. This file
 // may not be copied, modified, or distributed
 // except according to those terms.
 
 //! Traits for loading/saving Registry values
-use super::enums::*;
-use super::winapi::shared::winerror;
-use super::RegValue;
-use super::{to_utf16, v16_to_v8};
+use crate::enums::*;
+use crate::RegValue;
+use crate::{to_utf16, v16_to_v8};
 use std::ffi::{OsStr, OsString};
 use std::io;
 use std::os::windows::ffi::OsStringExt;
 use std::slice;
+use winapi::shared::winerror;
 
 /// A trait for types that can be loaded from registry values.
 ///

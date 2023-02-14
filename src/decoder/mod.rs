@@ -1,10 +1,10 @@
-// Copyright 2017, Igor Shaula
+// Copyright 2023, Igor Shaula
 // Licensed under the MIT License <LICENSE or
 // http://opensource.org/licenses/MIT>. This file
 // may not be copied, modified, or distributed
 // except according to those terms.
-use super::enums::*;
-use super::RegKey;
+use crate::enums::*;
+use crate::RegKey;
 use std::error::Error;
 use std::fmt;
 use std::io;

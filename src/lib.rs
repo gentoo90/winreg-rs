@@ -1,4 +1,4 @@
-// Copyright 2015, Igor Shaula
+// Copyright 2023, Igor Shaula
 // Licensed under the MIT License <LICENSE or
 // http://opensource.org/licenses/MIT>. This file
 // may not be copied, modified, or distributed
@@ -17,7 +17,6 @@
 //!```
 //!
 //!```no_run
-//!extern crate winreg;
 //!use std::io;
 //!use std::path::Path;
 //!use winreg::enums::*;
@@ -88,7 +87,6 @@
 //!### Iterators
 //!
 //!```no_run
-//!extern crate winreg;
 //!use std::io;
 //!use winreg::RegKey;
 //!use winreg::enums::*;
@@ -112,12 +110,10 @@
 //!}
 //!```
 //!
-#[cfg(feature = "chrono")]
-extern crate chrono;
-#[cfg(feature = "serialization-serde")]
-extern crate serde;
-extern crate winapi;
-use enums::*;
+use crate::enums::*;
+#[cfg(feature = "transactions")]
+use crate::transaction::Transaction;
+use crate::types::{FromRegValue, ToRegValue};
 use std::default::Default;
 use std::ffi::OsStr;
 use std::fmt;
@@ -126,9 +122,6 @@ use std::mem::transmute;
 use std::os::windows::ffi::OsStrExt;
 use std::ptr;
 use std::slice;
-#[cfg(feature = "transactions")]
-use transaction::Transaction;
-use types::{FromRegValue, ToRegValue};
 pub use winapi::shared::minwindef::HKEY;
 use winapi::shared::minwindef::{BYTE, DWORD, FILETIME, LPBYTE};
 use winapi::shared::winerror;
@@ -907,9 +900,7 @@ impl RegKey {
     ///
     /// ```no_run
     /// # use std::error::Error;
-    /// #[macro_use]
-    /// extern crate serde_derive;
-    /// extern crate winreg;
+    /// use serde_derive::Serialize;
     /// use winreg::RegKey;
     /// use winreg::enums::*;
     ///
@@ -954,9 +945,7 @@ impl RegKey {
     ///
     /// ```no_run
     /// # use std::error::Error;
-    /// #[macro_use]
-    /// extern crate serde_derive;
-    /// extern crate winreg;
+    /// use serde_derive::Deserialize;
     /// use winreg::RegKey;
     /// use winreg::enums::*;
     ///

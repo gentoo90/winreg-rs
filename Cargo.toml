@@ -1,5 +1,6 @@
 [package]
 name = "winreg"
+edition = "2018"
 version = "0.10.1"
 authors = ["Igor Shaula <gentoo90@gmail.com>"]
 license = "MIT"

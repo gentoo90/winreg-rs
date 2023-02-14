@@ -40,7 +40,6 @@ winreg = "0.10"
 ```
 
 ```rust
-extern crate winreg;
 use std::io;
 use std::path::Path;
 use winreg::enums::*;
@@ -111,7 +110,6 @@ fn main() -> io::Result<()> {
 ### Iterators
 
 ```rust
-extern crate winreg;
 use std::io;
 use winreg::RegKey;
 use winreg::enums::*;
@@ -144,7 +142,6 @@ winreg = { version = "0.10", features = ["transactions"] }
 ```
 
 ```rust
-extern crate winreg;
 use std::io;
 use winreg::RegKey;
 use winreg::enums::*;
@@ -188,9 +185,7 @@ serde_derive = "1"
 ```
 
 ```rust
-#[macro_use]
-extern crate serde_derive;
-extern crate winreg;
+use serde_derive::{Deserialize, Serialize};
 use std::collections::HashMap;
 use std::error::Error;
 use winreg::enums::*;

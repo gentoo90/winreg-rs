@@ -1,12 +1,12 @@
-// Copyright 2017, Igor Shaula
+// Copyright 2023, Igor Shaula
 // Licensed under the MIT License <LICENSE or
 // http://opensource.org/licenses/MIT>. This file
 // may not be copied, modified, or distributed
 // except according to those terms.
-use super::super::FromRegValue;
 use super::{
     DecodeResult, Decoder, DecoderEnumerationState, DecoderError, DecoderReadingState, DECODER_SAM,
 };
+use crate::types::FromRegValue;
 use serde::de::*;
 use std::fmt;
 use std::mem;
@@ -29,7 +29,7 @@ impl<'de, 'a> Deserializer<'de> for &'a mut Decoder {
             EnumeratingValues(..) => {
                 let s = self.f_name.as_ref().ok_or(DecoderError::NoFieldName)?;
                 let v = self.key.get_raw_value(s)?;
-                use RegType::*;
+                use crate::enums::RegType::*;
                 match v.vtype {
                     REG_SZ | REG_EXPAND_SZ | REG_MULTI_SZ => {
                         visitor.visit_string(String::from_reg_value(&v)?)

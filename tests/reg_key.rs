@@ -1,11 +1,10 @@
-extern crate rand;
-extern crate tempfile;
-extern crate winapi;
-extern crate winreg;
-#[cfg(feature = "serialization-serde")]
-#[macro_use]
-extern crate serde_derive;
-use self::rand::Rng;
+// Copyright 2023, Igor Shaula
+// Licensed under the MIT License <LICENSE or
+// http://opensource.org/licenses/MIT>. This file
+// may not be copied, modified, or distributed
+// except according to those terms.
+use rand::Rng;
+use serde_derive::{Deserialize, Serialize};
 use std::collections::HashMap;
 use std::ffi::{OsStr, OsString};
 use tempfile::tempdir;
