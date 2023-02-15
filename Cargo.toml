@@ -12,6 +12,7 @@ keywords = ["Windows", "WinSDK", "Registry"]
 categories = ["api-bindings", "os::windows-apis"]
 
 [dependencies]
+cfg-if = "1.0"
 winapi = { version = "0.3.9", features = ["impl-default", "impl-debug", "minwindef", "minwinbase", "timezoneapi", "winerror", "winnt", "winreg", "handleapi"] }
 chrono = { version = "0.4.6", optional = true }
 serde = { version = "1", optional = true }
