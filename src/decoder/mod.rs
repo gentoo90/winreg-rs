@@ -4,7 +4,7 @@
 // may not be copied, modified, or distributed
 // except according to those terms.
 use crate::enums::*;
-use crate::RegKey;
+use crate::reg_key::RegKey;
 use std::error::Error;
 use std::fmt;
 use std::io;

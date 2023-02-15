@@ -5,9 +5,9 @@
 // except according to those terms.
 
 //! Traits for loading/saving Registry values
+use crate::common::*;
 use crate::enums::*;
 use crate::RegValue;
-use crate::{to_utf16, v16_to_v8};
 use std::ffi::{OsStr, OsString};
 use std::io;
 use std::os::windows::ffi::OsStringExt;

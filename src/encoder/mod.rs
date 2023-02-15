@@ -5,8 +5,8 @@
 // except according to those terms.
 use self::EncoderState::*;
 use crate::enums::*;
+use crate::reg_key::RegKey;
 use crate::transaction::Transaction;
-use crate::RegKey;
 use std::error::Error;
 use std::fmt;
 use std::io;
