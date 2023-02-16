@@ -73,7 +73,7 @@ fn test_create_subkey_disposition() {
     assert_eq!(disp, REG_CREATED_NEW_KEY);
     let (_subkey2, disp2) = hkcu.create_subkey(path).unwrap();
     assert_eq!(disp2, REG_OPENED_EXISTING_KEY);
-    hkcu.delete_subkey_all(&path).unwrap();
+    hkcu.delete_subkey_all(path).unwrap();
 }
 
 #[test]

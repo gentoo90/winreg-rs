@@ -318,7 +318,7 @@ impl RegKey {
     }
 
     /// Copy all the values and subkeys from `path` to `dest` key.
-    /// WIll copy the content of `self` if `path` is an empty string.
+    /// Will copy the content of `self` if `path` is an empty string.
     ///
     /// # Examples
     ///
@@ -343,7 +343,7 @@ impl RegKey {
     }
 
     pub fn query_info(&self) -> io::Result<RegKeyMetadata> {
-        let mut info: RegKeyMetadata = Default::default();
+        let mut info: RegKeyMetadata = RegKeyMetadata::default();
         match unsafe {
             winapi_reg::RegQueryInfoKeyW(
                 self.hkey,

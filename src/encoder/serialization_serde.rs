@@ -186,7 +186,7 @@ impl<'a> Serializer for &'a mut Encoder {
             NextKey(ref s) => {
                 // nested structure
                 match self.keys[self.keys.len() - 1].create_subkey_transacted_with_flags(
-                    &s,
+                    s,
                     &self.tr,
                     ENCODER_SAM,
                 ) {
@@ -206,9 +206,9 @@ impl<'a> Serializer for &'a mut Encoder {
     fn serialize_struct(
         self,
         _name: &'static str,
-        _len: usize,
+        len: usize,
     ) -> EncodeResult<Self::SerializeStruct> {
-        self.serialize_map(Some(_len))
+        self.serialize_map(Some(len))
     }
 
     fn serialize_struct_variant(

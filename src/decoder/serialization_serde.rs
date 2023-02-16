@@ -284,7 +284,7 @@ impl<'de, 'a> Deserializer<'de> for &'a mut Decoder {
     }
 }
 
-impl<'de, 'a> MapAccess<'de> for Decoder {
+impl<'de> MapAccess<'de> for Decoder {
     type Error = DecoderError;
     fn next_key_seed<K>(&mut self, seed: K) -> Result<Option<K::Value>, Self::Error>
     where
