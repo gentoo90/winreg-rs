@@ -1,5 +1,13 @@
 # Changelog
 
+## 0.11.0
+
+* Migrate to the 2018 edition of Rust
+* Move the code from `lib.rs` to separate files
+* Use [`cfg-if`](https://crates.io/crates/cfg-if) instead of `build.rs` to fail build on non-windows systems
+* Reimplement deserialization logic, implement [de]serialization for byte arrays ([#49](https://github.com/gentoo90/winreg-rs/issues/49))
+* Fix some typos and `clippy` warnings
+
 ## 0.10.1
 
 * Bump the minimal required version of `winapi` to `0.3.9` (required for `load_app_key`)
