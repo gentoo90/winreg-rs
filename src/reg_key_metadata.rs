@@ -3,31 +3,61 @@
 // http://opensource.org/licenses/MIT>. This file
 // may not be copied, modified, or distributed
 // except according to those terms.
-use winapi::shared::minwindef::{DWORD, FILETIME};
-use winapi::um::minwinbase::SYSTEMTIME;
-use winapi::um::timezoneapi::FileTimeToSystemTime;
+use std::fmt;
+use std::ops::Deref;
+use windows_sys::Win32::Foundation::FILETIME;
+use windows_sys::Win32::Foundation::SYSTEMTIME;
+use windows_sys::Win32::System::Time::FileTimeToSystemTime;
+
+pub struct FileTime(pub(crate) FILETIME);
+
+impl Default for FileTime {
+    fn default() -> Self {
+        Self(FILETIME {
+            dwLowDateTime: 0,
+            dwHighDateTime: 0,
+        })
+    }
+}
+
+impl fmt::Debug for FileTime {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        f.debug_struct("FILETIME")
+            .field("dwLowDateTime", &self.dwLowDateTime)
+            .field("dwHighDateTime", &self.dwHighDateTime)
+            .finish()
+    }
+}
+
+impl Deref for FileTime {
+    type Target = FILETIME;
+
+    fn deref(&self) -> &Self::Target {
+        &self.0
+    }
+}
 
 /// Metadata returned by `RegKey::query_info`
 #[derive(Debug, Default)]
 pub struct RegKeyMetadata {
     // pub Class: winapi::LPWSTR,
-    // pub ClassLen: DWORD,
-    pub sub_keys: DWORD,
-    pub max_sub_key_len: DWORD,
-    pub max_class_len: DWORD,
-    pub values: DWORD,
-    pub max_value_name_len: DWORD,
-    pub max_value_len: DWORD,
-    // pub SecurityDescriptor: DWORD,
-    pub last_write_time: FILETIME,
+    // pub ClassLen: u32,
+    pub sub_keys: u32,
+    pub max_sub_key_len: u32,
+    pub max_class_len: u32,
+    pub values: u32,
+    pub max_value_name_len: u32,
+    pub max_value_len: u32,
+    // pub SecurityDescriptor: u32,
+    pub last_write_time: FileTime,
 }
 
 impl RegKeyMetadata {
-    /// Returns `last_write_time` field as `winapi::um::minwinbase::SYSTEMTIME`
+    /// Returns `last_write_time` field as `windows_sys::Win32::Foundation::SYSTEMTIME`
     pub fn get_last_write_time_system(&self) -> SYSTEMTIME {
         let mut st: SYSTEMTIME = unsafe { ::std::mem::zeroed() };
         unsafe {
-            FileTimeToSystemTime(&self.last_write_time, &mut st);
+            FileTimeToSystemTime(&self.last_write_time.0, &mut st);
         }
         st
     }

@@ -10,7 +10,6 @@ use crate::types::FromRegValue;
 use std::error::Error;
 use std::fmt;
 use std::io;
-use winapi::shared::minwindef::DWORD;
 
 macro_rules! parse_string {
     ($s:ident) => {{
@@ -57,12 +56,12 @@ pub type DecodeResult<T> = Result<T, DecoderError>;
 #[derive(Debug, Clone)]
 enum DecoderCursor {
     Start,
-    Key(DWORD),
-    KeyName(DWORD, String),
-    KeyVal(DWORD, String),
-    Field(DWORD),
-    FieldName(DWORD, String),
-    FieldVal(DWORD, String),
+    Key(u32),
+    KeyName(u32, String),
+    KeyVal(u32, String),
+    Field(u32),
+    FieldName(u32, String),
+    FieldVal(u32, String),
 }
 
 #[derive(Debug)]
@@ -71,7 +70,7 @@ pub struct Decoder {
     cursor: DecoderCursor,
 }
 
-const DECODER_SAM: DWORD = KEY_QUERY_VALUE | KEY_ENUMERATE_SUB_KEYS;
+const DECODER_SAM: u32 = KEY_QUERY_VALUE | KEY_ENUMERATE_SUB_KEYS;
 
 impl Decoder {
     pub fn from_key(key: &RegKey) -> DecodeResult<Decoder> {

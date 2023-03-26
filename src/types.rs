@@ -12,7 +12,7 @@ use std::ffi::{OsStr, OsString};
 use std::io;
 use std::os::windows::ffi::OsStringExt;
 use std::slice;
-use winapi::shared::winerror;
+use windows_sys::Win32::Foundation;
 
 /// A trait for types that can be loaded from registry values.
 ///
@@ -43,7 +43,7 @@ impl FromRegValue for String {
                 }
                 Ok(s)
             }
-            _ => werr!(winerror::ERROR_BAD_FILE_TYPE),
+            _ => werr!(Foundation::ERROR_BAD_FILE_TYPE),
         }
     }
 }
@@ -62,7 +62,7 @@ impl FromRegValue for Vec<String> {
                 let v: Vec<String> = s.split('\u{0}').map(|x| x.to_owned()).collect();
                 Ok(v)
             }
-            _ => werr!(winerror::ERROR_BAD_FILE_TYPE),
+            _ => werr!(Foundation::ERROR_BAD_FILE_TYPE),
         }
     }
 }
@@ -81,7 +81,7 @@ impl FromRegValue for OsString {
                 let s = OsString::from_wide(words);
                 Ok(s)
             }
-            _ => werr!(winerror::ERROR_BAD_FILE_TYPE),
+            _ => werr!(Foundation::ERROR_BAD_FILE_TYPE),
         }
     }
 }
@@ -102,7 +102,7 @@ impl FromRegValue for Vec<OsString> {
                     .collect();
                 Ok(v)
             }
-            _ => werr!(winerror::ERROR_BAD_FILE_TYPE),
+            _ => werr!(Foundation::ERROR_BAD_FILE_TYPE),
         }
     }
 }
@@ -112,7 +112,7 @@ impl FromRegValue for u32 {
         match val.vtype {
             #[allow(clippy::cast_ptr_alignment)]
             REG_DWORD => Ok(unsafe { *(val.bytes.as_ptr() as *const u32) }),
-            _ => werr!(winerror::ERROR_BAD_FILE_TYPE),
+            _ => werr!(Foundation::ERROR_BAD_FILE_TYPE),
         }
     }
 }
@@ -122,7 +122,7 @@ impl FromRegValue for u64 {
         match val.vtype {
             #[allow(clippy::cast_ptr_alignment)]
             REG_QWORD => Ok(unsafe { *(val.bytes.as_ptr() as *const u64) }),
-            _ => werr!(winerror::ERROR_BAD_FILE_TYPE),
+            _ => werr!(Foundation::ERROR_BAD_FILE_TYPE),
         }
     }
 }

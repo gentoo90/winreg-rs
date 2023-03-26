@@ -19,7 +19,7 @@ fn main() -> io::Result<()> {
     println!("info = {:?}", info);
     let mt = info.get_last_write_time_system();
     println!(
-        "last_write_time as winapi::um::minwinbase::SYSTEMTIME = {}-{:02}-{:02} {:02}:{:02}:{:02}",
+        "last_write_time as windows_sys::Win32::Foundation::SYSTEMTIME = {}-{:02}-{:02} {:02}:{:02}:{:02}",
         mt.wYear, mt.wMonth, mt.wDay, mt.wHour, mt.wMinute, mt.wSecond
     );
     println!(

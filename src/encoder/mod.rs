@@ -10,7 +10,6 @@ use crate::transaction::Transaction;
 use std::error::Error;
 use std::fmt;
 use std::io;
-use winapi::shared::minwindef::DWORD;
 
 macro_rules! emit_value {
     ($s:ident, $v:ident) => {
@@ -71,7 +70,7 @@ pub struct Encoder {
     state: EncoderState,
 }
 
-const ENCODER_SAM: DWORD = KEY_CREATE_SUB_KEY | KEY_SET_VALUE;
+const ENCODER_SAM: u32 = KEY_CREATE_SUB_KEY | KEY_SET_VALUE;
 
 impl Encoder {
     pub fn from_key(key: &RegKey) -> EncodeResult<Encoder> {

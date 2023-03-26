@@ -7,7 +7,7 @@ use rand::Rng;
 use std::collections::HashMap;
 use std::ffi::{OsStr, OsString};
 use tempfile::tempdir;
-use winapi::shared::winerror;
+use windows_sys::Win32::Foundation;
 use winreg::enums::*;
 use winreg::types::FromRegValue;
 use winreg::{RegKey, RegValue};
@@ -34,7 +34,7 @@ fn test_load_appkey() {
         let key_err = RegKey::load_app_key_with_flags(&file_path, KEY_READ, 0).unwrap_err();
         assert_eq!(
             key_err.raw_os_error(),
-            Some(winerror::ERROR_SHARING_VIOLATION as i32)
+            Some(Foundation::ERROR_SHARING_VIOLATION as i32)
         );
     }
     let val2: String = {
