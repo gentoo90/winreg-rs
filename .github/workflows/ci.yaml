@@ -47,12 +47,24 @@ jobs:
         uses: actions-rs/cargo@v1
         with:
           command: generate-lockfile
-      - name: Restrict Dependencies Versions
+      - name: Restrict chrono version
         if: matrix.restrict_deps_versions
         uses: actions-rs/cargo@v1
         with:
           command: update
           args: --package chrono --precise 0.4.19
+      - name: Restrict serde version
+        if: matrix.restrict_deps_versions
+        uses: actions-rs/cargo@v1
+        with:
+          command: update
+          args: --package serde --precise 1.0.156
+      - name: Restrict serde_derive version
+        if: matrix.restrict_deps_versions
+        uses: actions-rs/cargo@v1
+        with:
+          command: update
+          args: --package serde_derive --precise 1.0.156
       - name: Check formatting
         if: matrix.lint
         uses: actions-rs/cargo@v1
