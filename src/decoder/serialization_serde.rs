@@ -257,13 +257,6 @@ impl<'de, 'a> Deserializer<'de> for &'a mut Decoder {
         visitor.visit_map(self)
     }
 
-    fn deserialize_identifier<V>(self, visitor: V) -> DecodeResult<V::Value>
-    where
-        V: Visitor<'de>,
-    {
-        self.deserialize_string(visitor)
-    }
-
     fn deserialize_enum<V>(
         self,
         _name: &'static str,
@@ -274,6 +267,13 @@ impl<'de, 'a> Deserializer<'de> for &'a mut Decoder {
         V: Visitor<'de>,
     {
         no_impl!("deserialize_enum")
+    }
+
+    fn deserialize_identifier<V>(self, visitor: V) -> DecodeResult<V::Value>
+    where
+        V: Visitor<'de>,
+    {
+        self.deserialize_string(visitor)
     }
 
     fn deserialize_ignored_any<V>(self, visitor: V) -> DecodeResult<V::Value>

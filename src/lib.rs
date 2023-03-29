@@ -117,6 +117,7 @@ cfg_if::cfg_if! {
         pub use crate::reg_key::{EnumKeys, EnumValues, RegKey, HKEY};
         pub use crate::reg_key_metadata::RegKeyMetadata;
         pub use crate::reg_value::RegValue;
+        extern crate windows_sys;
 
         mod common;
         #[cfg(feature = "serialization-serde")]

@@ -15,11 +15,14 @@ use std::ffi::OsStr;
 use std::io;
 use std::mem::transmute;
 use std::ptr;
-pub use winapi::shared::minwindef::HKEY;
-use winapi::shared::minwindef::{BYTE, DWORD, LPBYTE};
-use winapi::shared::winerror;
-use winapi::um::winnt::{self, WCHAR};
-use winapi::um::winreg as winapi_reg;
+
+use windows_sys::Win32::System::Registry as winnt;
+use windows_sys::Win32::Foundation as winerror;
+use windows_sys::Win32::System::Registry as winapi_reg;
+pub use windows_sys::Win32::System::Registry::HKEY;
+
+type DWORD = u32;
+type WCHAR = u16;
 
 /// Handle of opened registry key
 #[derive(Debug)]
@@ -50,6 +53,7 @@ impl RegKey {
     /// # use winreg::enums::*;
     /// let hklm = RegKey::predef(HKEY_LOCAL_MACHINE);
     /// ```
+    #[must_use]
     pub const fn predef(hkey: HKEY) -> RegKey {
         RegKey { hkey }
     }
@@ -95,11 +99,11 @@ impl RegKey {
     /// ```
     pub fn load_app_key_with_flags<N: AsRef<OsStr>>(
         filename: N,
-        perms: winapi_reg::REGSAM,
+        perms: u32,
         options: DWORD,
     ) -> io::Result<RegKey> {
         let c_filename = to_utf16(filename);
-        let mut new_hkey: HKEY = ptr::null_mut();
+        let mut new_hkey: HKEY = 0;
         match unsafe {
             winapi_reg::RegLoadAppKeyW(c_filename.as_ptr(), &mut new_hkey, perms, options, 0)
                 as DWORD
@@ -124,6 +128,7 @@ impl RegKey {
     /// # Ok(())
     /// # }
     /// ```
+    #[must_use]
     pub const fn raw_handle(&self) -> HKEY {
         self.hkey
     }
@@ -167,10 +172,10 @@ impl RegKey {
     pub fn open_subkey_with_flags<P: AsRef<OsStr>>(
         &self,
         path: P,
-        perms: winapi_reg::REGSAM,
+        perms: u32,
     ) -> io::Result<RegKey> {
         let c_path = to_utf16(path);
-        let mut new_hkey: HKEY = ptr::null_mut();
+        let mut new_hkey: HKEY = 0;
         match unsafe {
             winapi_reg::RegOpenKeyExW(self.hkey, c_path.as_ptr(), 0, perms, &mut new_hkey) as DWORD
         } {
@@ -195,10 +200,10 @@ impl RegKey {
         &self,
         path: P,
         t: &Transaction,
-        perms: winapi_reg::REGSAM,
+        perms: u32,
     ) -> io::Result<RegKey> {
         let c_path = to_utf16(path);
-        let mut new_hkey: HKEY = ptr::null_mut();
+        let mut new_hkey: HKEY = 0;
         match unsafe {
             winapi_reg::RegOpenKeyTransactedW(
                 self.hkey,
@@ -247,10 +252,10 @@ impl RegKey {
     pub fn create_subkey_with_flags<P: AsRef<OsStr>>(
         &self,
         path: P,
-        perms: winapi_reg::REGSAM,
+        perms: u32,
     ) -> io::Result<(RegKey, RegDisposition)> {
         let c_path = to_utf16(path);
-        let mut new_hkey: HKEY = ptr::null_mut();
+        let mut new_hkey: HKEY = 0;
         let mut disp_buf: DWORD = 0;
         match unsafe {
             winapi_reg::RegCreateKeyExW(
@@ -289,10 +294,10 @@ impl RegKey {
         &self,
         path: P,
         t: &Transaction,
-        perms: winapi_reg::REGSAM,
+        perms: u32,
     ) -> io::Result<(RegKey, RegDisposition)> {
         let c_path = to_utf16(path);
-        let mut new_hkey: HKEY = ptr::null_mut();
+        let mut new_hkey: HKEY = 0;
         let mut disp_buf: DWORD = 0;
         match unsafe {
             winapi_reg::RegCreateKeyTransactedW(
@@ -357,7 +362,7 @@ impl RegKey {
                 &mut info.max_value_name_len,
                 &mut info.max_value_len,
                 ptr::null_mut(), // lpcbSecurityDescriptor: winapi::LPDWORD,
-                &mut info.last_write_time,
+                &mut info.last_write_time.0,
             ) as DWORD
         } {
             0 => Ok(info),
@@ -380,6 +385,7 @@ impl RegKey {
     ///     println!("{}", i);
     /// }
     /// ```
+    #[must_use]
     pub const fn enum_keys(&self) -> EnumKeys {
         EnumKeys {
             key: self,
@@ -404,6 +410,7 @@ impl RegKey {
     /// # Ok(())
     /// # }
     /// ```
+    #[must_use]
     pub const fn enum_values(&self) -> EnumValues {
         EnumValues {
             key: self,
@@ -449,7 +456,7 @@ impl RegKey {
     pub fn delete_subkey_with_flags<P: AsRef<OsStr>>(
         &self,
         path: P,
-        perms: winapi_reg::REGSAM,
+        perms: u32,
     ) -> io::Result<()> {
         let c_path = to_utf16(path);
         match unsafe {
@@ -481,7 +488,7 @@ impl RegKey {
         &self,
         path: P,
         t: &Transaction,
-        perms: winapi_reg::REGSAM,
+        perms: u32,
     ) -> io::Result<()> {
         let c_path = to_utf16(path);
         match unsafe {
@@ -584,10 +591,10 @@ impl RegKey {
             match unsafe {
                 winapi_reg::RegQueryValueExW(
                     self.hkey,
-                    c_name.as_ptr() as *const u16,
+                    c_name.as_ptr().cast::<u16>(),
                     ptr::null_mut(),
                     &mut buf_type,
-                    buf.as_mut_ptr() as LPBYTE,
+                    buf.as_mut_ptr().cast::<u8>(),
                     &mut buf_len,
                 ) as DWORD
             } {
@@ -663,7 +670,7 @@ impl RegKey {
                 c_name.as_ptr(),
                 0,
                 t,
-                value.bytes.as_ptr() as *const BYTE,
+                value.bytes.as_ptr().cast::<u8>(),
                 value.bytes.len() as u32,
             ) as DWORD
         } {
@@ -833,7 +840,7 @@ impl RegKey {
                     &mut name_len,
                     ptr::null_mut(), // reserved
                     &mut buf_type,
-                    buf.as_mut_ptr() as LPBYTE,
+                    buf.as_mut_ptr().cast::<u8>(),
                     &mut buf_len,
                 ) as DWORD
             } {

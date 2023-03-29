@@ -10,7 +10,8 @@ use crate::transaction::Transaction;
 use std::error::Error;
 use std::fmt;
 use std::io;
-use winapi::shared::minwindef::DWORD;
+
+type DWORD = u32;
 
 macro_rules! emit_value {
     ($s:ident, $v:ident) => {

@@ -14,6 +14,7 @@
 //!use winreg::transaction::Transaction;
 //!
 //!fn main() {
+//!    use windows_sys::Win32::System::Registry::HKEY_CURRENT_USER;
 //!    let t = Transaction::new().unwrap();
 //!    let hkcu = RegKey::predef(HKEY_CURRENT_USER);
 //!    let (key, _disp) = hkcu.create_subkey_transacted("Software\\RustTransaction", &t).unwrap();
@@ -23,7 +24,7 @@
 //!    println!("Commit transaction? [y/N]:");
 //!    let mut input = String::new();
 //!    io::stdin().read_line(&mut input).unwrap();
-//!    input = input.trim_right().to_owned();
+//!    input = input.trim_end().to_owned();
 //!    if input == "y" || input == "Y" {
 //!        t.commit().unwrap();
 //!        println!("Transaction committed.");
@@ -40,9 +41,9 @@
 #![cfg(feature = "transactions")]
 use std::io;
 use std::ptr;
-use winapi::um::handleapi;
-use winapi::um::ktmw32;
-use winapi::um::winnt;
+use windows_sys::Win32::Foundation as handleapi;
+use windows_sys::Win32::Foundation as winnt;
+use windows_sys::Win32::Storage::FileSystem as ktmw32;
 
 #[derive(Debug)]
 pub struct Transaction {
