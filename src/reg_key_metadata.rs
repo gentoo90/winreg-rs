@@ -9,8 +9,7 @@ use std::fmt::{Debug, Formatter};
 use std::ops::Deref;
 use windows_sys::Win32::Foundation::{FILETIME, SYSTEMTIME};
 use windows_sys::Win32::System::Time::FileTimeToSystemTime;
-
-type DWORD = u32;
+use crate::types::DWORD;
 
 /// Metadata returned by `RegKey::query_info`
 #[derive(Debug, Default)]
@@ -57,9 +56,8 @@ impl Deref for FileTime {
 
 impl RegKeyMetadata {
     /// Returns `last_write_time` field as `winapi::um::minwinbase::SYSTEMTIME`
-    #[must_use]
     pub fn get_last_write_time_system(&self) -> SYSTEMTIME {
-        let mut st: SYSTEMTIME = unsafe { std::mem::zeroed() };
+        let mut st: SYSTEMTIME = unsafe { ::std::mem::zeroed() };
         unsafe {
             FileTimeToSystemTime(&self.last_write_time.0, &mut st);
         }
@@ -72,9 +70,10 @@ impl RegKeyMetadata {
     pub fn get_last_write_time_chrono(&self) -> chrono::NaiveDateTime {
         let st = self.get_last_write_time_system();
 
-        chrono::NaiveDate::from_ymd_opt(st.wYear.into(), st.wMonth.into(), st.wDay.into())
-            .expect("out-of-range date, invalid month and/or day")
-            .and_hms_opt(st.wHour.into(), st.wMinute.into(), st.wSecond.into())
-            .expect("invalid hour, minute and/or second")
+        chrono::NaiveDate::from_ymd(st.wYear.into(), st.wMonth.into(), st.wDay.into()).and_hms(
+            st.wHour.into(),
+            st.wMinute.into(),
+            st.wSecond.into(),
+        )
     }
 }

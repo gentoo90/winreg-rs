@@ -6,7 +6,6 @@
 use crate::enums::*;
 use crate::types::FromRegValue;
 use std::fmt;
-use std::fmt::{Debug, Formatter};
 
 /// Raw registry value
 #[derive(PartialEq)]
@@ -25,19 +24,19 @@ macro_rules! format_reg_value {
 }
 
 impl fmt::Display for RegValue {
-    fn fmt(&self, f: &mut Formatter) -> fmt::Result {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         let f_val = match self.vtype {
             REG_SZ | REG_EXPAND_SZ | REG_MULTI_SZ => format_reg_value!(self => String),
             REG_DWORD => format_reg_value!(self => u32),
             REG_QWORD => format_reg_value!(self => u64),
             _ => format!("{:?}", self.bytes), //TODO: implement more types
         };
-        write!(f, "{f_val}")
+        write!(f, "{}", f_val)
     }
 }
 
-impl Debug for RegValue {
-    fn fmt(&self, f: &mut Formatter) -> fmt::Result {
+impl fmt::Debug for RegValue {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         write!(f, "RegValue({:?}: {})", self.vtype, self)
     }
 }

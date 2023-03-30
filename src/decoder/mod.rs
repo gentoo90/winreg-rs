@@ -6,12 +6,10 @@
 use crate::enums::*;
 use crate::reg_key::RegKey;
 use crate::reg_value::RegValue;
-use crate::types::FromRegValue;
+use crate::types::{DWORD, FromRegValue};
 use std::error::Error;
 use std::fmt;
 use std::io;
-
-type DWORD = u32;
 
 macro_rules! parse_string {
     ($s:ident) => {{

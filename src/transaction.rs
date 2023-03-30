@@ -14,7 +14,6 @@
 //!use winreg::transaction::Transaction;
 //!
 //!fn main() {
-//!    use windows_sys::Win32::System::Registry::HKEY_CURRENT_USER;
 //!    let t = Transaction::new().unwrap();
 //!    let hkcu = RegKey::predef(HKEY_CURRENT_USER);
 //!    let (key, _disp) = hkcu.create_subkey_transacted("Software\\RustTransaction", &t).unwrap();
@@ -24,7 +23,7 @@
 //!    println!("Commit transaction? [y/N]:");
 //!    let mut input = String::new();
 //!    io::stdin().read_line(&mut input).unwrap();
-//!    input = input.trim_end().to_owned();
+//!    input = input.trim_right().to_owned();
 //!    if input == "y" || input == "Y" {
 //!        t.commit().unwrap();
 //!        println!("Transaction committed.");
@@ -41,20 +40,19 @@
 #![cfg(feature = "transactions")]
 use std::io;
 use std::ptr;
-use windows_sys::Win32::Foundation as handleapi;
-use windows_sys::Win32::Foundation as winnt;
-use windows_sys::Win32::Storage::FileSystem as ktmw32;
+use windows_sys::Win32::Foundation;
+use windows_sys::Win32::Storage::FileSystem;
 
 #[derive(Debug)]
 pub struct Transaction {
-    pub handle: winnt::HANDLE,
+    pub handle: Foundation::HANDLE,
 }
 
 impl Transaction {
     //TODO: add arguments
     pub fn new() -> io::Result<Transaction> {
         unsafe {
-            let handle = ktmw32::CreateTransaction(
+            let handle = FileSystem::CreateTransaction(
                 ptr::null_mut(),
                 ptr::null_mut(),
                 0,
@@ -63,7 +61,7 @@ impl Transaction {
                 0,
                 ptr::null_mut(),
             );
-            if handle == handleapi::INVALID_HANDLE_VALUE {
+            if handle == Foundation::INVALID_HANDLE_VALUE {
                 return Err(io::Error::last_os_error());
             };
             Ok(Transaction { handle })
@@ -72,7 +70,7 @@ impl Transaction {
 
     pub fn commit(&self) -> io::Result<()> {
         unsafe {
-            match ktmw32::CommitTransaction(self.handle) {
+            match FileSystem::CommitTransaction(self.handle) {
                 0 => Err(io::Error::last_os_error()),
                 _ => Ok(()),
             }
@@ -81,7 +79,7 @@ impl Transaction {
 
     pub fn rollback(&self) -> io::Result<()> {
         unsafe {
-            match ktmw32::RollbackTransaction(self.handle) {
+            match FileSystem::RollbackTransaction(self.handle) {
                 0 => Err(io::Error::last_os_error()),
                 _ => Ok(()),
             }
@@ -90,7 +88,7 @@ impl Transaction {
 
     fn close_(&mut self) -> io::Result<()> {
         unsafe {
-            match handleapi::CloseHandle(self.handle) {
+            match Foundation::CloseHandle(self.handle) {
                 0 => Err(io::Error::last_os_error()),
                 _ => Ok(()),
             }

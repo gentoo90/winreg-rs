@@ -10,8 +10,7 @@ use crate::transaction::Transaction;
 use std::error::Error;
 use std::fmt;
 use std::io;
-
-type DWORD = u32;
+use crate::types::DWORD;
 
 macro_rules! emit_value {
     ($s:ident, $v:ident) => {

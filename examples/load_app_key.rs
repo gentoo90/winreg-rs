@@ -4,7 +4,7 @@
 // may not be copied, modified, or distributed
 // except according to those terms.
 use std::io;
-use winreg::enums::{KEY_READ, REG_PROCESS_APPKEY};
+use winreg::enums::*;
 use winreg::RegKey;
 
 fn main() -> io::Result<()> {
@@ -20,6 +20,6 @@ fn main() -> io::Result<()> {
             RegKey::load_app_key_with_flags("myhive.dat", KEY_READ, REG_PROCESS_APPKEY)?;
         app_key_2.get_value("answer")?
     };
-    println!("The Answer is {answer}");
+    println!("The Answer is {}", answer);
     Ok(())
 }

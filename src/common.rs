@@ -22,5 +22,5 @@ pub(crate) fn to_utf16<P: AsRef<OsStr>>(s: P) -> Vec<u16> {
 }
 
 pub(crate) fn v16_to_v8(v: &[u16]) -> Vec<u8> {
-    unsafe { slice::from_raw_parts(v.as_ptr().cast::<u8>(), v.len() * 2).to_vec() }
+    unsafe { slice::from_raw_parts(v.as_ptr() as *const u8, v.len() * 2).to_vec() }
 }

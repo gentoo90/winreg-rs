@@ -1,6 +1,6 @@
 [package]
 name = "winreg"
-edition = "2021"
+edition = "2018"
 version = "0.11.0"
 authors = ["Igor Shaula <gentoo90@gmail.com>"]
 license = "MIT"
@@ -26,7 +26,7 @@ serde = { version = "1", optional = true }
 
 [dev-dependencies]
 rand = "0.3"
-tempfile = "3.3.0"
+tempfile = "~3.0"
 serde_derive = "1"
 serde_bytes = "0.11"
 
