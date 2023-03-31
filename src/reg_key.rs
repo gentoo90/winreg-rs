@@ -298,7 +298,7 @@ impl RegKey {
                 c_path.as_ptr(),
                 0,
                 ptr::null_mut(),
-                REG_OPTION_NON_VOLATILE::REG_OPTION_NON_VOLATILE,
+                Registry::REG_OPTION_NON_VOLATILE,
                 perms,
                 ptr::null_mut(),
                 &mut new_hkey,
