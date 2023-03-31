@@ -779,7 +779,9 @@ impl RegKey {
 
     fn close_(&mut self) -> io::Result<()> {
         // don't try to close predefined keys
-        if self.hkey >= enums::HKEY_CLASSES_ROOT {
+        // The root hkey overflows with windows-sys, where HKEY is an alias for isize.
+        // Cast to u32 to keep comparisons intact.
+        if self.hkey as usize >= enums::HKEY_CLASSES_ROOT as usize {
             return Ok(());
         };
         match unsafe { Registry::RegCloseKey(self.hkey) } {
