@@ -68,10 +68,9 @@ impl RegKeyMetadata {
     pub fn get_last_write_time_chrono(&self) -> chrono::NaiveDateTime {
         let st = self.get_last_write_time_system();
 
-        chrono::NaiveDate::from_ymd(st.wYear.into(), st.wMonth.into(), st.wDay.into()).and_hms(
-            st.wHour.into(),
-            st.wMinute.into(),
-            st.wSecond.into(),
-        )
+        chrono::NaiveDate::from_ymd_opt(st.wYear.into(), st.wMonth.into(), st.wDay.into())
+            .expect("out-of-range date, invalid month and/or day")
+            .and_hms_opt(st.wHour.into(), st.wMinute.into(), st.wSecond.into())
+            .expect("invalid hour, minute and/or second")
     }
 }
