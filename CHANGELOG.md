@@ -1,5 +1,11 @@
 # Changelog
 
+## 0.50.0
+
+* Breaking change: [`winapi-rs`](https://crates.io/crates/winapi) is not maintained any more, so migrate to Microsofts [`windows-sys`](https://crates.io/crates/windows-sys) as a backend ([#48](https://github.com/gentoo90/winreg-rs/pull/48), [#51](https://github.com/gentoo90/winreg-rs/pull/51))
+* Breaking change: Increase minimum supported Rust version to `1.46` since `windows-sys` doesn't compile with older versions
+* Replace deprecated methods from `chrono` ([#48](https://github.com/gentoo90/winreg-rs/pull/48))
+
 ## 0.11.0
 
 * Migrate to the 2018 edition of Rust
