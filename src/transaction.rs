@@ -102,3 +102,9 @@ impl Drop for Transaction {
         self.close_().unwrap_or(());
     }
 }
+
+impl AsRef<Transaction> for Transaction {
+    fn as_ref(&self) -> &Transaction {
+        self
+    }
+}

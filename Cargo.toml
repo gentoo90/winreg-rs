@@ -46,6 +46,10 @@ name = "serialization"
 required-features = ["serialization-serde"]
 
 [[example]]
+name = "transacted_serialization"
+required-features = ["serialization-serde"]
+
+[[example]]
 name = "map_key_serialization"
 required-features = ["serialization-serde"]
 
