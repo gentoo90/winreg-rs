@@ -1,5 +1,10 @@
 # Changelog
 
+## 0.12.0
+
+* Breaking change: fix `std::fmt::Display` implementation for `RegValue` ([#52](https://github.com/gentoo90/winreg-rs/issues/52))
+* Add `RegKey::encode_transacted()` method (pullrequest [#55](https://github.com/gentoo90/winreg-rs/pull/55), fixes [#54](https://github.com/gentoo90/winreg-rs/issues/54))
+
 ## 0.11.0
 
 * Migrate to the 2018 edition of Rust
