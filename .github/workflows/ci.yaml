@@ -83,6 +83,18 @@ jobs:
         with:
           command: update
           args: --package proc-macro2 --precise 1.0.65
+      - name: Restrict windows-targets version
+        if: matrix.restrict_deps_versions
+        uses: actions-rs/cargo@v1
+        with:
+          command: update
+          args: --package windows-targets --precise 0.48.1
+      - name: Restrict windows_x86_64_msvc version
+        if: matrix.restrict_deps_versions
+        uses: actions-rs/cargo@v1
+        with:
+          command: update
+          args: --package windows_x86_64_msvc --precise 0.48.0
       - name: Check formatting
         if: matrix.lint
         uses: actions-rs/cargo@v1
