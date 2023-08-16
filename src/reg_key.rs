@@ -694,6 +694,7 @@ impl RegKey {
     }
 
     /// Save `Encodable` type to a registry key.
+    /// This will create a new transaction for this operation.
     /// Part of `serialization-serde` feature.
     ///
     /// # Examples
@@ -736,6 +737,60 @@ impl RegKey {
         let mut encoder = crate::encoder::Encoder::from_key(self)?;
         value.serialize(&mut encoder)?;
         encoder.commit()
+    }
+
+    /// Save `Encodable` type to a registry key using an existing transaction.
+    /// Part of `serialization-serde` feature.
+    ///
+    /// # Examples
+    ///
+    /// ```no_run
+    /// # use std::error::Error;
+    /// use serde_derive::Serialize;
+    /// use winreg::transaction::Transaction;
+    /// use winreg::RegKey;
+    /// use winreg::enums::*;
+    ///
+    /// #[derive(Serialize)]
+    /// struct Rectangle{
+    ///     x: u32,
+    ///     y: u32,
+    ///     w: u32,
+    ///     h: u32,
+    /// }
+    ///
+    /// #[derive(Serialize)]
+    /// struct Settings{
+    ///     current_dir: String,
+    ///     window_pos: Rectangle,
+    ///     show_in_tray: bool,
+    /// }
+    ///
+    /// # fn main() -> Result<(), Box<dyn Error>> {
+    /// let s: Settings = Settings{
+    ///     current_dir: "C:\\".to_owned(),
+    ///     window_pos: Rectangle{ x:200, y: 100, w: 800, h: 500 },
+    ///     show_in_tray: false,
+    /// };
+    ///
+    /// let transaction = Transaction::new()?;
+    ///
+    /// let s_key = RegKey::predef(HKEY_CURRENT_USER)
+    ///     .open_subkey_transacted("Software\\MyProduct\\Settings", &transaction)?;
+    /// s_key.encode_transacted(&s, &transaction)?;
+    ///
+    /// transaction.commit()?;
+    /// # Ok(())
+    /// # }
+    /// ```
+    #[cfg(feature = "serialization-serde")]
+    pub fn encode_transacted<T: serde::Serialize>(
+        &self,
+        value: &T,
+        tr: &Transaction,
+    ) -> crate::encoder::EncodeResult<()> {
+        let mut encoder = crate::encoder::Encoder::from_key_transacted(self, tr)?;
+        value.serialize(&mut encoder)
     }
 
     /// Load `Decodable` type from a registry key.

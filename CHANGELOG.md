@@ -1,5 +1,10 @@
 # Changelog
 
+## 0.12.0, 0.51.0
+
+* Breaking change: fix `std::fmt::Display` implementation for `RegValue` ([#52](https://github.com/gentoo90/winreg-rs/issues/52))
+* Add `RegKey::encode_transacted()` method (pullrequest [#55](https://github.com/gentoo90/winreg-rs/pull/55), fixes [#54](https://github.com/gentoo90/winreg-rs/issues/54))
+
 ## 0.50.0
 
 * Breaking change: [`winapi-rs`](https://crates.io/crates/winapi) is not maintained any more, so migrate to Microsofts [`windows-sys`](https://crates.io/crates/windows-sys) as a backend ([#48](https://github.com/gentoo90/winreg-rs/pull/48), [#51](https://github.com/gentoo90/winreg-rs/pull/51))
