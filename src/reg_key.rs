@@ -669,6 +669,30 @@ impl RegKey {
         }
     }
 
+    /// Rename registry key.
+    ///
+    /// # Examples
+    /// ```no_run
+    /// # use std::error::Error;
+    /// # use winreg::RegKey;
+    /// # use winreg::enums::*;
+    /// # fn main() -> Result<(), Box<dyn Error>> {
+    /// let hkcu = RegKey::predef(HKEY_CURRENT_USER);
+    /// let settings = hkcu.open_subkey("Software\\MyProduct\\Settings")?;
+    /// settings.rename_key("old_name", "new_name")?;
+    /// # Ok(())
+    /// # }
+    /// ```
+    pub fn rename_key<N: AsRef<OsStr>>(&self, old_name: N, new_name: N) -> io::Result<()> {
+        let c_old_name = to_utf16(old_name);
+        let c_new_name = to_utf16(new_name);
+        match unsafe { Registry::RegRenameKey(self.hkey, c_old_name.as_ptr(), c_new_name.as_ptr()) }
+        {
+            0 => Ok(()),
+            err => werr!(err),
+        }
+    }
+
     /// Delete specified value from registry.
     /// Will delete the `Default` value if `name` is an empty string.
     ///
