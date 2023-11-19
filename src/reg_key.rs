@@ -314,6 +314,33 @@ impl RegKey {
         }
     }
 
+    /// Rename a subkey
+    ///
+    /// # Examples
+    /// ```no_run
+    /// # use std::error::Error;
+    /// # use winreg::RegKey;
+    /// # use winreg::enums::*;
+    /// # fn main() -> Result<(), Box<dyn Error>> {
+    /// let items = RegKey::predef(HKEY_CURRENT_USER).open_subkey(r"Software\MyProduct\Items")?;
+    /// items.rename_subkey("itemA", "itemB")?;
+    /// # Ok(())
+    /// # }
+    /// ```
+    pub fn rename_subkey<ON: AsRef<OsStr>, NN: AsRef<OsStr>>(
+        &self,
+        old_name: ON,
+        new_name: NN,
+    ) -> io::Result<()> {
+        let c_old_name = to_utf16(old_name);
+        let c_new_name = to_utf16(new_name);
+        match unsafe { Registry::RegRenameKey(self.hkey, c_old_name.as_ptr(), c_new_name.as_ptr()) }
+        {
+            0 => Ok(()),
+            err => werr!(err),
+        }
+    }
+
     /// Copy all the values and subkeys from `path` to `dest` key.
     /// Will copy the content of `self` if `path` is an empty string.
     ///

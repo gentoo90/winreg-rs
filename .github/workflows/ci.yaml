@@ -47,12 +47,36 @@ jobs:
         uses: actions-rs/cargo@v1
         with:
           command: generate-lockfile
+      - name: Restrict iana-time-zone version
+        if: matrix.restrict_deps_versions
+        uses: actions-rs/cargo@v1
+        with:
+          command: update
+          args: --package iana-time-zone --precise 0.1.54
+      - name: Restrict js-sys version
+        if: matrix.restrict_deps_versions
+        uses: actions-rs/cargo@v1
+        with:
+          command: update
+          args: --package js-sys --precise 0.3.50
+      - name: Restrict wasm-bindgen version
+        if: matrix.restrict_deps_versions
+        uses: actions-rs/cargo@v1
+        with:
+          command: update
+          args: --package wasm-bindgen --precise 0.2.84
       - name: Restrict serde_bytes version
         if: matrix.restrict_deps_versions
         uses: actions-rs/cargo@v1
         with:
           command: update
           args: --package serde_bytes --precise 0.11.10
+      - name: Restrict serde_json version
+        if: matrix.restrict_deps_versions
+        uses: actions-rs/cargo@v1
+        with:
+          command: update
+          args: --package serde_json --precise 1.0.72
       - name: Restrict serde version
         if: matrix.restrict_deps_versions
         uses: actions-rs/cargo@v1
@@ -88,13 +112,13 @@ jobs:
         uses: actions-rs/cargo@v1
         with:
           command: update
-          args: --package windows-targets --precise 0.48.1
+          args: --package windows-targets:0.48.5 --precise 0.48.5
       - name: Restrict windows_x86_64_msvc version
         if: matrix.restrict_deps_versions
         uses: actions-rs/cargo@v1
         with:
           command: update
-          args: --package windows_x86_64_msvc --precise 0.48.0
+          args: --package windows_x86_64_msvc:0.48.5 --precise 0.48.5
       - name: Check formatting
         if: matrix.lint
         uses: actions-rs/cargo@v1

@@ -90,7 +90,7 @@ impl Encoder<Transaction> {
         }
     }
 
-    pub fn commit(&mut self) -> EncodeResult<()> {
+    pub fn commit(self) -> EncodeResult<()> {
         self.tr.commit().map_err(EncoderError::IoError)
     }
 }

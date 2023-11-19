@@ -1,5 +1,21 @@
 # Changelog
 
+## 0.52.0
+* Breaking change: `.commit()` and `.rollback()` now consume the transaction ([#62](https://github.com/gentoo90/winreg-rs/issues/62))
+* Add `RegKey::rename_subkey()` method ([#58](https://github.com/gentoo90/winreg-rs/issues/58))
+* Make serialization modules public ([#59](https://github.com/gentoo90/winreg-rs/issues/59))
+* Fix UB in `FromRegValue` for `u32` and `u64` ([#61](https://github.com/gentoo90/winreg-rs/issues/61))
+
+## 0.14.0
+* Breaking change: increase MSRV to 1.34
+* Fix UB in `FromRegValue` for `u32` and `u64` ([#61](https://github.com/gentoo90/winreg-rs/issues/61))
+
+## 0.13.0
+
+* Breaking change: `.commit()` and `.rollback()` now consume the transaction ([#62](https://github.com/gentoo90/winreg-rs/issues/62))
+* Add `RegKey::rename_subkey()` method ([#58](https://github.com/gentoo90/winreg-rs/issues/58))
+* Make serialization modules public ([#59](https://github.com/gentoo90/winreg-rs/issues/59))
+
 ## 0.12.0, 0.51.0
 
 * Breaking change: fix `std::fmt::Display` implementation for `RegValue` ([#52](https://github.com/gentoo90/winreg-rs/issues/52))
