@@ -59,6 +59,12 @@ jobs:
         with:
           command: update
           args: --package serde_bytes --precise 0.11.10
+      - name: Restrict serde_json version
+        if: matrix.restrict_deps_versions
+        uses: actions-rs/cargo@v1
+        with:
+          command: update
+          args: --package serde_json --precise 1.0.72
       - name: Restrict serde version
         if: matrix.restrict_deps_versions
         uses: actions-rs/cargo@v1
@@ -83,6 +89,12 @@ jobs:
         with:
           command: update
           args: --package proc-macro2 --precise 1.0.65
+      - name: Restrict ryu version
+        if: matrix.restrict_deps_versions
+        uses: actions-rs/cargo@v1
+        with:
+          command: update
+          args: --package ryu --precise 1.0.6
       - name: Check formatting
         if: matrix.lint
         uses: actions-rs/cargo@v1
