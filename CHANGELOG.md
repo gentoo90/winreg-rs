@@ -1,5 +1,9 @@
 # Changelog
 
+## 0.14.0
+* Breaking change: increase MSRV to 1.34
+* Fix UB in `FromRegValue` for `u32` and `u64` ([#61](https://github.com/gentoo90/winreg-rs/issues/61))
+
 ## 0.13.0
 
 * Breaking change: `.commit()` and `.rollback()` now consume the transaction ([#62](https://github.com/gentoo90/winreg-rs/issues/62))
