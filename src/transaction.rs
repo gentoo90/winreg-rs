@@ -69,7 +69,7 @@ impl Transaction {
         }
     }
 
-    pub fn commit(&self) -> io::Result<()> {
+    pub fn commit(self) -> io::Result<()> {
         unsafe {
             match ktmw32::CommitTransaction(self.handle) {
                 0 => Err(io::Error::last_os_error()),
@@ -78,7 +78,7 @@ impl Transaction {
         }
     }
 
-    pub fn rollback(&self) -> io::Result<()> {
+    pub fn rollback(self) -> io::Result<()> {
         unsafe {
             match ktmw32::RollbackTransaction(self.handle) {
                 0 => Err(io::Error::last_os_error()),
