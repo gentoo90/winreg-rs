@@ -169,10 +169,35 @@ impl RegKey {
         path: P,
         perms: winapi_reg::REGSAM,
     ) -> io::Result<RegKey> {
+        self.open_subkey_with_options_flags(path, 0, perms)
+    }
+
+    /// Open subkey with desired permissions and options.
+    /// Will open another handle to itself if `path` is an empty string.
+    ///
+    /// # Examples
+    ///
+    /// ```no_run
+    /// # use std::error::Error;
+    /// # use winreg::RegKey;
+    /// # use winreg::enums::*;
+    /// # fn main() -> Result<(), Box<dyn Error>> {
+    /// let hklm = RegKey::predef(HKEY_LOCAL_MACHINE);
+    /// hklm.open_subkey_with_options_flags("SOFTWARE\\LinkKey", REG_OPTION_OPEN_LINK, KEY_READ)?;
+    /// # Ok(())
+    /// # }
+    /// ```
+    pub fn open_subkey_with_options_flags<P: AsRef<OsStr>>(
+        &self,
+        path: P,
+        options: DWORD,
+        perms: winapi_reg::REGSAM,
+    ) -> io::Result<RegKey> {
         let c_path = to_utf16(path);
         let mut new_hkey: HKEY = ptr::null_mut();
         match unsafe {
-            winapi_reg::RegOpenKeyExW(self.hkey, c_path.as_ptr(), 0, perms, &mut new_hkey) as DWORD
+            winapi_reg::RegOpenKeyExW(self.hkey, c_path.as_ptr(), options, perms, &mut new_hkey)
+                as DWORD
         } {
             0 => Ok(RegKey { hkey: new_hkey }),
             err => werr!(err),
@@ -197,13 +222,25 @@ impl RegKey {
         t: &Transaction,
         perms: winapi_reg::REGSAM,
     ) -> io::Result<RegKey> {
+        self.open_subkey_transacted_with_options_flags(path, t, 0, perms)
+    }
+
+    /// Part of `transactions` feature.
+    #[cfg(feature = "transactions")]
+    pub fn open_subkey_transacted_with_options_flags<P: AsRef<OsStr>>(
+        &self,
+        path: P,
+        t: &Transaction,
+        options: DWORD,
+        perms: winapi_reg::REGSAM,
+    ) -> io::Result<RegKey> {
         let c_path = to_utf16(path);
         let mut new_hkey: HKEY = ptr::null_mut();
         match unsafe {
             winapi_reg::RegOpenKeyTransactedW(
                 self.hkey,
                 c_path.as_ptr(),
-                0,
+                options,
                 perms,
                 &mut new_hkey,
                 t.handle,
@@ -249,6 +286,15 @@ impl RegKey {
         path: P,
         perms: winapi_reg::REGSAM,
     ) -> io::Result<(RegKey, RegDisposition)> {
+        self.create_subkey_with_options_flags(path, REG_OPTION_NON_VOLATILE, perms)
+    }
+
+    pub fn create_subkey_with_options_flags<P: AsRef<OsStr>>(
+        &self,
+        path: P,
+        options: DWORD,
+        perms: winapi_reg::REGSAM,
+    ) -> io::Result<(RegKey, RegDisposition)> {
         let c_path = to_utf16(path);
         let mut new_hkey: HKEY = ptr::null_mut();
         let mut disp_buf: DWORD = 0;
@@ -258,7 +304,7 @@ impl RegKey {
                 c_path.as_ptr(),
                 0,
                 ptr::null_mut(),
-                winnt::REG_OPTION_NON_VOLATILE,
+                options,
                 perms,
                 ptr::null_mut(),
                 &mut new_hkey,
@@ -291,6 +337,18 @@ impl RegKey {
         t: &Transaction,
         perms: winapi_reg::REGSAM,
     ) -> io::Result<(RegKey, RegDisposition)> {
+        self.create_subkey_transacted_with_options_flags(path, t, REG_OPTION_NON_VOLATILE, perms)
+    }
+
+    /// Part of `transactions` feature.
+    #[cfg(feature = "transactions")]
+    pub fn create_subkey_transacted_with_options_flags<P: AsRef<OsStr>>(
+        &self,
+        path: P,
+        t: &Transaction,
+        options: DWORD,
+        perms: winapi_reg::REGSAM,
+    ) -> io::Result<(RegKey, RegDisposition)> {
         let c_path = to_utf16(path);
         let mut new_hkey: HKEY = ptr::null_mut();
         let mut disp_buf: DWORD = 0;
@@ -300,7 +358,7 @@ impl RegKey {
                 c_path.as_ptr(),
                 0,
                 ptr::null_mut(),
-                winnt::REG_OPTION_NON_VOLATILE,
+                options,
                 perms,
                 ptr::null_mut(),
                 &mut new_hkey,
