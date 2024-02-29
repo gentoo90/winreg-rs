@@ -176,6 +176,38 @@ impl RegKey {
         }
     }
 
+    /// Open subkey with desired permissions and options.
+    /// Will open another handle to itself if `path` is an empty string.
+    ///
+    /// # Examples
+    ///
+    /// ```no_run
+    /// # use std::error::Error;
+    /// # use winreg::RegKey;
+    /// # use winreg::enums::*;
+    /// # fn main() -> Result<(), Box<dyn Error>> {
+    /// # use windows_sys::Win32::System::Registry::REG_OPTION_CREATE_LINK;
+    /// let hklm = RegKey::predef(HKEY_LOCAL_MACHINE);
+    /// hklm.open_subkey_with_options_flags("SOFTWARE\\Microsoft", REG_OPTION_CREATE_LINK, KEY_READ)?;
+    /// # Ok(())
+    /// # }
+    /// ```
+    pub fn open_subkey_with_options_flags<P: AsRef<OsStr>>(
+        &self,
+        path: P,
+        options: Registry::REG_OPEN_CREATE_OPTIONS,
+        perms: Registry::REG_SAM_FLAGS,
+    ) -> io::Result<RegKey> {
+        let c_path = to_utf16(path);
+        let mut new_hkey: HKEY = 0;
+        match unsafe {
+            Registry::RegOpenKeyExW(self.hkey, c_path.as_ptr(), options, perms, &mut new_hkey)
+        } {
+            0 => Ok(RegKey { hkey: new_hkey }),
+            err => werr!(err),
+        }
+    }
+
     /// Part of `transactions` feature.
     #[cfg(feature = "transactions")]
     pub fn open_subkey_transacted<P: AsRef<OsStr>>(
@@ -201,6 +233,33 @@ impl RegKey {
                 self.hkey,
                 c_path.as_ptr(),
                 0,
+                perms,
+                &mut new_hkey,
+                t.handle,
+                ptr::null_mut(),
+            )
+        } {
+            0 => Ok(RegKey { hkey: new_hkey }),
+            err => werr!(err),
+        }
+    }
+
+    /// Part of `transactions` feature.
+    #[cfg(feature = "transactions")]
+    pub fn open_subkey_transacted_with_options_flags<P: AsRef<OsStr>>(
+        &self,
+        path: P,
+        t: &Transaction,
+        options: Registry::REG_OPEN_CREATE_OPTIONS,
+        perms: Registry::REG_SAM_FLAGS,
+    ) -> io::Result<RegKey> {
+        let c_path = to_utf16(path);
+        let mut new_hkey: HKEY = 0;
+        match unsafe {
+            Registry::RegOpenKeyTransactedW(
+                self.hkey,
+                c_path.as_ptr(),
+                options,
                 perms,
                 &mut new_hkey,
                 t.handle,
@@ -270,6 +329,36 @@ impl RegKey {
         }
     }
 
+    pub fn create_subkey_with_options_flags<P: AsRef<OsStr>>(
+        &self,
+        path: P,
+        options: Registry::REG_OPEN_CREATE_OPTIONS,
+        perms: Registry::REG_SAM_FLAGS,
+    ) -> io::Result<(RegKey, RegDisposition)> {
+        let c_path = to_utf16(path);
+        let mut new_hkey: HKEY = 0;
+        let mut disp_buf: u32 = 0;
+        match unsafe {
+            Registry::RegCreateKeyExW(
+                self.hkey,
+                c_path.as_ptr(),
+                0,
+                ptr::null_mut(),
+                options,
+                perms,
+                ptr::null_mut(),
+                &mut new_hkey,
+                &mut disp_buf,
+            )
+        } {
+            0 => {
+                let disp: RegDisposition = unsafe { transmute(disp_buf as u8) };
+                Ok((RegKey { hkey: new_hkey }, disp))
+            }
+            err => werr!(err),
+        }
+    }
+
     /// Part of `transactions` feature.
     #[cfg(feature = "transactions")]
     pub fn create_subkey_transacted<P: AsRef<OsStr>>(
@@ -298,6 +387,41 @@ impl RegKey {
                 0,
                 ptr::null_mut(),
                 Registry::REG_OPTION_NON_VOLATILE,
+                perms,
+                ptr::null_mut(),
+                &mut new_hkey,
+                &mut disp_buf,
+                t.handle,
+                ptr::null_mut(),
+            )
+        } {
+            0 => {
+                let disp: RegDisposition = unsafe { transmute(disp_buf as u8) };
+                Ok((RegKey { hkey: new_hkey }, disp))
+            }
+            err => werr!(err),
+        }
+    }
+
+    /// Part of `transactions` feature.
+    #[cfg(feature = "transactions")]
+    pub fn create_subkey_transacted_with_options_flags<P: AsRef<OsStr>>(
+        &self,
+        path: P,
+        t: &Transaction,
+        options: Registry::REG_OPEN_CREATE_OPTIONS,
+        perms: Registry::REG_SAM_FLAGS,
+    ) -> io::Result<(RegKey, RegDisposition)> {
+        let c_path = to_utf16(path);
+        let mut new_hkey: HKEY = 0;
+        let mut disp_buf: u32 = 0;
+        match unsafe {
+            Registry::RegCreateKeyTransactedW(
+                self.hkey,
+                c_path.as_ptr(),
+                0,
+                ptr::null_mut(),
+                options,
                 perms,
                 ptr::null_mut(),
                 &mut new_hkey,
