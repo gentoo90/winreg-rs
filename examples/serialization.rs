@@ -22,7 +22,7 @@ struct Size {
 
 #[derive(Debug, Serialize, Deserialize, PartialEq)]
 struct Rectangle {
-    coords: Coords,
+    coords: Option<Coords>,
     size: Size,
 }
 
@@ -37,6 +37,7 @@ struct Test {
     t_struct: Rectangle,
     t_map: HashMap<String, u32>,
     t_string: String,
+    t_optional_string: Option<String>,
     #[serde(with = "serde_bytes")]
     t_bytes: Vec<u8>,
     #[serde(rename = "")] // empty name becomes the (Default) value in the registry
@@ -68,11 +69,12 @@ fn main() -> Result<(), Box<dyn Error>> {
         t_u64: 123_456_789_101_112,
         t_usize: 1_234_567_891,
         t_struct: Rectangle {
-            coords: Coords { x: 55, y: 77 },
+            coords: Some(Coords { x: 55, y: 77 }),
             size: Size { w: 500, h: 300 },
         },
         t_map: map,
         t_string: "test 123!".to_owned(),
+        t_optional_string: Some("test 456!".to_owned()),
         t_bytes: vec![0xDE, 0xAD, 0xBE, 0xEF],
         t_char: 'a',
         t_i8: -123,

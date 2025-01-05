@@ -23,7 +23,7 @@ struct Size {
 
 #[derive(Debug, Serialize, Deserialize, PartialEq)]
 struct Rectangle {
-    coords: Coords,
+    coords: Option<Coords>,
     size: Size,
 }
 
@@ -35,9 +35,14 @@ struct AllFields {
     t_u32: u32,
     t_u64: u64,
     t_usize: usize,
-    t_struct: Rectangle,
+    t_rect_no_coords: Rectangle,
+    t_rect_with_coords: Rectangle,
     t_string: String,
     t_map: HashMap<String, HashMap<String, u32>>,
+    t_optional_u32_none: Option<u32>,
+    t_optional_u32_some: Option<u32>,
+    t_optional_map_none: Option<HashMap<String, u32>>,
+    t_optional_map_some: Option<HashMap<String, u32>>,
     t_i8: i8,
     t_i16: i16,
     t_i32: i32,
@@ -63,7 +68,7 @@ impl AllFields {
         k2.insert("val3".to_owned(), 1024);
 
         let mut map = HashMap::new();
-        map.insert("key1".to_owned(), k1);
+        map.insert("key1".to_owned(), k1.clone());
         map.insert("key2".to_owned(), k2);
 
         AllFields {
@@ -73,11 +78,19 @@ impl AllFields {
             t_u32: 123_456_789,
             t_u64: 123_456_789_101_112,
             t_usize: 1_234_567_891,
-            t_struct: Rectangle {
-                coords: Coords { x: 55, y: 77 },
+            t_rect_no_coords: Rectangle {
+                coords: None,
+                size: Size { w: 320, h: 240 },
+            },
+            t_rect_with_coords: Rectangle {
+                coords: Some(Coords { x: 55, y: 77 }),
                 size: Size { w: 500, h: 300 },
             },
             t_map: map,
+            t_optional_u32_none: None,
+            t_optional_u32_some: Some(1234),
+            t_optional_map_none: None,
+            t_optional_map_some: Some(k1),
             t_string: "Test123 \n$%^&|+-*/\\()".to_owned(),
             t_i8: -123,
             t_i16: -2049,
@@ -95,7 +108,7 @@ impl AllFields {
 #[derive(Debug, PartialEq, Serialize, Deserialize)]
 struct SomeFields {
     t_usize: usize,
-    t_struct: Rectangle,
+    t_rect_no_coords: Rectangle,
     t_string: String,
     t_u32: Option<u32>,
     t_none: Option<u32>,
@@ -105,7 +118,7 @@ impl PartialEq<AllFields> for SomeFields {
     fn eq(&self, other: &AllFields) -> bool {
         *self.t_string == other.t_string
             && self.t_usize == other.t_usize
-            && self.t_struct == other.t_struct
+            && self.t_rect_no_coords == other.t_rect_no_coords
             && self.t_u32 == Some(other.t_u32)
             && self.t_none.is_none()
     }

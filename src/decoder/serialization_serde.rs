@@ -4,7 +4,7 @@
 // may not be copied, modified, or distributed
 // except according to those terms.
 use super::{DecodeResult, Decoder, DecoderCursor, DecoderError, DECODER_SAM};
-use crate::types::FromRegValue;
+use crate::{types::FromRegValue, RegValue};
 use serde::de::*;
 use std::fmt;
 
@@ -176,9 +176,21 @@ impl<'de, 'a> Deserializer<'de> for &'a mut Decoder {
         let v = {
             use super::DecoderCursor::*;
             match self.cursor {
-                FieldVal(_, ref name) => {
-                    self.key.get_raw_value(name).map_err(DecoderError::IoError)
-                }
+                Start => return visitor.visit_some(&mut *self),
+                FieldVal(index, ref name) => self
+                    .key
+                    .get_raw_value(name)
+                    .map_err(DecoderError::IoError)
+                    .and_then(|v| match v {
+                        RegValue {
+                            vtype: crate::enums::RegType::REG_NONE,
+                            ..
+                        } => {
+                            self.cursor = DecoderCursor::Field(index + 1);
+                            Err(DecoderError::DeserializerError("Found REG_NONE".to_owned()))
+                        }
+                        val => Ok(val),
+                    }),
                 _ => Err(DecoderError::DeserializerError("Nothing found".to_owned())),
             }
         };

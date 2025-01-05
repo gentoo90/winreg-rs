@@ -22,7 +22,7 @@ struct Size {
 
 #[derive(Debug, Serialize, Deserialize, PartialEq)]
 struct Rectangle {
-    coords: Coords,
+    coords: Option<Coords>,
     size: Size,
 }
 
@@ -33,14 +33,14 @@ fn main() -> Result<(), Box<dyn Error>> {
     v1.insert(
         "first".to_owned(),
         Rectangle {
-            coords: Coords { x: 55, y: 77 },
+            coords: Some(Coords { x: 55, y: 77 }),
             size: Size { w: 500, h: 300 },
         },
     );
     v1.insert(
         "second".to_owned(),
         Rectangle {
-            coords: Coords { x: 11, y: 22 },
+            coords: None,
             size: Size { w: 1000, h: 600 },
         },
     );

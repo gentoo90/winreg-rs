@@ -106,11 +106,14 @@ impl<'a, Tr: AsRef<Transaction>> Serializer for &'a mut Encoder<Tr> {
     }
 
     fn serialize_none(self) -> EncodeResult<Self::Ok> {
-        no_impl!("serialize_none")
+        match mem::replace(&mut self.state, Start) {
+            NextKey(..) => Ok(()),
+            Start => Err(EncoderError::NoFieldName),
+        }
     }
 
-    fn serialize_some<T: ?Sized + Serialize>(self, _value: &T) -> EncodeResult<Self::Ok> {
-        no_impl!("serialize_some")
+    fn serialize_some<T: ?Sized + Serialize>(self, value: &T) -> EncodeResult<Self::Ok> {
+        value.serialize(self)
     }
 
     fn serialize_unit(self) -> EncodeResult<Self::Ok> {
