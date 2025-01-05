@@ -670,7 +670,7 @@ impl RegKey {
             match unsafe {
                 winapi_reg::RegQueryValueExW(
                     self.hkey,
-                    c_name.as_ptr() as *const u16,
+                    c_name.as_ptr(),
                     ptr::null_mut(),
                     &mut buf_type,
                     buf.as_mut_ptr() as LPBYTE,
@@ -1020,7 +1020,7 @@ pub struct EnumKeys<'key> {
     index: DWORD,
 }
 
-impl<'key> Iterator for EnumKeys<'key> {
+impl Iterator for EnumKeys<'_> {
     type Item = io::Result<String>;
 
     fn next(&mut self) -> Option<io::Result<String>> {
@@ -1045,7 +1045,7 @@ pub struct EnumValues<'key> {
     index: DWORD,
 }
 
-impl<'key> Iterator for EnumValues<'key> {
+impl Iterator for EnumValues<'_> {
     type Item = io::Result<(String, RegValue)>;
 
     fn next(&mut self) -> Option<io::Result<(String, RegValue)>> {

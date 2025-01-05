@@ -15,10 +15,7 @@ macro_rules! werr {
 }
 
 pub(crate) fn to_utf16<P: AsRef<OsStr>>(s: P) -> Vec<u16> {
-    s.as_ref()
-        .encode_wide()
-        .chain(Some(0).into_iter())
-        .collect()
+    s.as_ref().encode_wide().chain(Some(0)).collect()
 }
 
 pub(crate) fn v16_to_v8(v: &[u16]) -> Vec<u8> {

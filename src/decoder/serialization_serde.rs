@@ -14,7 +14,7 @@ impl Error for DecoderError {
     }
 }
 
-impl<'de, 'a> Deserializer<'de> for &'a mut Decoder {
+impl<'de> Deserializer<'de> for &mut Decoder {
     type Error = DecoderError;
     fn deserialize_any<V>(self, visitor: V) -> DecodeResult<V::Value>
     where

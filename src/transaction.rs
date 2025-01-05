@@ -37,7 +37,6 @@
 //!    }
 //!}
 //!```
-#![cfg(feature = "transactions")]
 use std::io;
 use std::ptr;
 use winapi::um::handleapi;
