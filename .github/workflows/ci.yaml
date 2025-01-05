@@ -95,6 +95,18 @@ jobs:
         with:
           command: update
           args: --package ryu --precise 1.0.6
+      - name: Restrict libc version
+        if: matrix.restrict_deps_versions
+        uses: actions-rs/cargo@v1
+        with:
+          command: update
+          args: --package libc --precise 0.2.164
+      - name: Restrict num-traits version
+        if: matrix.restrict_deps_versions
+        uses: actions-rs/cargo@v1
+        with:
+          command: update
+          args: --package num-traits --precise 0.2.18
       - name: Check formatting
         if: matrix.lint
         uses: actions-rs/cargo@v1
