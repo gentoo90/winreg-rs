@@ -37,7 +37,10 @@ impl<'de, 'a> Deserializer<'de> for &'a mut Decoder {
                     REG_QWORD => visitor.visit_u64(u64::from_reg_value(&v)?),
                     REG_BINARY => visitor.visit_byte_buf(v.bytes),
                     REG_NONE => visitor.visit_none(),
-                    _ => no_impl!(format!("value type deserialization not implemented {:?}", v.vtype)),
+                    _ => no_impl!(format!(
+                        "value type deserialization not implemented {:?}",
+                        v.vtype
+                    )),
                 }
             }
             _ => no_impl!("deserialize_any"),
