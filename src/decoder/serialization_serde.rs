@@ -35,7 +35,7 @@ impl<'de> Deserializer<'de> for &mut Decoder {
                     }
                     REG_DWORD => visitor.visit_u32(u32::from_reg_value(&v)?),
                     REG_QWORD => visitor.visit_u64(u64::from_reg_value(&v)?),
-                    REG_BINARY => visitor.visit_byte_buf(v.bytes),
+                    REG_BINARY => visitor.visit_byte_buf(v.bytes.into_owned()),
                     REG_NONE => visitor.visit_none(),
                     _ => no_impl!(format!(
                         "value type deserialization not implemented {:?}",
@@ -180,20 +180,19 @@ impl<'de> Deserializer<'de> for &mut Decoder {
             use super::DecoderCursor::*;
             match self.cursor {
                 Start => return visitor.visit_some(&mut *self),
-                FieldVal(index, ref name) => self
-                    .key
-                    .get_raw_value(name)
-                    .map_err(DecoderError::IoError)
-                    .and_then(|v| match v {
-                        RegValue {
+                FieldVal(index, ref name) => {
+                    let v = self.key.get_raw_value(name).map_err(DecoderError::IoError);
+                    match v {
+                        Ok(RegValue {
                             vtype: crate::enums::RegType::REG_NONE,
                             ..
-                        } => {
+                        }) => {
                             self.cursor = DecoderCursor::Field(index + 1);
                             Err(DecoderError::DeserializerError("Found REG_NONE".to_owned()))
                         }
                         val => Ok(val),
-                    }),
+                    }
+                }
                 _ => Err(DecoderError::DeserializerError("Nothing found".to_owned())),
             }
         };

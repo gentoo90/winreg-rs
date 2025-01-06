@@ -661,7 +661,7 @@ impl RegKey {
     /// # Ok(())
     /// # }
     /// ```
-    pub fn get_raw_value<N: AsRef<OsStr>>(&self, name: N) -> io::Result<RegValue> {
+    pub fn get_raw_value<N: AsRef<OsStr>>(&self, name: N) -> io::Result<RegValue<'static>> {
         let c_name = to_utf16(name);
         let mut buf_len: DWORD = 2048;
         let mut buf_type: DWORD = 0;
@@ -687,7 +687,7 @@ impl RegKey {
                     }
                     let t: RegType = unsafe { transmute(buf_type as u8) };
                     return Ok(RegValue {
-                        bytes: buf,
+                        bytes: buf.into(),
                         vtype: t,
                     });
                 }
@@ -734,7 +734,7 @@ impl RegKey {
     /// let hkcu = RegKey::predef(HKEY_CURRENT_USER);
     /// let settings = hkcu.open_subkey("Software\\MyProduct\\Settings")?;
     /// let bytes: Vec<u8> = vec![1, 2, 3, 5, 8, 13, 21, 34, 55, 89];
-    /// let data = RegValue{ vtype: REG_BINARY, bytes: bytes};
+    /// let data = RegValue{ vtype: REG_BINARY, bytes: bytes.into()};
     /// settings.set_raw_value("data", &data)?;
     /// println!("Bytes: {:?}", data.bytes);
     /// # Ok(())
@@ -957,7 +957,10 @@ impl RegKey {
         }
     }
 
-    pub(crate) fn enum_value(&self, index: DWORD) -> Option<io::Result<(String, RegValue)>> {
+    pub(crate) fn enum_value(
+        &self,
+        index: DWORD,
+    ) -> Option<io::Result<(String, RegValue<'static>)>> {
         let mut name_len = 2048;
         #[allow(clippy::unnecessary_cast)]
         let mut name = [0 as WCHAR; 2048];
@@ -992,7 +995,7 @@ impl RegKey {
                     }
                     let t: RegType = unsafe { transmute(buf_type as u8) };
                     let value = RegValue {
-                        bytes: buf,
+                        bytes: buf.into(),
                         vtype: t,
                     };
                     return Some(Ok((name, value)));
@@ -1045,10 +1048,10 @@ pub struct EnumValues<'key> {
     index: DWORD,
 }
 
-impl Iterator for EnumValues<'_> {
-    type Item = io::Result<(String, RegValue)>;
+impl<'a> Iterator for EnumValues<'a> {
+    type Item = io::Result<(String, RegValue<'static>)>;
 
-    fn next(&mut self) -> Option<io::Result<(String, RegValue)>> {
+    fn next(&mut self) -> Option<io::Result<(String, RegValue<'static>)>> {
         match self.key.enum_value(self.index) {
             v @ Some(_) => {
                 self.index += 1;

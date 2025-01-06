@@ -5,12 +5,13 @@
 // except according to those terms.
 use crate::enums::*;
 use crate::types::FromRegValue;
+use std::borrow::Cow;
 use std::fmt;
 
 /// Raw registry value
 #[derive(PartialEq)]
-pub struct RegValue {
-    pub bytes: Vec<u8>,
+pub struct RegValue<'a> {
+    pub bytes: Cow<'a, [u8]>,
     pub vtype: RegType,
 }
 
@@ -23,7 +24,7 @@ macro_rules! format_reg_value {
     };
 }
 
-impl fmt::Display for RegValue {
+impl fmt::Display for RegValue<'_> {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         let f_val = match self.vtype {
             REG_SZ | REG_EXPAND_SZ | REG_MULTI_SZ => format_reg_value!(self => String),
@@ -35,7 +36,7 @@ impl fmt::Display for RegValue {
     }
 }
 
-impl fmt::Debug for RegValue {
+impl fmt::Debug for RegValue<'_> {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         write!(f, "RegValue({:?}: {})", self.vtype, self)
     }

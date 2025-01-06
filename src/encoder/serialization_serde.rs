@@ -95,7 +95,7 @@ impl<'a, Tr: AsRef<Transaction>> Serializer for &'a mut Encoder<Tr> {
                     .set_raw_value(
                         s,
                         &RegValue {
-                            bytes: vec,
+                            bytes: vec.into(),
                             vtype: RegType::REG_BINARY,
                         },
                     )
