@@ -687,7 +687,7 @@ impl RegKey {
                     }
                     let t: RegType = unsafe { transmute(buf_type as u8) };
                     return Ok(RegValue {
-                        bytes: buf,
+                        bytes: buf.into(),
                         vtype: t,
                     });
                 }
@@ -734,7 +734,7 @@ impl RegKey {
     /// let hkcu = RegKey::predef(HKEY_CURRENT_USER);
     /// let settings = hkcu.open_subkey("Software\\MyProduct\\Settings")?;
     /// let bytes: Vec<u8> = vec![1, 2, 3, 5, 8, 13, 21, 34, 55, 89];
-    /// let data = RegValue{ vtype: REG_BINARY, bytes: bytes};
+    /// let data = RegValue{ vtype: REG_BINARY, bytes: bytes.into()};
     /// settings.set_raw_value("data", &data)?;
     /// println!("Bytes: {:?}", data.bytes);
     /// # Ok(())
@@ -992,7 +992,7 @@ impl RegKey {
                     }
                     let t: RegType = unsafe { transmute(buf_type as u8) };
                     let value = RegValue {
-                        bytes: buf,
+                        bytes: buf.into(),
                         vtype: t,
                     };
                     return Some(Ok((name, value)));
@@ -1045,10 +1045,10 @@ pub struct EnumValues<'key> {
     index: DWORD,
 }
 
-impl Iterator for EnumValues<'_> {
-    type Item = io::Result<(String, RegValue)>;
+impl<'a> Iterator for EnumValues<'a> {
+    type Item = io::Result<(String, RegValue<'a>)>;
 
-    fn next(&mut self) -> Option<io::Result<(String, RegValue)>> {
+    fn next(&mut self) -> Option<io::Result<(String, RegValue<'a>)>> {
         match self.key.enum_value(self.index) {
             v @ Some(_) => {
                 self.index += 1;

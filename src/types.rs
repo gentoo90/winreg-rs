@@ -111,7 +111,7 @@ impl FromRegValue for Vec<OsString> {
 macro_rules! try_from_reg_value_int {
     ($val:expr, $map:expr) => {
         $val.bytes
-            .as_slice()
+            .as_ref()
             .try_into()
             .map($map)
             .map_err(|_| io::Error::from_raw_os_error(winerror::ERROR_INVALID_DATA as i32))
@@ -149,7 +149,7 @@ macro_rules! to_reg_value_sz {
         impl<$($l,)*> ToRegValue for $t {
             fn to_reg_value(&self) -> RegValue {
                 RegValue {
-                    bytes: v16_to_v8(&to_utf16(self)),
+                    bytes: v16_to_v8(&to_utf16(self)).into(),
                     vtype: REG_SZ,
                 }
             }
@@ -173,7 +173,7 @@ macro_rules! to_reg_value_multi_sz {
                     .concat();
                 os_strings.push(0);
                 RegValue {
-                    bytes: v16_to_v8(&os_strings),
+                    bytes: v16_to_v8(&os_strings).into(),
                     vtype: REG_MULTI_SZ,
                 }
             }
@@ -191,7 +191,7 @@ impl ToRegValue for u32 {
         let bytes: Vec<u8> =
             unsafe { slice::from_raw_parts((self as *const u32) as *const u8, 4).to_vec() };
         RegValue {
-            bytes,
+            bytes: bytes.into(),
             vtype: REG_DWORD,
         }
     }
@@ -202,7 +202,7 @@ impl ToRegValue for u64 {
         let bytes: Vec<u8> =
             unsafe { slice::from_raw_parts((self as *const u64) as *const u8, 8).to_vec() };
         RegValue {
-            bytes,
+            bytes: bytes.into(),
             vtype: REG_QWORD,
         }
     }

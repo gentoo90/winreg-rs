@@ -109,7 +109,7 @@ impl Decoder {
                     .key
                     .get_raw_value(name)
                     .map_err(DecoderError::IoError)?;
-                Ok(bytes)
+                Ok(bytes.into_owned())
             }
             _ => Err(DecoderError::DeserializerError("Not a value".to_owned())),
         }
