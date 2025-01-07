@@ -4,7 +4,7 @@
 // may not be copied, modified, or distributed
 // except according to those terms.
 use super::{DecodeResult, Decoder, DecoderCursor, DecoderError, DECODER_SAM};
-use crate::types::FromRegValue;
+use crate::{types::FromRegValue, RegValue};
 use serde::de::*;
 use std::fmt;
 
@@ -14,7 +14,7 @@ impl Error for DecoderError {
     }
 }
 
-impl<'de, 'a> Deserializer<'de> for &'a mut Decoder {
+impl<'de> Deserializer<'de> for &mut Decoder {
     type Error = DecoderError;
     fn deserialize_any<V>(self, visitor: V) -> DecodeResult<V::Value>
     where
@@ -36,7 +36,11 @@ impl<'de, 'a> Deserializer<'de> for &'a mut Decoder {
                     REG_DWORD => visitor.visit_u32(u32::from_reg_value(&v)?),
                     REG_QWORD => visitor.visit_u64(u64::from_reg_value(&v)?),
                     REG_BINARY => visitor.visit_byte_buf(v.bytes),
-                    _ => no_impl!("value type deserialization not implemented"),
+                    REG_NONE => visitor.visit_none(),
+                    _ => no_impl!(format!(
+                        "value type deserialization not implemented {:?}",
+                        v.vtype
+                    )),
                 }
             }
             _ => no_impl!("deserialize_any"),
@@ -175,9 +179,21 @@ impl<'de, 'a> Deserializer<'de> for &'a mut Decoder {
         let v = {
             use super::DecoderCursor::*;
             match self.cursor {
-                FieldVal(_, ref name) => {
-                    self.key.get_raw_value(name).map_err(DecoderError::IoError)
-                }
+                Start => return visitor.visit_some(&mut *self),
+                FieldVal(index, ref name) => self
+                    .key
+                    .get_raw_value(name)
+                    .map_err(DecoderError::IoError)
+                    .and_then(|v| match v {
+                        RegValue {
+                            vtype: crate::enums::RegType::REG_NONE,
+                            ..
+                        } => {
+                            self.cursor = DecoderCursor::Field(index + 1);
+                            Err(DecoderError::DeserializerError("Found REG_NONE".to_owned()))
+                        }
+                        val => Ok(val),
+                    }),
                 _ => Err(DecoderError::DeserializerError("Nothing found".to_owned())),
             }
         };

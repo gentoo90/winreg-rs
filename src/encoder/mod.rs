@@ -100,7 +100,7 @@ impl Encoder<&Transaction> {
         key: &RegKey,
         tr: &'a Transaction,
     ) -> EncodeResult<Encoder<&'a Transaction>> {
-        key.open_subkey_transacted_with_flags("", &tr, ENCODER_SAM)
+        key.open_subkey_transacted_with_flags("", tr, ENCODER_SAM)
             .map(|k| Encoder::new_transacted(k, tr))
             .map_err(EncoderError::IoError)
     }

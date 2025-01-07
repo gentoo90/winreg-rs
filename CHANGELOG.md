@@ -1,5 +1,10 @@
 # Changelog
 
+## 0.15.0, 0.53.0
+* Don't stop deserialization of `Any` due to `REG_NONE` (pullrequest [#67](https://github.com/gentoo90/winreg-rs/pull/67), fixes [#66](https://github.com/gentoo90/winreg-rs/issues/66))
+* Implement (de)serialization of `Option` ([#56](https://github.com/gentoo90/winreg-rs/issues/56))
+* Add `RegKey` methods for creating/opening subkeys with custom options ([#65](https://github.com/gentoo90/winreg-rs/pull/65))
+
 ## 0.52.0
 * Breaking change: `.commit()` and `.rollback()` now consume the transaction ([#62](https://github.com/gentoo90/winreg-rs/issues/62))
 * Add `RegKey::rename_subkey()` method ([#58](https://github.com/gentoo90/winreg-rs/issues/58))

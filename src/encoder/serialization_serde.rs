@@ -106,11 +106,14 @@ impl<'a, Tr: AsRef<Transaction>> Serializer for &'a mut Encoder<Tr> {
     }
 
     fn serialize_none(self) -> EncodeResult<Self::Ok> {
-        no_impl!("serialize_none")
+        match mem::replace(&mut self.state, Start) {
+            NextKey(..) => Ok(()),
+            Start => Err(EncoderError::NoFieldName),
+        }
     }
 
-    fn serialize_some<T: ?Sized + Serialize>(self, _value: &T) -> EncodeResult<Self::Ok> {
-        no_impl!("serialize_some")
+    fn serialize_some<T: ?Sized + Serialize>(self, value: &T) -> EncodeResult<Self::Ok> {
+        value.serialize(self)
     }
 
     fn serialize_unit(self) -> EncodeResult<Self::Ok> {
@@ -455,9 +458,9 @@ impl serde::Serializer for MapKeySerializer {
         Err(EncoderError::KeyMustBeAString)
     }
 
-    fn collect_str<T: ?Sized>(self, value: &T) -> EncodeResult<String>
+    fn collect_str<T>(self, value: &T) -> EncodeResult<String>
     where
-        T: fmt::Display,
+        T: fmt::Display + ?Sized,
     {
         Ok(value.to_string())
     }
@@ -468,7 +471,7 @@ pub struct StructMapEncoder<'a, Tr: AsRef<Transaction>> {
     is_root: bool,
 }
 
-impl<'a, Tr: AsRef<Transaction>> SerializeStruct for StructMapEncoder<'a, Tr> {
+impl<Tr: AsRef<Transaction>> SerializeStruct for StructMapEncoder<'_, Tr> {
     type Ok = ();
     type Error = EncoderError;
 
@@ -489,7 +492,7 @@ impl<'a, Tr: AsRef<Transaction>> SerializeStruct for StructMapEncoder<'a, Tr> {
     }
 }
 
-impl<'a, Tr: AsRef<Transaction>> SerializeMap for StructMapEncoder<'a, Tr> {
+impl<Tr: AsRef<Transaction>> SerializeMap for StructMapEncoder<'_, Tr> {
     type Ok = ();
     type Error = EncoderError;
 

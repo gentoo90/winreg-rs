@@ -23,7 +23,7 @@ struct Size {
 
 #[derive(Debug, Serialize, Deserialize, PartialEq)]
 struct Rectangle {
-    coords: Coords,
+    coords: Option<Coords>,
     size: Size,
 }
 
@@ -70,7 +70,7 @@ fn main() -> Result<(), Box<dyn Error>> {
         t_u64: 123_456_789_101_112,
         t_usize: 1_234_567_891,
         t_struct: Rectangle {
-            coords: Coords { x: 55, y: 77 },
+            coords: Some(Coords { x: 55, y: 77 }),
             size: Size { w: 500, h: 300 },
         },
         t_map: map,
