@@ -795,7 +795,7 @@ impl RegKey {
     /// use winreg::enums::*;
     ///
     /// #[derive(Serialize)]
-    /// struct Rectangle{
+    /// struct Rectangle {
     ///     x: u32,
     ///     y: u32,
     ///     w: u32,
@@ -803,16 +803,16 @@ impl RegKey {
     /// }
     ///
     /// #[derive(Serialize)]
-    /// struct Settings{
+    /// struct Settings {
     ///     current_dir: String,
     ///     window_pos: Rectangle,
     ///     show_in_tray: bool,
     /// }
     ///
     /// # fn main() -> Result<(), Box<dyn Error>> {
-    /// let s: Settings = Settings{
+    /// let s: Settings = Settings {
     ///     current_dir: "C:\\".to_owned(),
-    ///     window_pos: Rectangle{ x:200, y: 100, w: 800, h: 500 },
+    ///     window_pos: Rectangle { x: 200, y: 100, w: 800, h: 500 },
     ///     show_in_tray: false,
     /// };
     /// let s_key = RegKey::predef(HKEY_CURRENT_USER)
@@ -841,7 +841,7 @@ impl RegKey {
     /// use winreg::enums::*;
     ///
     /// #[derive(Serialize)]
-    /// struct Rectangle{
+    /// struct Rectangle {
     ///     x: u32,
     ///     y: u32,
     ///     w: u32,
@@ -849,16 +849,16 @@ impl RegKey {
     /// }
     ///
     /// #[derive(Serialize)]
-    /// struct Settings{
+    /// struct Settings {
     ///     current_dir: String,
     ///     window_pos: Rectangle,
     ///     show_in_tray: bool,
     /// }
     ///
     /// # fn main() -> Result<(), Box<dyn Error>> {
-    /// let s: Settings = Settings{
+    /// let s: Settings = Settings {
     ///     current_dir: "C:\\".to_owned(),
-    ///     window_pos: Rectangle{ x:200, y: 100, w: 800, h: 500 },
+    ///     window_pos: Rectangle { x: 200, y: 100, w: 800, h: 500 },
     ///     show_in_tray: false,
     /// };
     ///
@@ -894,7 +894,7 @@ impl RegKey {
     /// use winreg::enums::*;
     ///
     /// #[derive(Deserialize)]
-    /// struct Rectangle{
+    /// struct Rectangle {
     ///     x: u32,
     ///     y: u32,
     ///     w: u32,
@@ -902,7 +902,7 @@ impl RegKey {
     /// }
     ///
     /// #[derive(Deserialize)]
-    /// struct Settings{
+    /// struct Settings {
     ///     current_dir: String,
     ///     window_pos: Rectangle,
     ///     show_in_tray: bool,
