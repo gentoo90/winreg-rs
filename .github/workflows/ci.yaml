@@ -20,7 +20,7 @@ jobs:
           - channel: stable
             target: x86_64-pc-windows-msvc
             lint: true
-          - channel: '1.56'
+          - channel: '1.60'
             target: x86_64-pc-windows-msvc
             restrict_deps_versions: true
     env:
@@ -47,18 +47,36 @@ jobs:
         uses: actions-rs/cargo@v1
         with:
           command: generate-lockfile
+      - name: Restrict serde version
+        if: matrix.restrict_deps_versions
+        uses: actions-rs/cargo@v1
+        with:
+          command: update
+          args: --package serde --precise 1.0.210
+      - name: Restrict syn version
+        if: matrix.restrict_deps_versions
+        uses: actions-rs/cargo@v1
+        with:
+          command: update
+          args: --package syn --precise 2.0.67
       - name: Restrict chrono version
         if: matrix.restrict_deps_versions
         uses: actions-rs/cargo@v1
         with:
           command: update
-          args: --package chrono --precise 0.4.26
+          args: --package chrono --precise 0.4.31
       - name: Restrict libc version
         if: matrix.restrict_deps_versions
         uses: actions-rs/cargo@v1
         with:
           command: update
           args: --package libc --precise 0.2.163
+      - name: Restrict memchr version
+        if: matrix.restrict_deps_versions
+        uses: actions-rs/cargo@v1
+        with:
+          command: update
+          args: --package memchr --precise 2.6.2
       - name: Setup Taplo
         if: matrix.lint
         uses: uncenter/setup-taplo@v1

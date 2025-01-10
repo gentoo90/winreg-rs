@@ -97,7 +97,7 @@ impl RegKey {
         options: u32,
     ) -> io::Result<RegKey> {
         let c_filename = to_utf16(filename);
-        let mut new_hkey: HKEY = 0;
+        let mut new_hkey: HKEY = std::ptr::null_mut();
         match unsafe {
             Registry::RegLoadAppKeyW(c_filename.as_ptr(), &mut new_hkey, perms, options, 0)
         } {
@@ -191,7 +191,7 @@ impl RegKey {
         perms: Registry::REG_SAM_FLAGS,
     ) -> io::Result<RegKey> {
         let c_path = to_utf16(path);
-        let mut new_hkey: HKEY = 0;
+        let mut new_hkey: HKEY = std::ptr::null_mut();
         match unsafe {
             Registry::RegOpenKeyExW(self.hkey, c_path.as_ptr(), options, perms, &mut new_hkey)
         } {
@@ -231,7 +231,7 @@ impl RegKey {
         perms: Registry::REG_SAM_FLAGS,
     ) -> io::Result<RegKey> {
         let c_path = to_utf16(path);
-        let mut new_hkey: HKEY = 0;
+        let mut new_hkey: HKEY = std::ptr::null_mut();
         match unsafe {
             Registry::RegOpenKeyTransactedW(
                 self.hkey,
@@ -292,7 +292,7 @@ impl RegKey {
         perms: Registry::REG_SAM_FLAGS,
     ) -> io::Result<(RegKey, RegDisposition)> {
         let c_path = to_utf16(path);
-        let mut new_hkey: HKEY = 0;
+        let mut new_hkey: HKEY = std::ptr::null_mut();
         let mut disp_buf: u32 = 0;
         match unsafe {
             Registry::RegCreateKeyExW(
@@ -346,7 +346,7 @@ impl RegKey {
         perms: Registry::REG_SAM_FLAGS,
     ) -> io::Result<(RegKey, RegDisposition)> {
         let c_path = to_utf16(path);
-        let mut new_hkey: HKEY = 0;
+        let mut new_hkey: HKEY = std::ptr::null_mut();
         let mut disp_buf: u32 = 0;
         match unsafe {
             Registry::RegCreateKeyTransactedW(
