@@ -668,7 +668,7 @@ impl RegKey {
                     c_name.as_ptr(),
                     ptr::null_mut(),
                     &mut buf_type,
-                    buf.as_mut_ptr() as *mut u8,
+                    buf.as_mut_ptr(),
                     &mut buf_len,
                 )
             } {
@@ -744,7 +744,7 @@ impl RegKey {
                 c_name.as_ptr(),
                 0,
                 t,
-                value.bytes.as_ptr() as *const u8,
+                value.bytes.as_ptr(),
                 value.bytes.len() as u32,
             )
         } {
@@ -971,7 +971,7 @@ impl RegKey {
                     &mut name_len,
                     ptr::null_mut(), // reserved
                     &mut buf_type,
-                    buf.as_mut_ptr() as *mut u8,
+                    buf.as_mut_ptr(),
                     &mut buf_len,
                 )
             } {
