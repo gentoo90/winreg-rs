@@ -1,5 +1,9 @@
 # Changelog
 
+## 0.55.0
+* Breaking change: Migrate MSRV 1.60
+* Breaking change: Upgrade `windows-sys` to version 0.59
+
 ## 0.54.0
 * Breaking change: Migrate to the 2021 edition of Rust (MSRV 1.56)
 * Breaking change: Upgrade `windows-sys` to version 0.52

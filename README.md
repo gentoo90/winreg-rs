@@ -36,7 +36,7 @@ Current features:
 ```toml
 # Cargo.toml
 [dependencies]
-winreg = "0.54"
+winreg = "0.55"
 ```
 
 ```rust
@@ -138,7 +138,7 @@ fn main() -> io::Result<()> {
 ```toml
 # Cargo.toml
 [dependencies]
-winreg = { version = "0.54", features = ["transactions"] }
+winreg = { version = "0.55", features = ["transactions"] }
 ```
 
 ```rust
@@ -179,7 +179,7 @@ fn main() -> io::Result<()> {
 ```toml
 # Cargo.toml
 [dependencies]
-winreg = { version = "0.54", features = ["serialization-serde"] }
+winreg = { version = "0.55", features = ["serialization-serde"] }
 serde = "1"
 serde_derive = "1"
 ```
