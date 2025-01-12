@@ -3,38 +3,40 @@
 // http://opensource.org/licenses/MIT>. This file
 // may not be copied, modified, or distributed
 // except according to those terms.
+#![allow(clippy::needless_doctest_main)]
 
 //! Structure for a registry transaction.
 //! Part of `transactions` feature.
 //!
 //!```no_run
 //!use std::io;
-//!use winreg::RegKey;
 //!use winreg::enums::*;
 //!use winreg::transaction::Transaction;
+//!use winreg::RegKey;
 //!
-//!fn main() {
-//!    let t = Transaction::new().unwrap();
+//!fn main() -> io::Result<()> {
+//!    let t = Transaction::new()?;
 //!    let hkcu = RegKey::predef(HKEY_CURRENT_USER);
-//!    let (key, _disp) = hkcu.create_subkey_transacted("Software\\RustTransaction", &t).unwrap();
-//!    key.set_value("TestQWORD", &1234567891011121314u64).unwrap();
-//!    key.set_value("TestDWORD", &1234567890u32).unwrap();
+//!    let (key, _disp) = hkcu.create_subkey_transacted("Software\\RustTransaction", &t)?;
+//!    key.set_value("TestQWORD", &1_234_567_891_011_121_314u64)?;
+//!    key.set_value("TestDWORD", &1_234_567_890u32)?;
 //!
 //!    println!("Commit transaction? [y/N]:");
 //!    let mut input = String::new();
-//!    io::stdin().read_line(&mut input).unwrap();
-//!    input = input.trim_right().to_owned();
+//!    io::stdin().read_line(&mut input)?;
+//!    input = input.trim_end().to_owned();
 //!    if input == "y" || input == "Y" {
-//!        t.commit().unwrap();
+//!        t.commit()?;
 //!        println!("Transaction committed.");
-//!    }
-//!    else {
+//!    } else {
 //!        // this is optional, if transaction wasn't committed,
 //!        // it will be rolled back on disposal
-//!        t.rollback().unwrap();
+//!        t.rollback()?;
 //!
 //!        println!("Transaction wasn't committed, it will be rolled back.");
 //!    }
+//!
+//!    Ok(())
 //!}
 //!```
 use std::io;
