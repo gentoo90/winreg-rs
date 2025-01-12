@@ -14,7 +14,7 @@ categories = ["api-bindings", "os::windows-apis"]
 
 [dependencies]
 cfg-if = "1.0"
-windows-sys = { version = "0.48", features = [
+windows-sys = { version = "0.52", features = [
     "Win32_Foundation",
     "Win32_System_Time",
     "Win32_System_Registry",
