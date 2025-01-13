@@ -1,12 +1,12 @@
 # Changelog
 
 ## 0.55.0
-* Breaking change: Migrate MSRV 1.60
-* Breaking change: Upgrade `windows-sys` to version 0.59
+* Breaking change: Increate MSRV to 1.60
+* Breaking change: Upgrade `windows-sys` to version 0.59 ([#77](https://github.com/gentoo90/winreg-rs/pull/77))
 
 ## 0.54.0
 * Breaking change: Migrate to the 2021 edition of Rust (MSRV 1.56)
-* Breaking change: Upgrade `windows-sys` to version 0.52
+* Breaking change: Upgrade `windows-sys` to version 0.52 (closes [#63](https://github.com/gentoo90/winreg-rs/pull/63), [#70](https://github.com/gentoo90/winreg-rs/pull/70))
 
 ## 0.15.0, 0.53.0
 * Don't stop deserialization of `Any` due to `REG_NONE` (pullrequest [#67](https://github.com/gentoo90/winreg-rs/pull/67), fixes [#66](https://github.com/gentoo90/winreg-rs/issues/66))
