@@ -466,7 +466,7 @@ impl RegKey {
     ///     println!("{}", i);
     /// }
     /// ```
-    pub const fn enum_keys(&self) -> EnumKeys {
+    pub const fn enum_keys(&self) -> EnumKeys<'_> {
         EnumKeys {
             key: self,
             index: 0,
@@ -490,7 +490,7 @@ impl RegKey {
     /// # Ok(())
     /// # }
     /// ```
-    pub const fn enum_values(&self) -> EnumValues {
+    pub const fn enum_values(&self) -> EnumValues<'_> {
         EnumValues {
             key: self,
             index: 0,
