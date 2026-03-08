@@ -6,6 +6,7 @@
 use serde_derive::{Deserialize, Serialize};
 use std::collections::HashMap;
 use std::error::Error;
+use std::io;
 use winreg::enums::*;
 use winreg::transaction::Transaction;
 
@@ -86,12 +87,26 @@ fn main() -> Result<(), Box<dyn Error>> {
         t_f32: 3.15,
     };
 
-    key.encode_transacted(&v1, &transaction).unwrap();
-    transaction.commit().unwrap();
+    key.encode_transacted(&v1, &transaction)?;
+
+    println!("Commit transaction? [y/N]:");
+    let mut input = String::new();
+    io::stdin().read_line(&mut input)?;
+    input = input.trim_end().to_owned();
+    if input == "y" || input == "Y" {
+        transaction.commit()?;
+        println!("Transaction committed.");
+    } else {
+        // this is optional, if transaction wasn't committed,
+        // it will be rolled back on disposal
+        transaction.rollback()?;
+
+        println!("Transaction wasn't committed, it will be rolled back.");
+    }
 
     let key = hkcu.open_subkey("Software\\RustEncode")?;
 
-    let v2: Test = key.decode().unwrap();
+    let v2: Test = key.decode()?;
     println!("Decoded {:?}", v2);
 
     println!("Equal to encoded: {:?}", v1 == v2);
