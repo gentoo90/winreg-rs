@@ -77,6 +77,12 @@ jobs:
         with:
           command: update
           args: --package serde_derive --precise 1.0.156
+      - name: Restrict unicode-ident version
+        if: matrix.restrict_deps_versions
+        uses: actions-rs/cargo@v1
+        with:
+          command: update
+          args: --package unicode-ident --precise 1.0.22
       - name: Restrict quote version
         if: matrix.restrict_deps_versions
         uses: actions-rs/cargo@v1
