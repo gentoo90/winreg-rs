@@ -783,7 +783,8 @@ impl RegKey {
     }
 
     /// Save `Encodable` type to a registry key.
-    /// This will create a new transaction for this operation.
+    /// Will create a new transaction internally for this operation and commit it when done.
+    /// If serialization fails, the transaction will be rolled back.
     /// Part of `serialization-serde` feature.
     ///
     /// # Examples
