@@ -265,7 +265,13 @@ fn main() -> Result<(), Box<dyn Error>> {
         t_f32: 3.15,
     };
 
+    // to just write the data from structure without touching other
+    // subkeys/values in the target key:
     key.encode(&v1)?;
+
+    // or
+    // to wipe out everything under the target key:
+    // key.encode_destructive(&v1)?;
 
     let v2: Test = key.decode()?;
     println!("Decoded {:?}", v2);

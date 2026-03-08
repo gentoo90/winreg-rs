@@ -783,6 +783,9 @@ impl RegKey {
     }
 
     /// Save `Encodable` type to a registry key.
+    /// **Will not touch the subkeys/values of the target key that are `Option::None` or
+    /// not in the structure being serialized. Use `encode_destructive` if you need to wipe
+    /// out entire content of the target key when serializing.**
     /// Will create a new transaction internally for this operation and commit it when done.
     /// If serialization fails, the transaction will be rolled back.
     /// Part of `serialization-serde` feature.
@@ -829,7 +832,63 @@ impl RegKey {
         encoder.commit()
     }
 
+    /// Save `Encodable` type to a registry key.
+    /// **Removes everything under the target key before writing.
+    /// Use `encode` instead if you want to keep things that are not in the structure being serialized.**
+    /// Will create a new transaction internally for this operation and commit it when done.
+    /// If serialization fails, the transaction will be rolled back.
+    /// Part of `serialization-serde` feature.
+    ///
+    /// # Examples
+    ///
+    /// ```no_run
+    /// # use std::error::Error;
+    /// use serde_derive::Serialize;
+    /// use winreg::RegKey;
+    /// use winreg::enums::*;
+    ///
+    /// #[derive(Serialize)]
+    /// struct Rectangle {
+    ///     x: u32,
+    ///     y: u32,
+    ///     w: u32,
+    ///     h: u32,
+    /// }
+    ///
+    /// #[derive(Serialize)]
+    /// struct Settings {
+    ///     current_dir: String,
+    ///     window_pos: Rectangle,
+    ///     show_in_tray: bool,
+    /// }
+    ///
+    /// # fn main() -> Result<(), Box<dyn Error>> {
+    /// let s: Settings = Settings {
+    ///     current_dir: "C:\\".to_owned(),
+    ///     window_pos: Rectangle { x: 200, y: 100, w: 800, h: 500 },
+    ///     show_in_tray: false,
+    /// };
+    /// let s_key = RegKey::predef(HKEY_CURRENT_USER)
+    ///     .open_subkey("Software\\MyProduct\\Settings")?;
+    /// s_key.encode_destructive(&s)?;
+    /// # Ok(())
+    /// # }
+    /// ```
+    #[cfg(feature = "serialization-serde")]
+    pub fn encode_destructive<T: serde::Serialize>(
+        &self,
+        value: &T,
+    ) -> crate::encoder::EncodeResult<()> {
+        let mut encoder = crate::encoder::Encoder::from_key(self)?;
+        encoder.wipe()?;
+        value.serialize(&mut encoder)?;
+        encoder.commit()
+    }
+
     /// Save `Encodable` type to a registry key using an existing transaction.
+    /// **Will not touch the subkeys/values of the target key that are `Option::None` or
+    /// not in the structure being serialized. Use `encode_destructive_transacted` if you need
+    /// to wipe out entire content of the target key when serializing.**
     /// Part of `serialization-serde` feature.
     ///
     /// # Examples
@@ -880,6 +939,64 @@ impl RegKey {
         tr: &Transaction,
     ) -> crate::encoder::EncodeResult<()> {
         let mut encoder = crate::encoder::Encoder::from_key_transacted(self, tr)?;
+        value.serialize(&mut encoder)
+    }
+
+    /// Save `Encodable` type to a registry key using an existing transaction.
+    /// **Removes everything under the target key before writing.
+    /// Use `encode_transacted` instead if you want to keep things that are not
+    /// in the structure being serialized.**
+    /// Part of `serialization-serde` feature.
+    ///
+    /// # Examples
+    ///
+    /// ```no_run
+    /// # use std::error::Error;
+    /// use serde_derive::Serialize;
+    /// use winreg::transaction::Transaction;
+    /// use winreg::RegKey;
+    /// use winreg::enums::*;
+    ///
+    /// #[derive(Serialize)]
+    /// struct Rectangle {
+    ///     x: u32,
+    ///     y: u32,
+    ///     w: u32,
+    ///     h: u32,
+    /// }
+    ///
+    /// #[derive(Serialize)]
+    /// struct Settings {
+    ///     current_dir: String,
+    ///     window_pos: Rectangle,
+    ///     show_in_tray: bool,
+    /// }
+    ///
+    /// # fn main() -> Result<(), Box<dyn Error>> {
+    /// let s: Settings = Settings {
+    ///     current_dir: "C:\\".to_owned(),
+    ///     window_pos: Rectangle { x: 200, y: 100, w: 800, h: 500 },
+    ///     show_in_tray: false,
+    /// };
+    ///
+    /// let transaction = Transaction::new()?;
+    ///
+    /// let s_key = RegKey::predef(HKEY_CURRENT_USER)
+    ///     .open_subkey_transacted("Software\\MyProduct\\Settings", &transaction)?;
+    /// s_key.encode_destructive_transacted(&s, &transaction)?;
+    ///
+    /// transaction.commit()?;
+    /// # Ok(())
+    /// # }
+    /// ```
+    #[cfg(feature = "serialization-serde")]
+    pub fn encode_destructive_transacted<T: serde::Serialize>(
+        &self,
+        value: &T,
+        tr: &Transaction,
+    ) -> crate::encoder::EncodeResult<()> {
+        let mut encoder = crate::encoder::Encoder::from_key_transacted(self, tr)?;
+        encoder.wipe()?;
         value.serialize(&mut encoder)
     }
 
