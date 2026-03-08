@@ -40,6 +40,7 @@
 //!}
 //!```
 use std::io;
+use std::os::windows::io::{AsRawHandle, FromRawHandle, IntoRawHandle, RawHandle};
 use std::ptr;
 use winapi::um::handleapi;
 use winapi::um::ktmw32;
@@ -107,5 +108,25 @@ impl Drop for Transaction {
 impl AsRef<Transaction> for Transaction {
     fn as_ref(&self) -> &Transaction {
         self
+    }
+}
+
+impl FromRawHandle for Transaction {
+    #[inline]
+    unsafe fn from_raw_handle(handle: RawHandle) -> Transaction {
+        Transaction { handle }
+    }
+}
+
+impl IntoRawHandle for Transaction {
+    #[inline]
+    fn into_raw_handle(self) -> RawHandle {
+        self.handle
+    }
+}
+
+impl AsRawHandle for Transaction {
+    fn as_raw_handle(&self) -> RawHandle {
+        self.handle
     }
 }
