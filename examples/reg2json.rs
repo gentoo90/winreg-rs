@@ -6,11 +6,10 @@
 extern crate serde_transcode;
 extern crate winreg;
 use std::error::Error;
-use winreg::enums::*;
-use winreg::RegKey;
+use winreg::HKCR;
 
 fn main() -> Result<(), Box<dyn Error>> {
-    let key = RegKey::predef(HKEY_CLASSES_ROOT).open_subkey("Folder")?;
+    let key = HKCR.open_subkey("Folder")?;
 
     let mut deserializer = winreg::decoder::Decoder::from_key(&key)?;
     let mut serializer = serde_json::Serializer::pretty(std::io::stdout());

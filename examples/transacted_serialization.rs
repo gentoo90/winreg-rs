@@ -7,8 +7,8 @@ use serde_derive::{Deserialize, Serialize};
 use std::collections::HashMap;
 use std::error::Error;
 use std::io;
-use winreg::enums::*;
 use winreg::transaction::Transaction;
+use winreg::HKCU;
 
 #[derive(Debug, Serialize, Deserialize, PartialEq)]
 struct Coords {
@@ -54,8 +54,7 @@ struct Test {
 
 fn main() -> Result<(), Box<dyn Error>> {
     let transaction = Transaction::new()?;
-    let hkcu = winreg::RegKey::predef(HKEY_CURRENT_USER);
-    let (key, _disp) = hkcu.create_subkey_transacted("Software\\RustEncode", &transaction)?;
+    let (key, _disp) = HKCU.create_subkey_transacted("Software\\RustEncode", &transaction)?;
 
     let mut map = HashMap::new();
     map.insert("".to_owned(), 0); // empty name becomes the (Default) value in the registry
@@ -104,7 +103,7 @@ fn main() -> Result<(), Box<dyn Error>> {
         println!("Transaction wasn't committed, it will be rolled back.");
     }
 
-    let key = hkcu.open_subkey("Software\\RustEncode")?;
+    let key = HKCU.open_subkey("Software\\RustEncode")?;
 
     let v2: Test = key.decode()?;
     println!("Decoded {:?}", v2);

@@ -4,12 +4,11 @@
 // may not be copied, modified, or distributed
 // except according to those terms.
 use std::io;
-use winreg::enums::*;
-use winreg::RegKey;
+use winreg::{HKCR, HKLM};
 
 fn main() -> io::Result<()> {
     println!("File extensions, registered in system:");
-    for i in RegKey::predef(HKEY_CLASSES_ROOT)
+    for i in HKCR
         .enum_keys()
         .map(|x| x.unwrap())
         .filter(|x| x.starts_with('.'))
@@ -17,7 +16,7 @@ fn main() -> io::Result<()> {
         println!("{}", i);
     }
 
-    let system = RegKey::predef(HKEY_LOCAL_MACHINE).open_subkey("HARDWARE\\DESCRIPTION\\System")?;
+    let system = HKLM.open_subkey("HARDWARE\\DESCRIPTION\\System")?;
     for (name, value) in system.enum_values().map(|x| x.unwrap()) {
         println!("{} = {:?}", name, value);
     }
