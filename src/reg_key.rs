@@ -4,6 +4,8 @@
 // may not be copied, modified, or distributed
 // except according to those terms.
 use crate::common::*;
+use crate::enum_keys::EnumKeys;
+use crate::enum_values::EnumValues;
 use crate::enums::{self, *};
 use crate::reg_key_metadata::RegKeyMetadata;
 use crate::reg_value::RegValue;
@@ -1096,56 +1098,6 @@ impl RegKey {
 impl Drop for RegKey {
     fn drop(&mut self) {
         self.close_().unwrap_or(());
-    }
-}
-
-/// Iterator over subkeys names
-pub struct EnumKeys<'key> {
-    key: &'key RegKey,
-    index: DWORD,
-}
-
-impl Iterator for EnumKeys<'_> {
-    type Item = io::Result<String>;
-
-    fn next(&mut self) -> Option<io::Result<String>> {
-        match self.key.enum_key(self.index) {
-            v @ Some(_) => {
-                self.index += 1;
-                v
-            }
-            e @ None => e,
-        }
-    }
-
-    fn nth(&mut self, n: usize) -> Option<Self::Item> {
-        self.index += n as DWORD;
-        self.next()
-    }
-}
-
-/// Iterator over values
-pub struct EnumValues<'key> {
-    key: &'key RegKey,
-    index: DWORD,
-}
-
-impl<'a> Iterator for EnumValues<'a> {
-    type Item = io::Result<(String, RegValue<'static>)>;
-
-    fn next(&mut self) -> Option<io::Result<(String, RegValue<'static>)>> {
-        match self.key.enum_value(self.index) {
-            v @ Some(_) => {
-                self.index += 1;
-                v
-            }
-            e @ None => e,
-        }
-    }
-
-    fn nth(&mut self, n: usize) -> Option<Self::Item> {
-        self.index += n as DWORD;
-        self.next()
     }
 }
 
