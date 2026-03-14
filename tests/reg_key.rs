@@ -10,7 +10,7 @@ use tempfile::tempdir;
 use windows_sys::Win32::Foundation;
 use winreg::enums::*;
 use winreg::types::FromRegValue;
-use winreg::{RegKey, RegValue};
+use winreg::{RegKey, RegValue, HKCU, HKLM};
 
 mod common;
 
@@ -47,8 +47,7 @@ fn test_load_appkey() {
 
 #[test]
 fn test_open_subkey_with_flags_query_info() {
-    let hklm = RegKey::predef(HKEY_LOCAL_MACHINE);
-    let win = hklm
+    let win = HKLM
         .open_subkey_with_flags("Software\\Microsoft\\Windows", KEY_READ)
         .unwrap();
 
@@ -60,42 +59,34 @@ fn test_open_subkey_with_flags_query_info() {
     assert!(win
         .open_subkey_with_flags("CurrentVersion\\", KEY_READ)
         .is_ok());
-    assert!(hklm
+    assert!(HKLM
         .open_subkey_with_flags("i\\just\\hope\\nobody\\created\\that\\key", KEY_READ)
         .is_err());
 }
 
 #[test]
 fn test_create_subkey_disposition() {
-    let hkcu = RegKey::predef(HKEY_CURRENT_USER);
     let path = "Software\\WinRegRsTestCreateSubkey";
-    let (_subkey, disp) = hkcu.create_subkey(path).unwrap();
+    let (_subkey, disp) = HKCU.create_subkey(path).unwrap();
     assert_eq!(disp, REG_CREATED_NEW_KEY);
-    let (_subkey2, disp2) = hkcu.create_subkey(path).unwrap();
+    let (_subkey2, disp2) = HKCU.create_subkey(path).unwrap();
     assert_eq!(disp2, REG_OPENED_EXISTING_KEY);
-    hkcu.delete_subkey_all(path).unwrap();
+    HKCU.delete_subkey_all(path).unwrap();
 }
 
 #[test]
 fn test_delete_subkey() {
     let path = "Software\\WinRegRsTestDeleteSubkey";
-    RegKey::predef(HKEY_CURRENT_USER)
-        .create_subkey(path)
-        .unwrap();
-    assert!(RegKey::predef(HKEY_CURRENT_USER)
-        .delete_subkey(path)
-        .is_ok());
+    HKCU.create_subkey(path).unwrap();
+    assert!(HKCU.delete_subkey(path).is_ok());
 }
 
 #[test]
 fn test_delete_subkey_with_flags() {
     let path = "Software\\Classes\\WinRegRsTestDeleteSubkeyWithFlags";
-    RegKey::predef(HKEY_CURRENT_USER)
-        .create_subkey_with_flags(path, KEY_WOW64_32KEY)
+    HKCU.create_subkey_with_flags(path, KEY_WOW64_32KEY)
         .unwrap();
-    assert!(RegKey::predef(HKEY_CURRENT_USER)
-        .delete_subkey_with_flags(path, KEY_WOW64_32KEY)
-        .is_ok());
+    assert!(HKCU.delete_subkey_with_flags(path, KEY_WOW64_32KEY).is_ok());
 }
 
 #[test]
@@ -245,6 +236,19 @@ fn test_enum_keys() {
 }
 
 #[test]
+fn test_enum_keys_os_string() {
+    with_key!(key, "EnumKeysOsString" => {
+        let mut keys1 = vec!("qwerty", "asdf", "1", "2", "3", "5", "8", "йцукен");
+        keys1.sort_unstable();
+        for i in &keys1 {
+            key.create_subkey(i).unwrap();
+        }
+        let keys2: Vec<_> = key.enum_keys_os_string().map(|x| x.unwrap()).collect();
+        assert_eq!(keys1, keys2);
+    });
+}
+
+#[test]
 fn test_enum_values() {
     with_key!(key, "EnumValues" => {
         let mut vals1 = vec!("qwerty", "asdf", "1", "2", "3", "5", "8", "йцукен");
@@ -252,9 +256,30 @@ fn test_enum_values() {
         for i in &vals1 {
             key.set_value(i,i).unwrap();
         }
-        let mut vals2: Vec<String> = Vec::with_capacity(vals1.len());
-        let mut vals3: Vec<String> = Vec::with_capacity(vals1.len());
+        let mut vals2: Vec<_> = Vec::with_capacity(vals1.len());
+        let mut vals3: Vec<_> = Vec::with_capacity(vals1.len());
         for (name, val) in key.enum_values()
+            .map(|x| x.unwrap())
+        {
+            vals2.push(name);
+            vals3.push(String::from_reg_value(&val).unwrap());
+        }
+        assert_eq!(vals1, vals2);
+        assert_eq!(vals1, vals3);
+    });
+}
+
+#[test]
+fn test_enum_values_os_string() {
+    with_key!(key, "EnumValuesOsString" => {
+        let mut vals1 = vec!("qwerty", "asdf", "1", "2", "3", "5", "8", "йцукен");
+        vals1.sort_unstable();
+        for i in &vals1 {
+            key.set_value(i,i).unwrap();
+        }
+        let mut vals2: Vec<_> = Vec::with_capacity(vals1.len());
+        let mut vals3: Vec<_> = Vec::with_capacity(vals1.len());
+        for (name, val) in key.enum_values_os_string()
             .map(|x| x.unwrap())
         {
             vals2.push(name);

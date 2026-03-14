@@ -9,10 +9,8 @@ macro_rules! with_key {
     ($k:ident, $path:expr => $b:block) => {{
         let mut path = "Software\\WinRegRsTest".to_owned();
         path.push_str($path);
-        let ($k, _disp) = winreg::RegKey::predef(winreg::enums::HKEY_CURRENT_USER)
-            .create_subkey(&path).unwrap();
+        let ($k, _disp) = winreg::HKCU.create_subkey(&path).unwrap();
         $b
-        winreg::RegKey::predef(winreg::enums::HKEY_CURRENT_USER)
-        .delete_subkey_all(path).unwrap();
+        winreg::HKCU.delete_subkey_all(path).unwrap();
     }}
 }

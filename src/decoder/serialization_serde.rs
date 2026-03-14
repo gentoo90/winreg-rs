@@ -7,6 +7,7 @@ use super::{DecodeResult, Decoder, DecoderCursor, DecoderError, DECODER_SAM};
 use crate::{types::FromRegValue, RegValue};
 use serde::de::*;
 use std::fmt;
+use windows_sys::Win32::Foundation;
 
 impl Error for DecoderError {
     fn custom<T: fmt::Display>(msg: T) -> Self {
@@ -35,7 +36,7 @@ impl<'de> Deserializer<'de> for &mut Decoder {
                     }
                     REG_DWORD => visitor.visit_u32(u32::from_reg_value(&v)?),
                     REG_QWORD => visitor.visit_u64(u64::from_reg_value(&v)?),
-                    REG_BINARY => visitor.visit_byte_buf(v.bytes),
+                    REG_BINARY => visitor.visit_byte_buf(v.bytes.into_owned()),
                     REG_NONE => visitor.visit_none(),
                     _ => no_impl!(format!(
                         "value type deserialization not implemented {:?}",
@@ -180,20 +181,19 @@ impl<'de> Deserializer<'de> for &mut Decoder {
             use super::DecoderCursor::*;
             match self.cursor {
                 Start => return visitor.visit_some(&mut *self),
-                FieldVal(index, ref name) => self
-                    .key
-                    .get_raw_value(name)
-                    .map_err(DecoderError::IoError)
-                    .and_then(|v| match v {
-                        RegValue {
+                FieldVal(index, ref name) => {
+                    let v = self.key.get_raw_value(name).map_err(DecoderError::IoError);
+                    match v {
+                        Ok(RegValue {
                             vtype: crate::enums::RegType::REG_NONE,
                             ..
-                        } => {
+                        }) => {
                             self.cursor = DecoderCursor::Field(index + 1);
                             Err(DecoderError::DeserializerError("Found REG_NONE".to_owned()))
                         }
                         val => Ok(val),
-                    }),
+                    }
+                }
                 _ => Err(DecoderError::DeserializerError("Nothing found".to_owned())),
             }
         };
@@ -314,7 +314,12 @@ impl<'de> MapAccess<'de> for Decoder {
             }
             Key(index) => match self.key.enum_key(index) {
                 Some(res) => {
-                    self.cursor = KeyName(index, res?);
+                    self.cursor = KeyName(
+                        index,
+                        res?.into_string().map_err(|_| {
+                            std::io::Error::from_raw_os_error(Foundation::ERROR_INVALID_DATA as i32)
+                        })?,
+                    );
                     seed.deserialize(&mut *self).map(Some)
                 }
                 None => {
@@ -326,7 +331,14 @@ impl<'de> MapAccess<'de> for Decoder {
                 let next_value = self.key.enum_value(index);
                 match next_value {
                     Some(res) => {
-                        self.cursor = FieldName(index, res?.0);
+                        self.cursor = FieldName(
+                            index,
+                            res?.0.into_string().map_err(|_| {
+                                std::io::Error::from_raw_os_error(
+                                    Foundation::ERROR_INVALID_DATA as i32,
+                                )
+                            })?,
+                        );
                         seed.deserialize(&mut *self).map(Some)
                     }
                     None => Ok(None),

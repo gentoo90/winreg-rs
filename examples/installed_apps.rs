@@ -6,7 +6,7 @@
 use serde_derive::{Deserialize, Serialize};
 use std::collections::HashMap;
 use std::fmt;
-use winreg::enums::*;
+use winreg::HKLM;
 
 #[allow(non_snake_case)]
 #[derive(Debug, Serialize, Deserialize)]
@@ -34,8 +34,7 @@ impl fmt::Display for InstalledApp {
 }
 
 fn main() {
-    let hklm = winreg::RegKey::predef(HKEY_LOCAL_MACHINE);
-    let uninstall_key = hklm
+    let uninstall_key = HKLM
         .open_subkey("SOFTWARE\\Microsoft\\Windows\\CurrentVersion\\Uninstall")
         .expect("key is missing");
 

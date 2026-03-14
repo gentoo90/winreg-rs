@@ -70,7 +70,8 @@ pub struct Encoder<Tr: AsRef<Transaction>> {
     state: EncoderState,
 }
 
-const ENCODER_SAM: u32 = KEY_CREATE_SUB_KEY | KEY_SET_VALUE;
+const ENCODER_SAM: u32 =
+    KEY_CREATE_SUB_KEY | KEY_SET_VALUE | DELETE | KEY_ENUMERATE_SUB_KEYS | KEY_QUERY_VALUE;
 
 impl Encoder<Transaction> {
     pub fn from_key(key: &RegKey) -> EncodeResult<Encoder<Transaction>> {
@@ -88,6 +89,14 @@ impl Encoder<Transaction> {
             tr,
             state: Start,
         }
+    }
+
+    /// use this to clear the old key content before starting serialization
+    pub(crate) fn wipe(&self) -> EncodeResult<()> {
+        // since key is opened with transaction RegDeleteTreeW happens inside this transaction
+        self.keys[0]
+            .delete_subkey_all("")
+            .map_err(EncoderError::IoError)
     }
 
     pub fn commit(self) -> EncodeResult<()> {
@@ -113,5 +122,13 @@ impl Encoder<&Transaction> {
             tr,
             state: Start,
         }
+    }
+
+    /// use this to clear the old key content before starting serialization
+    pub(crate) fn wipe(&self) -> EncodeResult<()> {
+        // since key is opened with transaction RegDeleteTreeW happens inside this transaction
+        self.keys[0]
+            .delete_subkey_all("")
+            .map_err(EncoderError::IoError)
     }
 }

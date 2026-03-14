@@ -36,7 +36,7 @@ Current features:
 ```toml
 # Cargo.toml
 [dependencies]
-winreg = "0.55"
+winreg = "0.56"
 ```
 
 ```rust
@@ -138,7 +138,7 @@ fn main() -> io::Result<()> {
 ```toml
 # Cargo.toml
 [dependencies]
-winreg = { version = "0.55", features = ["transactions"] }
+winreg = { version = "0.56", features = ["transactions"] }
 ```
 
 ```rust
@@ -179,7 +179,7 @@ fn main() -> io::Result<()> {
 ```toml
 # Cargo.toml
 [dependencies]
-winreg = { version = "0.55", features = ["serialization-serde"] }
+winreg = { version = "0.56", features = ["serialization-serde"] }
 serde = "1"
 serde_derive = "1"
 ```
@@ -265,7 +265,13 @@ fn main() -> Result<(), Box<dyn Error>> {
         t_f32: 3.15,
     };
 
+    // to just write the data from structure without touching other
+    // subkeys/values in the target key:
     key.encode(&v1)?;
+
+    // or
+    // to wipe out everything under the target key:
+    // key.encode_destructive(&v1)?;
 
     let v2: Test = key.decode()?;
     println!("Decoded {:?}", v2);

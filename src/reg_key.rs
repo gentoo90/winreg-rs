@@ -4,6 +4,10 @@
 // may not be copied, modified, or distributed
 // except according to those terms.
 use crate::common::*;
+use crate::enum_keys::EnumKeys;
+use crate::enum_keys_os_string::EnumKeysOsString;
+use crate::enum_values::EnumValues;
+use crate::enum_values_os_string::EnumValuesOsString;
 use crate::enums::{self, *};
 use crate::reg_key_metadata::RegKeyMetadata;
 use crate::reg_value::RegValue;
@@ -11,9 +15,10 @@ use crate::reg_value::RegValue;
 use crate::transaction::Transaction;
 use crate::types::{FromRegValue, ToRegValue};
 use std::default::Default;
-use std::ffi::OsStr;
+use std::ffi::{OsStr, OsString};
 use std::io;
 use std::mem::transmute;
+use std::os::windows::ffi::OsStringExt;
 use std::ptr;
 use windows_sys::Win32::Foundation;
 use windows_sys::Win32::System::Registry;
@@ -112,11 +117,9 @@ impl RegKey {
     ///
     /// ```no_run
     /// # use std::error::Error;
-    /// # use winreg::RegKey;
-    /// # use winreg::enums::*;
+    /// # use winreg::HKLM;
     /// # fn main() -> Result<(), Box<dyn Error>> {
-    /// let hklm = RegKey::predef(HKEY_LOCAL_MACHINE);
-    /// let soft = hklm.open_subkey("SOFTWARE")?;
+    /// let soft = HKLM.open_subkey("SOFTWARE")?;
     /// let handle = soft.raw_handle();
     /// # Ok(())
     /// # }
@@ -134,11 +137,9 @@ impl RegKey {
     ///
     /// ```no_run
     /// # use std::error::Error;
-    /// # use winreg::RegKey;
-    /// # use winreg::enums::*;
+    /// # use winreg::HKCU;
     /// # fn main() -> Result<(), Box<dyn Error>> {
-    /// let soft = RegKey::predef(HKEY_CURRENT_USER)
-    ///     .open_subkey("Software")?;
+    /// let soft = HKCU.open_subkey("Software")?;
     /// # Ok(())
     /// # }
     /// ```
@@ -153,11 +154,10 @@ impl RegKey {
     ///
     /// ```no_run
     /// # use std::error::Error;
-    /// # use winreg::RegKey;
     /// # use winreg::enums::*;
+    /// # use winreg::HKLM;
     /// # fn main() -> Result<(), Box<dyn Error>> {
-    /// let hklm = RegKey::predef(HKEY_LOCAL_MACHINE);
-    /// hklm.open_subkey_with_flags("SOFTWARE\\Microsoft", KEY_READ)?;
+    /// HKLM.open_subkey_with_flags("SOFTWARE\\Microsoft", KEY_READ)?;
     /// # Ok(())
     /// # }
     /// ```
@@ -176,11 +176,10 @@ impl RegKey {
     ///
     /// ```no_run
     /// # use std::error::Error;
-    /// # use winreg::RegKey;
     /// # use winreg::enums::*;
+    /// # use winreg::HKLM;
     /// # fn main() -> Result<(), Box<dyn Error>> {
-    /// let hklm = RegKey::predef(HKEY_LOCAL_MACHINE);
-    /// hklm.open_subkey_with_options_flags("SOFTWARE\\LinkKey", REG_OPTION_OPEN_LINK, KEY_READ)?;
+    /// HKLM.open_subkey_with_options_flags("SOFTWARE\\LinkKey", REG_OPTION_OPEN_LINK, KEY_READ)?;
     /// # Ok(())
     /// # }
     /// ```
@@ -260,11 +259,10 @@ impl RegKey {
     ///
     /// ```no_run
     /// # use std::error::Error;
-    /// # use winreg::RegKey;
     /// use winreg::enums::*;
+    /// use winreg::HKCU;
     /// # fn main() -> Result<(), Box<dyn Error>> {
-    /// let hkcu = RegKey::predef(HKEY_CURRENT_USER);
-    /// let (settings, disp) = hkcu.create_subkey("Software\\MyProduct\\Settings")?;
+    /// let (settings, disp) = HKCU.create_subkey("Software\\MyProduct\\Settings")?;
     ///
     /// match disp {
     ///     REG_CREATED_NEW_KEY => println!("A new key has been created"),
@@ -376,10 +374,9 @@ impl RegKey {
     /// # Examples
     /// ```no_run
     /// # use std::error::Error;
-    /// # use winreg::RegKey;
-    /// # use winreg::enums::*;
+    /// # use winreg::HKCU;
     /// # fn main() -> Result<(), Box<dyn Error>> {
-    /// let items = RegKey::predef(HKEY_CURRENT_USER).open_subkey(r"Software\MyProduct\Items")?;
+    /// let items = HKCU.open_subkey(r"Software\MyProduct\Items")?;
     /// items.rename_subkey("itemA", "itemB")?;
     /// # Ok(())
     /// # }
@@ -405,12 +402,11 @@ impl RegKey {
     ///
     /// ```no_run
     /// # use std::error::Error;
-    /// # use winreg::RegKey;
     /// # use winreg::enums::*;
+    /// # use winreg::HKCU;
     /// # fn main() -> Result<(), Box<dyn Error>> {
-    /// let hkcu = RegKey::predef(HKEY_CURRENT_USER);
-    /// let src = hkcu.open_subkey_with_flags("Software\\MyProduct", KEY_READ)?;
-    /// let (dst, dst_disp) = hkcu.create_subkey("Software\\MyProduct\\Section2")?;
+    /// let src = HKCU.open_subkey_with_flags("Software\\MyProduct", KEY_READ)?;
+    /// let (dst, dst_disp) = HKCU.create_subkey("Software\\MyProduct\\Section2")?;
     /// src.copy_tree("Section1", &dst)?;
     /// # Ok(())
     /// # }
@@ -446,47 +442,91 @@ impl RegKey {
         }
     }
 
-    /// Return an iterator over subkeys names.
+    /// Return an iterator over subkeys names as `String`s.
     ///
     /// # Examples
     ///
     /// ```no_run
-    /// # use winreg::RegKey;
-    /// # use winreg::enums::*;
+    /// # use winreg::HKCR;
     /// println!("File extensions, registered in this system:");
-    /// for i in RegKey::predef(HKEY_CLASSES_ROOT)
-    ///     .enum_keys().map(|x| x.unwrap())
+    /// for i in HKCR.enum_keys().map(|x| x.unwrap())
     ///     .filter(|x| x.starts_with("."))
     /// {
     ///     println!("{}", i);
     /// }
     /// ```
-    pub const fn enum_keys(&self) -> EnumKeys {
+    pub const fn enum_keys(&self) -> EnumKeys<'_> {
         EnumKeys {
             key: self,
             index: 0,
         }
     }
 
-    /// Return an iterator over values.
+    /// Return an iterator over subkeys names as `OsString`s.
     ///
     /// # Examples
     ///
     /// ```no_run
     /// # use std::error::Error;
-    /// # use winreg::RegKey;
-    /// # use winreg::enums::*;
+    /// # use winreg::HKCU;
     /// # fn main() -> Result<(), Box<dyn Error>> {
-    /// let system = RegKey::predef(HKEY_LOCAL_MACHINE)
-    ///     .open_subkey_with_flags("HARDWARE\\DESCRIPTION\\System", KEY_READ)?;
+    /// println!("File extensions, registered in this system:");
+    /// let settings = HKCU.open_subkey("Software\\MyProduct\\Settings")?;
+    /// for i in settings.enum_keys_os_string().map(|x| x.unwrap())
+    /// {
+    ///     println!("{:?}", i);
+    /// }
+    /// # Ok(())
+    /// # }
+    /// ```
+    pub const fn enum_keys_os_string(&self) -> EnumKeysOsString<'_> {
+        EnumKeysOsString {
+            key: self,
+            index: 0,
+        }
+    }
+
+    /// Return an iterator over values represented as `(String, RegValue)`.
+    ///
+    /// # Examples
+    ///
+    /// ```no_run
+    /// # use std::error::Error;
+    /// # use winreg::enums::*;
+    /// # use winreg::HKLM;
+    /// # fn main() -> Result<(), Box<dyn Error>> {
+    /// let system = HKLM.open_subkey_with_flags("HARDWARE\\DESCRIPTION\\System", KEY_READ)?;
     /// for (name, value) in system.enum_values().map(|x| x.unwrap()) {
     ///     println!("{} = {:?}", name, value);
     /// }
     /// # Ok(())
     /// # }
     /// ```
-    pub const fn enum_values(&self) -> EnumValues {
+    pub const fn enum_values(&self) -> EnumValues<'_> {
         EnumValues {
+            key: self,
+            index: 0,
+        }
+    }
+
+    /// Return an iterator over values represented as `(OsString, RegValue)`.
+    ///
+    /// # Examples
+    ///
+    /// ```no_run
+    /// # use std::error::Error;
+    /// # use winreg::enums::*;
+    /// # use winreg::HKLM;
+    /// # fn main() -> Result<(), Box<dyn Error>> {
+    /// let system = HKLM.open_subkey_with_flags("HARDWARE\\DESCRIPTION\\System", KEY_READ)?;
+    /// for (name, value) in system.enum_values_os_string().map(|x| x.unwrap()) {
+    ///     println!("{:?} = {:?}", name, value);
+    /// }
+    /// # Ok(())
+    /// # }
+    /// ```
+    pub const fn enum_values_os_string(&self) -> EnumValuesOsString<'_> {
+        EnumValuesOsString {
             key: self,
             index: 0,
         }
@@ -500,11 +540,9 @@ impl RegKey {
     ///
     /// ```no_run
     /// # use std::error::Error;
-    /// # use winreg::RegKey;
-    /// # use winreg::enums::*;
+    /// # use winreg::HKCU;
     /// # fn main() -> Result<(), Box<dyn Error>> {
-    /// RegKey::predef(HKEY_CURRENT_USER)
-    ///     .delete_subkey(r"Software\MyProduct\History")?;
+    /// HKCU.delete_subkey(r"Software\MyProduct\History")?;
     /// # Ok(())
     /// # }
     /// ```
@@ -518,12 +556,11 @@ impl RegKey {
     /// # Examples
     /// ```no_run
     /// # use std::error::Error;
-    /// # use winreg::RegKey;
     /// # use winreg::enums::*;
+    /// # use winreg::HKLM;
     /// # fn main() -> Result<(), Box<dyn Error>> {
     /// // delete the key from the 32-bit registry view
-    /// RegKey::predef(HKEY_LOCAL_MACHINE)
-    ///     .delete_subkey_with_flags(r"Software\MyProduct\History", KEY_WOW64_32KEY)?;
+    /// HKLM.delete_subkey_with_flags(r"Software\MyProduct\History", KEY_WOW64_32KEY)?;
     /// # Ok(())
     /// # }
     /// ```
@@ -587,11 +624,9 @@ impl RegKey {
     ///
     /// ```no_run
     /// # use std::error::Error;
-    /// # use winreg::RegKey;
-    /// # use winreg::enums::*;
+    /// # use winreg::HKCU;
     /// # fn main() -> Result<(), Box<dyn Error>> {
-    /// RegKey::predef(HKEY_CURRENT_USER)
-    ///     .delete_subkey_all("Software\\MyProduct")?;
+    /// HKCU.delete_subkey_all("Software\\MyProduct")?;
     /// # Ok(())
     /// # }
     /// ```
@@ -622,11 +657,9 @@ impl RegKey {
     ///
     /// ```no_run
     /// # use std::error::Error;
-    /// # use winreg::RegKey;
-    /// # use winreg::enums::*;
+    /// # use winreg::HKCU;
     /// # fn main() -> Result<(), Box<dyn Error>> {
-    /// let hkcu = RegKey::predef(HKEY_CURRENT_USER);
-    /// let settings = hkcu.open_subkey("Software\\MyProduct\\Settings")?;
+    /// let settings = HKCU.open_subkey("Software\\MyProduct\\Settings")?;
     /// let server: String = settings.get_value("server")?;
     /// let port: u32 = settings.get_value("port")?;
     /// # Ok(())
@@ -646,17 +679,15 @@ impl RegKey {
     ///
     /// ```no_run
     /// # use std::error::Error;
-    /// # use winreg::RegKey;
-    /// # use winreg::enums::*;
+    /// # use winreg::HKCU;
     /// # fn main() -> Result<(), Box<dyn Error>> {
-    /// let hkcu = RegKey::predef(HKEY_CURRENT_USER);
-    /// let settings = hkcu.open_subkey("Software\\MyProduct\\Settings")?;
+    /// let settings = HKCU.open_subkey("Software\\MyProduct\\Settings")?;
     /// let data = settings.get_raw_value("data")?;
     /// println!("Bytes: {:?}", data.bytes);
     /// # Ok(())
     /// # }
     /// ```
-    pub fn get_raw_value<N: AsRef<OsStr>>(&self, name: N) -> io::Result<RegValue> {
+    pub fn get_raw_value<N: AsRef<OsStr>>(&self, name: N) -> io::Result<RegValue<'static>> {
         let c_name = to_utf16(name);
         let mut buf_len: u32 = 2048;
         let mut buf_type: u32 = 0;
@@ -682,7 +713,7 @@ impl RegKey {
                     }
                     let t: RegType = unsafe { transmute(buf_type as u8) };
                     return Ok(RegValue {
-                        bytes: buf,
+                        bytes: buf.into(),
                         vtype: t,
                     });
                 }
@@ -702,11 +733,9 @@ impl RegKey {
     ///
     /// ```no_run
     /// # use std::error::Error;
-    /// # use winreg::RegKey;
-    /// # use winreg::enums::*;
+    /// # use winreg::HKCU;
     /// # fn main() -> Result<(), Box<dyn Error>> {
-    /// let hkcu = RegKey::predef(HKEY_CURRENT_USER);
-    /// let (settings, disp) = hkcu.create_subkey("Software\\MyProduct\\Settings")?;
+    /// let (settings, disp) = HKCU.create_subkey("Software\\MyProduct\\Settings")?;
     /// settings.set_value("server", &"www.example.com")?;
     /// settings.set_value("port", &8080u32)?;
     /// # Ok(())
@@ -723,13 +752,12 @@ impl RegKey {
     ///
     /// ```no_run
     /// # use std::error::Error;
-    /// use winreg::{RegKey, RegValue};
+    /// use winreg::{HKCU, RegValue};
     /// use winreg::enums::*;
     /// # fn main() -> Result<(), Box<dyn Error>> {
-    /// let hkcu = RegKey::predef(HKEY_CURRENT_USER);
-    /// let settings = hkcu.open_subkey("Software\\MyProduct\\Settings")?;
+    /// let settings = HKCU.open_subkey("Software\\MyProduct\\Settings")?;
     /// let bytes: Vec<u8> = vec![1, 2, 3, 5, 8, 13, 21, 34, 55, 89];
-    /// let data = RegValue{ vtype: REG_BINARY, bytes: bytes};
+    /// let data = RegValue{ vtype: REG_BINARY, bytes: bytes.into()};
     /// settings.set_raw_value("data", &data)?;
     /// println!("Bytes: {:?}", data.bytes);
     /// # Ok(())
@@ -760,11 +788,9 @@ impl RegKey {
     ///
     /// ```no_run
     /// # use std::error::Error;
-    /// # use winreg::RegKey;
-    /// # use winreg::enums::*;
+    /// # use winreg::HKCU;
     /// # fn main() -> Result<(), Box<dyn Error>> {
-    /// let hkcu = RegKey::predef(HKEY_CURRENT_USER);
-    /// let settings = hkcu.open_subkey("Software\\MyProduct\\Settings")?;
+    /// let settings = HKCU.open_subkey("Software\\MyProduct\\Settings")?;
     /// settings.delete_value("data")?;
     /// # Ok(())
     /// # }
@@ -778,7 +804,11 @@ impl RegKey {
     }
 
     /// Save `Encodable` type to a registry key.
-    /// This will create a new transaction for this operation.
+    /// **Will not touch the subkeys/values of the target key that are `Option::None` or
+    /// not in the structure being serialized. Use `encode_destructive` if you need to wipe
+    /// out entire content of the target key when serializing.**
+    /// Will create a new transaction internally for this operation and commit it when done.
+    /// If serialization fails, the transaction will be rolled back.
     /// Part of `serialization-serde` feature.
     ///
     /// # Examples
@@ -786,11 +816,10 @@ impl RegKey {
     /// ```no_run
     /// # use std::error::Error;
     /// use serde_derive::Serialize;
-    /// use winreg::RegKey;
-    /// use winreg::enums::*;
+    /// use winreg::HKCU;
     ///
     /// #[derive(Serialize)]
-    /// struct Rectangle{
+    /// struct Rectangle {
     ///     x: u32,
     ///     y: u32,
     ///     w: u32,
@@ -798,20 +827,19 @@ impl RegKey {
     /// }
     ///
     /// #[derive(Serialize)]
-    /// struct Settings{
+    /// struct Settings {
     ///     current_dir: String,
     ///     window_pos: Rectangle,
     ///     show_in_tray: bool,
     /// }
     ///
     /// # fn main() -> Result<(), Box<dyn Error>> {
-    /// let s: Settings = Settings{
+    /// let s: Settings = Settings {
     ///     current_dir: "C:\\".to_owned(),
-    ///     window_pos: Rectangle{ x:200, y: 100, w: 800, h: 500 },
+    ///     window_pos: Rectangle { x: 200, y: 100, w: 800, h: 500 },
     ///     show_in_tray: false,
     /// };
-    /// let s_key = RegKey::predef(HKEY_CURRENT_USER)
-    ///     .open_subkey("Software\\MyProduct\\Settings")?;
+    /// let s_key = HKCU.open_subkey("Software\\MyProduct\\Settings")?;
     /// s_key.encode(&s)?;
     /// # Ok(())
     /// # }
@@ -823,7 +851,61 @@ impl RegKey {
         encoder.commit()
     }
 
+    /// Save `Encodable` type to a registry key.
+    /// **Removes everything under the target key before writing.
+    /// Use `encode` instead if you want to keep things that are not in the structure being serialized.**
+    /// Will create a new transaction internally for this operation and commit it when done.
+    /// If serialization fails, the transaction will be rolled back.
+    /// Part of `serialization-serde` feature.
+    ///
+    /// # Examples
+    ///
+    /// ```no_run
+    /// # use std::error::Error;
+    /// use serde_derive::Serialize;
+    /// use winreg::HKCU;
+    ///
+    /// #[derive(Serialize)]
+    /// struct Rectangle {
+    ///     x: u32,
+    ///     y: u32,
+    ///     w: u32,
+    ///     h: u32,
+    /// }
+    ///
+    /// #[derive(Serialize)]
+    /// struct Settings {
+    ///     current_dir: String,
+    ///     window_pos: Rectangle,
+    ///     show_in_tray: bool,
+    /// }
+    ///
+    /// # fn main() -> Result<(), Box<dyn Error>> {
+    /// let s: Settings = Settings {
+    ///     current_dir: "C:\\".to_owned(),
+    ///     window_pos: Rectangle { x: 200, y: 100, w: 800, h: 500 },
+    ///     show_in_tray: false,
+    /// };
+    /// let s_key = HKCU.open_subkey("Software\\MyProduct\\Settings")?;
+    /// s_key.encode_destructive(&s)?;
+    /// # Ok(())
+    /// # }
+    /// ```
+    #[cfg(feature = "serialization-serde")]
+    pub fn encode_destructive<T: serde::Serialize>(
+        &self,
+        value: &T,
+    ) -> crate::encoder::EncodeResult<()> {
+        let mut encoder = crate::encoder::Encoder::from_key(self)?;
+        encoder.wipe()?;
+        value.serialize(&mut encoder)?;
+        encoder.commit()
+    }
+
     /// Save `Encodable` type to a registry key using an existing transaction.
+    /// **Will not touch the subkeys/values of the target key that are `Option::None` or
+    /// not in the structure being serialized. Use `encode_destructive_transacted` if you need
+    /// to wipe out entire content of the target key when serializing.**
     /// Part of `serialization-serde` feature.
     ///
     /// # Examples
@@ -832,11 +914,10 @@ impl RegKey {
     /// # use std::error::Error;
     /// use serde_derive::Serialize;
     /// use winreg::transaction::Transaction;
-    /// use winreg::RegKey;
-    /// use winreg::enums::*;
+    /// use winreg::HKCU;
     ///
     /// #[derive(Serialize)]
-    /// struct Rectangle{
+    /// struct Rectangle {
     ///     x: u32,
     ///     y: u32,
     ///     w: u32,
@@ -844,23 +925,22 @@ impl RegKey {
     /// }
     ///
     /// #[derive(Serialize)]
-    /// struct Settings{
+    /// struct Settings {
     ///     current_dir: String,
     ///     window_pos: Rectangle,
     ///     show_in_tray: bool,
     /// }
     ///
     /// # fn main() -> Result<(), Box<dyn Error>> {
-    /// let s: Settings = Settings{
+    /// let s: Settings = Settings {
     ///     current_dir: "C:\\".to_owned(),
-    ///     window_pos: Rectangle{ x:200, y: 100, w: 800, h: 500 },
+    ///     window_pos: Rectangle { x: 200, y: 100, w: 800, h: 500 },
     ///     show_in_tray: false,
     /// };
     ///
     /// let transaction = Transaction::new()?;
     ///
-    /// let s_key = RegKey::predef(HKEY_CURRENT_USER)
-    ///     .open_subkey_transacted("Software\\MyProduct\\Settings", &transaction)?;
+    /// let s_key = HKCU.open_subkey_transacted("Software\\MyProduct\\Settings", &transaction)?;
     /// s_key.encode_transacted(&s, &transaction)?;
     ///
     /// transaction.commit()?;
@@ -877,6 +957,62 @@ impl RegKey {
         value.serialize(&mut encoder)
     }
 
+    /// Save `Encodable` type to a registry key using an existing transaction.
+    /// **Removes everything under the target key before writing.
+    /// Use `encode_transacted` instead if you want to keep things that are not
+    /// in the structure being serialized.**
+    /// Part of `serialization-serde` feature.
+    ///
+    /// # Examples
+    ///
+    /// ```no_run
+    /// # use std::error::Error;
+    /// use serde_derive::Serialize;
+    /// use winreg::transaction::Transaction;
+    /// use winreg::HKCU;
+    ///
+    /// #[derive(Serialize)]
+    /// struct Rectangle {
+    ///     x: u32,
+    ///     y: u32,
+    ///     w: u32,
+    ///     h: u32,
+    /// }
+    ///
+    /// #[derive(Serialize)]
+    /// struct Settings {
+    ///     current_dir: String,
+    ///     window_pos: Rectangle,
+    ///     show_in_tray: bool,
+    /// }
+    ///
+    /// # fn main() -> Result<(), Box<dyn Error>> {
+    /// let s: Settings = Settings {
+    ///     current_dir: "C:\\".to_owned(),
+    ///     window_pos: Rectangle { x: 200, y: 100, w: 800, h: 500 },
+    ///     show_in_tray: false,
+    /// };
+    ///
+    /// let transaction = Transaction::new()?;
+    ///
+    /// let s_key = HKCU.open_subkey_transacted("Software\\MyProduct\\Settings", &transaction)?;
+    /// s_key.encode_destructive_transacted(&s, &transaction)?;
+    ///
+    /// transaction.commit()?;
+    /// # Ok(())
+    /// # }
+    /// ```
+    #[cfg(feature = "serialization-serde")]
+    pub fn encode_destructive_transacted<T: serde::Serialize>(
+        &self,
+        value: &T,
+        tr: &Transaction,
+    ) -> crate::encoder::EncodeResult<()> {
+        let mut encoder = crate::encoder::Encoder::from_key_transacted(self, tr)?;
+        encoder.wipe()?;
+        value.serialize(&mut encoder)
+    }
+
     /// Load `Decodable` type from a registry key.
     /// Part of `serialization-serde` feature.
     ///
@@ -885,11 +1021,10 @@ impl RegKey {
     /// ```no_run
     /// # use std::error::Error;
     /// use serde_derive::Deserialize;
-    /// use winreg::RegKey;
-    /// use winreg::enums::*;
+    /// use winreg::HKCU;
     ///
     /// #[derive(Deserialize)]
-    /// struct Rectangle{
+    /// struct Rectangle {
     ///     x: u32,
     ///     y: u32,
     ///     w: u32,
@@ -897,15 +1032,14 @@ impl RegKey {
     /// }
     ///
     /// #[derive(Deserialize)]
-    /// struct Settings{
+    /// struct Settings {
     ///     current_dir: String,
     ///     window_pos: Rectangle,
     ///     show_in_tray: bool,
     /// }
     ///
     /// # fn main() -> Result<(), Box<dyn Error>> {
-    /// let s_key = RegKey::predef(HKEY_CURRENT_USER)
-    ///     .open_subkey("Software\\MyProduct\\Settings")?;
+    /// let s_key = HKCU.open_subkey("Software\\MyProduct\\Settings")?;
     /// let s: Settings = s_key.decode()?;
     /// # Ok(())
     /// # }
@@ -929,7 +1063,7 @@ impl RegKey {
         }
     }
 
-    pub(crate) fn enum_key(&self, index: u32) -> Option<io::Result<String>> {
+    pub(crate) fn enum_key(&self, index: u32) -> Option<io::Result<OsString>> {
         let mut name_len = 2048;
         #[allow(clippy::unnecessary_cast)]
         let mut name = [0 as u16; 2048];
@@ -945,16 +1079,16 @@ impl RegKey {
                 ptr::null_mut(), // lpftLastWriteTime: PFILETIME,
             )
         } {
-            0 => match String::from_utf16(&name[..name_len as usize]) {
-                Ok(s) => Some(Ok(s)),
-                Err(_) => Some(werr!(Foundation::ERROR_INVALID_BLOCK)),
-            },
+            0 => Some(Ok(OsString::from_wide(&name[..name_len as usize]))),
             Foundation::ERROR_NO_MORE_ITEMS => None,
             err => Some(werr!(err)),
         }
     }
 
-    pub(crate) fn enum_value(&self, index: u32) -> Option<io::Result<(String, RegValue)>> {
+    pub(crate) fn enum_value(
+        &self,
+        index: u32,
+    ) -> Option<io::Result<(OsString, RegValue<'static>)>> {
         let mut name_len = 2048;
         #[allow(clippy::unnecessary_cast)]
         let mut name = [0 as u16; 2048];
@@ -976,10 +1110,7 @@ impl RegKey {
                 )
             } {
                 0 => {
-                    let name = match String::from_utf16(&name[..name_len as usize]) {
-                        Ok(s) => s,
-                        Err(_) => return Some(werr!(Foundation::ERROR_INVALID_DATA)),
-                    };
+                    let name = OsString::from_wide(&name[..name_len as usize]);
                     unsafe {
                         buf.set_len(buf_len as usize);
                     }
@@ -989,7 +1120,7 @@ impl RegKey {
                     }
                     let t: RegType = unsafe { transmute(buf_type as u8) };
                     let value = RegValue {
-                        bytes: buf,
+                        bytes: buf.into(),
                         vtype: t,
                     };
                     return Some(Ok((name, value)));
@@ -1011,52 +1142,13 @@ impl Drop for RegKey {
     }
 }
 
-/// Iterator over subkeys names
-pub struct EnumKeys<'key> {
-    key: &'key RegKey,
-    index: u32,
-}
-
-impl Iterator for EnumKeys<'_> {
-    type Item = io::Result<String>;
-
-    fn next(&mut self) -> Option<io::Result<String>> {
-        match self.key.enum_key(self.index) {
-            v @ Some(_) => {
-                self.index += 1;
-                v
-            }
-            e @ None => e,
-        }
-    }
-
-    fn nth(&mut self, n: usize) -> Option<Self::Item> {
-        self.index += n as u32;
-        self.next()
-    }
-}
-
-/// Iterator over values
-pub struct EnumValues<'key> {
-    key: &'key RegKey,
-    index: u32,
-}
-
-impl Iterator for EnumValues<'_> {
-    type Item = io::Result<(String, RegValue)>;
-
-    fn next(&mut self) -> Option<io::Result<(String, RegValue)>> {
-        match self.key.enum_value(self.index) {
-            v @ Some(_) => {
-                self.index += 1;
-                v
-            }
-            e @ None => e,
-        }
-    }
-
-    fn nth(&mut self, n: usize) -> Option<Self::Item> {
-        self.index += n as u32;
-        self.next()
-    }
-}
+/// The predefined `HKEY_CLASSES_ROOT` registry key
+pub const HKCR: &RegKey = &RegKey::predef(HKEY_CLASSES_ROOT);
+/// The predefined `HKEY_CURRENT_USER` registry key
+pub const HKCU: &RegKey = &RegKey::predef(HKEY_CURRENT_USER);
+/// The predefined `HKEY_LOCAL_MACHINE` registry key
+pub const HKLM: &RegKey = &RegKey::predef(HKEY_LOCAL_MACHINE);
+/// The predefined `HKEY_USERS` registry key
+pub const HKU: &RegKey = &RegKey::predef(HKEY_USERS);
+/// The predefined `HKEY_CURRENT_CONFIG` registry key
+pub const HKCC: &RegKey = &RegKey::predef(HKEY_CURRENT_CONFIG);

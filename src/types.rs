@@ -111,7 +111,7 @@ impl FromRegValue for Vec<OsString> {
 macro_rules! try_from_reg_value_int {
     ($val:expr, $map:expr) => {
         $val.bytes
-            .as_slice()
+            .as_ref()
             .try_into()
             .map($map)
             .map_err(|_| io::Error::from_raw_os_error(Foundation::ERROR_INVALID_DATA as i32))
@@ -141,15 +141,15 @@ impl FromRegValue for u64 {
 ///
 /// **NOTE:** Adds trailing `NULL` character to `str`, `String`, `OsStr` and `OsString` values
 pub trait ToRegValue {
-    fn to_reg_value(&self) -> RegValue;
+    fn to_reg_value(&self) -> RegValue<'_>;
 }
 
 macro_rules! to_reg_value_sz {
     ($t:ty$(, $l:lifetime)*) => {
         impl<$($l,)*> ToRegValue for $t {
-            fn to_reg_value(&self) -> RegValue {
+            fn to_reg_value(&self) -> RegValue<'_> {
                 RegValue {
-                    bytes: v16_to_v8(&to_utf16(self)),
+                    bytes: v16_to_v8(&to_utf16(self)).into(),
                     vtype: REG_SZ,
                 }
             }
@@ -165,7 +165,7 @@ to_reg_value_sz!(&'a OsStr, 'a);
 macro_rules! to_reg_value_multi_sz {
     ($t:ty$(, $l:lifetime)*) => {
         impl<$($l,)*> ToRegValue for Vec<$t> {
-            fn to_reg_value(&self) -> RegValue {
+            fn to_reg_value(&self) -> RegValue<'_> {
                 let mut os_strings = self
                     .into_iter()
                     .map(to_utf16)
@@ -173,7 +173,7 @@ macro_rules! to_reg_value_multi_sz {
                     .concat();
                 os_strings.push(0);
                 RegValue {
-                    bytes: v16_to_v8(&os_strings),
+                    bytes: v16_to_v8(&os_strings).into(),
                     vtype: REG_MULTI_SZ,
                 }
             }
@@ -187,22 +187,22 @@ to_reg_value_multi_sz!(OsString);
 to_reg_value_multi_sz!(&'a OsStr, 'a);
 
 impl ToRegValue for u32 {
-    fn to_reg_value(&self) -> RegValue {
+    fn to_reg_value(&self) -> RegValue<'_> {
         let bytes: Vec<u8> =
             unsafe { slice::from_raw_parts((self as *const u32) as *const u8, 4).to_vec() };
         RegValue {
-            bytes,
+            bytes: bytes.into(),
             vtype: REG_DWORD,
         }
     }
 }
 
 impl ToRegValue for u64 {
-    fn to_reg_value(&self) -> RegValue {
+    fn to_reg_value(&self) -> RegValue<'_> {
         let bytes: Vec<u8> =
             unsafe { slice::from_raw_parts((self as *const u64) as *const u8, 8).to_vec() };
         RegValue {
-            bytes,
+            bytes: bytes.into(),
             vtype: REG_QWORD,
         }
     }

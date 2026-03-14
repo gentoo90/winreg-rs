@@ -12,12 +12,11 @@
 //!use std::io;
 //!use winreg::enums::*;
 //!use winreg::transaction::Transaction;
-//!use winreg::RegKey;
+//!use winreg::HKCU;
 //!
 //!fn main() -> io::Result<()> {
 //!    let t = Transaction::new()?;
-//!    let hkcu = RegKey::predef(HKEY_CURRENT_USER);
-//!    let (key, _disp) = hkcu.create_subkey_transacted("Software\\RustTransaction", &t)?;
+//!    let (key, _disp) = HKCU.create_subkey_transacted("Software\\RustTransaction", &t)?;
 //!    key.set_value("TestQWORD", &1_234_567_891_011_121_314u64)?;
 //!    key.set_value("TestDWORD", &1_234_567_890u32)?;
 //!
@@ -40,6 +39,7 @@
 //!}
 //!```
 use std::io;
+use std::os::windows::io::{AsRawHandle, FromRawHandle, IntoRawHandle, RawHandle};
 use std::ptr;
 use windows_sys::Win32::Foundation;
 use windows_sys::Win32::Storage::FileSystem;
@@ -106,5 +106,25 @@ impl Drop for Transaction {
 impl AsRef<Transaction> for Transaction {
     fn as_ref(&self) -> &Transaction {
         self
+    }
+}
+
+impl FromRawHandle for Transaction {
+    #[inline]
+    unsafe fn from_raw_handle(handle: RawHandle) -> Transaction {
+        Transaction { handle }
+    }
+}
+
+impl IntoRawHandle for Transaction {
+    #[inline]
+    fn into_raw_handle(self) -> RawHandle {
+        self.handle
+    }
+}
+
+impl AsRawHandle for Transaction {
+    fn as_raw_handle(&self) -> RawHandle {
+        self.handle
     }
 }

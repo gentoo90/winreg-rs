@@ -171,3 +171,46 @@ fn test_serialization_all_transacted() {
         assert_eq!(v2, v1);
     });
 }
+
+#[test]
+fn test_serialization_destructive() {
+    with_key!(key, "SerializationDestructive" => {
+        let v1 = Rectangle {
+            coords: Some(Coords { x: 55, y: 77 }),
+            size: Size { w: 500, h: 300 },
+        };
+        key.encode(&v1).unwrap();
+
+        let v2 = Rectangle {
+            coords: None,
+            size: Size { w: 500, h: 300 },
+        };
+        key.encode_destructive(&v2).unwrap();
+
+        let v3: Rectangle = key.decode().unwrap();
+        assert_eq!(v3, v2);
+    });
+}
+
+#[test]
+fn test_serialization_destructive_transacted() {
+    with_key!(key, "SerializationDestructiveTransacted" => {
+        let v1 = Rectangle {
+            coords: Some(Coords { x: 55, y: 77 }),
+            size: Size { w: 500, h: 300 },
+        };
+        key.encode(&v1).unwrap();
+
+        let v2 = Rectangle {
+            coords: None,
+            size: Size { w: 500, h: 300 },
+        };
+
+        let transaction = winreg::transaction::Transaction::new().unwrap();
+        key.encode_destructive_transacted(&v2, &transaction).unwrap();
+        transaction.commit().unwrap();
+
+        let v3: Rectangle = key.decode().unwrap();
+        assert_eq!(v3, v2);
+    });
+}

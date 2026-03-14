@@ -5,6 +5,7 @@
 // except according to those terms.
 
 //! `use winreg::enums::*;` to import all needed enumerations and constants
+pub use windows_sys::Win32::Storage::FileSystem::DELETE;
 pub use windows_sys::Win32::System::Registry::{
     HKEY_CLASSES_ROOT, HKEY_CURRENT_CONFIG, HKEY_CURRENT_USER, HKEY_CURRENT_USER_LOCAL_SETTINGS,
     HKEY_DYN_DATA, HKEY_LOCAL_MACHINE, HKEY_PERFORMANCE_DATA, HKEY_PERFORMANCE_NLSTEXT,

@@ -1,5 +1,16 @@
 # Changelog
 
+## 0.56
+* Set `windows-sys` version to `>=0.59, <=0.61` according to its README recomendation.
+
+## 0.16.0, 0.56
+* Breaking change: `RegValue.bytes` is now `Cow<[u8]>` and not `Vec<u8>` which introduces a lifetime to the structure ([#64](https://github.com/gentoo90/winreg-rs/issues/64)).
+* Breaking change: serialization now opens the key with `DELETE`, `KEY_ENUMERATE_SUB_KEYS` and `KEY_QUERY_VALUE` permissions in addition to `KEY_CREATE_SUB_KEY` and `KEY_SET_VALUE` used previously. This is required for:
+* New `RegKey` methods: `encode_destructive()` and `encode_destructive_transacted()` that wipe all subkeys/values of a target key before writing to it ([#76](https://github.com/gentoo90/winreg-rs/issues/76)).
+* New `RegKey` methods: `enum_keys_os_string()` and `enum_values_os_string()` return iterators that use `OsString` for key/value names ([#80](https://github.com/gentoo90/winreg-rs/issues/80))
+* Add `const`s for predefined registry keys: `HKCR`, `HKCU`, `HKLM`, `HKU` and `HKCC`
+* Implement `std` traits [`FromRawHandle`](https://doc.rust-lang.org/beta/std/os/windows/io/trait.FromRawHandle.html), [`IntoRawHandle`](https://doc.rust-lang.org/beta/std/os/windows/io/trait.IntoRawHandle.html) and [`AsRawHandle`](https://doc.rust-lang.org/beta/std/os/windows/io/trait.AsRawHandle.html) for `Transaction`.
+
 ## 0.55.0
 * Breaking change: Increate MSRV to 1.60
 * Breaking change: Upgrade `windows-sys` to version 0.59 ([#77](https://github.com/gentoo90/winreg-rs/pull/77))

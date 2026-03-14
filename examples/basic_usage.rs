@@ -6,12 +6,11 @@
 use std::io;
 use std::path::Path;
 use winreg::enums::*;
-use winreg::RegKey;
+use winreg::{HKCU, HKLM};
 
 fn main() -> io::Result<()> {
     println!("Reading some system info...");
-    let hklm = RegKey::predef(HKEY_LOCAL_MACHINE);
-    let cur_ver = hklm.open_subkey("SOFTWARE\\Microsoft\\Windows\\CurrentVersion")?;
+    let cur_ver = HKLM.open_subkey("SOFTWARE\\Microsoft\\Windows\\CurrentVersion")?;
     let pf: String = cur_ver.get_value("ProgramFilesDir")?;
     let dp: String = cur_ver.get_value("DevicePath")?;
     println!("ProgramFiles = {}\nDevicePath = {}", pf, dp);
@@ -28,9 +27,8 @@ fn main() -> io::Result<()> {
     );
 
     println!("And now lets write something...");
-    let hkcu = RegKey::predef(HKEY_CURRENT_USER);
     let path = Path::new("Software").join("WinregRsExample1");
-    let (key, disp) = hkcu.create_subkey(&path)?;
+    let (key, disp) = HKCU.create_subkey(&path)?;
 
     match disp {
         REG_CREATED_NEW_KEY => println!("A new key has been created"),
@@ -56,10 +54,10 @@ fn main() -> io::Result<()> {
     println!("TestQWORD = {}", qword_val);
 
     key.create_subkey("sub\\key")?;
-    hkcu.delete_subkey_all(&path)?;
+    HKCU.delete_subkey_all(&path)?;
 
     println!("Trying to open nonexistent key...");
-    hkcu.open_subkey(&path).unwrap_or_else(|e| match e.kind() {
+    HKCU.open_subkey(&path).unwrap_or_else(|e| match e.kind() {
         io::ErrorKind::NotFound => panic!("Key doesn't exist"),
         io::ErrorKind::PermissionDenied => panic!("Access denied"),
         _ => panic!("{:?}", e),

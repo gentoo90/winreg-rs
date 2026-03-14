@@ -47,12 +47,48 @@ jobs:
         uses: actions-rs/cargo@v1
         with:
           command: generate-lockfile
+      - name: Restrict windows-sys version
+        if: matrix.restrict_deps_versions
+        uses: actions-rs/cargo@v1
+        with:
+          command: update
+          args: --package windows-sys --precise 0.60.2
+      - name: Restrict serde_bytes version
+        if: matrix.restrict_deps_versions
+        uses: actions-rs/cargo@v1
+        with:
+          command: update
+          args: --package serde_bytes --precise 0.11.16
+      - name: Restrict itoa version
+        if: matrix.restrict_deps_versions
+        uses: actions-rs/cargo@v1
+        with:
+          command: update
+          args: --package itoa --precise 1.0.15
+      - name: Restrict serde_json version
+        if: matrix.restrict_deps_versions
+        uses: actions-rs/cargo@v1
+        with:
+          command: update
+          args: --package serde_json --precise 1.0.143
+      - name: Restrict ryu version
+        if: matrix.restrict_deps_versions
+        uses: actions-rs/cargo@v1
+        with:
+          command: update
+          args: --package ryu --precise 1.0.20
       - name: Restrict serde version
         if: matrix.restrict_deps_versions
         uses: actions-rs/cargo@v1
         with:
           command: update
           args: --package serde --precise 1.0.210
+      - name: Restrict unicode-ident version
+        if: matrix.restrict_deps_versions
+        uses: actions-rs/cargo@v1
+        with:
+          command: update
+          args: --package unicode-ident --precise 1.0.22
       - name: Restrict syn version
         if: matrix.restrict_deps_versions
         uses: actions-rs/cargo@v1
@@ -65,6 +101,18 @@ jobs:
         with:
           command: update
           args: --package chrono --precise 0.4.31
+      - name: Restrict quote version
+        if: matrix.restrict_deps_versions
+        uses: actions-rs/cargo@v1
+        with:
+          command: update
+          args: --package quote --precise 1.0.41
+      - name: Restrict proc-macro2 version
+        if: matrix.restrict_deps_versions
+        uses: actions-rs/cargo@v1
+        with:
+          command: update
+          args: --package proc-macro2 --precise 1.0.103
       - name: Restrict libc version
         if: matrix.restrict_deps_versions
         uses: actions-rs/cargo@v1

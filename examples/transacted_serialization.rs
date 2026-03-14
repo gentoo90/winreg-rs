@@ -6,8 +6,9 @@
 use serde_derive::{Deserialize, Serialize};
 use std::collections::HashMap;
 use std::error::Error;
-use winreg::enums::*;
+use std::io;
 use winreg::transaction::Transaction;
+use winreg::HKCU;
 
 #[derive(Debug, Serialize, Deserialize, PartialEq)]
 struct Coords {
@@ -53,8 +54,7 @@ struct Test {
 
 fn main() -> Result<(), Box<dyn Error>> {
     let transaction = Transaction::new()?;
-    let hkcu = winreg::RegKey::predef(HKEY_CURRENT_USER);
-    let (key, _disp) = hkcu.create_subkey_transacted("Software\\RustEncode", &transaction)?;
+    let (key, _disp) = HKCU.create_subkey_transacted("Software\\RustEncode", &transaction)?;
 
     let mut map = HashMap::new();
     map.insert("".to_owned(), 0); // empty name becomes the (Default) value in the registry
@@ -86,12 +86,26 @@ fn main() -> Result<(), Box<dyn Error>> {
         t_f32: 3.15,
     };
 
-    key.encode_transacted(&v1, &transaction).unwrap();
-    transaction.commit().unwrap();
+    key.encode_transacted(&v1, &transaction)?;
 
-    let key = hkcu.open_subkey("Software\\RustEncode")?;
+    println!("Commit transaction? [y/N]:");
+    let mut input = String::new();
+    io::stdin().read_line(&mut input)?;
+    input = input.trim_end().to_owned();
+    if input == "y" || input == "Y" {
+        transaction.commit()?;
+        println!("Transaction committed.");
+    } else {
+        // this is optional, if transaction wasn't committed,
+        // it will be rolled back on disposal
+        transaction.rollback()?;
 
-    let v2: Test = key.decode().unwrap();
+        println!("Transaction wasn't committed, it will be rolled back.");
+    }
+
+    let key = HKCU.open_subkey("Software\\RustEncode")?;
+
+    let v2: Test = key.decode()?;
     println!("Decoded {:?}", v2);
 
     println!("Equal to encoded: {:?}", v1 == v2);
