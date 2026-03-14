@@ -5,7 +5,9 @@
 // except according to those terms.
 use crate::common::*;
 use crate::enum_keys::EnumKeys;
+use crate::enum_keys_os_string::EnumKeysOsString;
 use crate::enum_values::EnumValues;
+use crate::enum_values_os_string::EnumValuesOsString;
 use crate::enums::{self, *};
 use crate::reg_key_metadata::RegKeyMetadata;
 use crate::reg_value::RegValue;
@@ -13,9 +15,10 @@ use crate::reg_value::RegValue;
 use crate::transaction::Transaction;
 use crate::types::{FromRegValue, ToRegValue};
 use std::default::Default;
-use std::ffi::OsStr;
+use std::ffi::{OsStr, OsString};
 use std::io;
 use std::mem::transmute;
+use std::os::windows::ffi::OsStringExt;
 use std::ptr;
 pub use winapi::shared::minwindef::HKEY;
 use winapi::shared::minwindef::{BYTE, DWORD, LPBYTE};
@@ -444,7 +447,7 @@ impl RegKey {
         }
     }
 
-    /// Return an iterator over subkeys names.
+    /// Return an iterator over subkeys names as `String`s.
     ///
     /// # Examples
     ///
@@ -464,7 +467,31 @@ impl RegKey {
         }
     }
 
-    /// Return an iterator over values.
+    /// Return an iterator over subkeys names as `OsString`s.
+    ///
+    /// # Examples
+    ///
+    /// ```no_run
+    /// # use std::error::Error;
+    /// # use winreg::HKCU;
+    /// # fn main() -> Result<(), Box<dyn Error>> {
+    /// println!("File extensions, registered in this system:");
+    /// let settings = HKCU.open_subkey("Software\\MyProduct\\Settings")?;
+    /// for i in settings.enum_keys_os_string().map(|x| x.unwrap())
+    /// {
+    ///     println!("{:?}", i);
+    /// }
+    /// # Ok(())
+    /// # }
+    /// ```
+    pub const fn enum_keys_os_string(&self) -> EnumKeysOsString<'_> {
+        EnumKeysOsString {
+            key: self,
+            index: 0,
+        }
+    }
+
+    /// Return an iterator over values represented as `(String, RegValue)`.
     ///
     /// # Examples
     ///
@@ -482,6 +509,29 @@ impl RegKey {
     /// ```
     pub const fn enum_values(&self) -> EnumValues<'_> {
         EnumValues {
+            key: self,
+            index: 0,
+        }
+    }
+
+    /// Return an iterator over values represented as `(OsString, RegValue)`.
+    ///
+    /// # Examples
+    ///
+    /// ```no_run
+    /// # use std::error::Error;
+    /// # use winreg::enums::*;
+    /// # use winreg::HKLM;
+    /// # fn main() -> Result<(), Box<dyn Error>> {
+    /// let system = HKLM.open_subkey_with_flags("HARDWARE\\DESCRIPTION\\System", KEY_READ)?;
+    /// for (name, value) in system.enum_values_os_string().map(|x| x.unwrap()) {
+    ///     println!("{:?} = {:?}", name, value);
+    /// }
+    /// # Ok(())
+    /// # }
+    /// ```
+    pub const fn enum_values_os_string(&self) -> EnumValuesOsString<'_> {
+        EnumValuesOsString {
             key: self,
             index: 0,
         }
@@ -1016,7 +1066,7 @@ impl RegKey {
         }
     }
 
-    pub(crate) fn enum_key(&self, index: DWORD) -> Option<io::Result<String>> {
+    pub(crate) fn enum_key(&self, index: DWORD) -> Option<io::Result<OsString>> {
         let mut name_len = 2048;
         #[allow(clippy::unnecessary_cast)]
         let mut name = [0 as WCHAR; 2048];
@@ -1032,10 +1082,7 @@ impl RegKey {
                 ptr::null_mut(), // lpftLastWriteTime: PFILETIME,
             ) as DWORD
         } {
-            0 => match String::from_utf16(&name[..name_len as usize]) {
-                Ok(s) => Some(Ok(s)),
-                Err(_) => Some(werr!(winerror::ERROR_INVALID_BLOCK)),
-            },
+            0 => Some(Ok(OsString::from_wide(&name[..name_len as usize]))),
             winerror::ERROR_NO_MORE_ITEMS => None,
             err => Some(werr!(err)),
         }
@@ -1044,7 +1091,7 @@ impl RegKey {
     pub(crate) fn enum_value(
         &self,
         index: DWORD,
-    ) -> Option<io::Result<(String, RegValue<'static>)>> {
+    ) -> Option<io::Result<(OsString, RegValue<'static>)>> {
         let mut name_len = 2048;
         #[allow(clippy::unnecessary_cast)]
         let mut name = [0 as WCHAR; 2048];
@@ -1066,10 +1113,7 @@ impl RegKey {
                 ) as DWORD
             } {
                 0 => {
-                    let name = match String::from_utf16(&name[..name_len as usize]) {
-                        Ok(s) => s,
-                        Err(_) => return Some(werr!(winerror::ERROR_INVALID_DATA)),
-                    };
+                    let name = OsString::from_wide(&name[..name_len as usize]);
                     unsafe {
                         buf.set_len(buf_len as usize);
                     }

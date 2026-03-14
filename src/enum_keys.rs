@@ -5,7 +5,7 @@
 // except according to those terms.
 use crate::RegKey;
 use std::io;
-use winapi::shared::minwindef::DWORD;
+use winapi::shared::{minwindef::DWORD, winerror};
 
 /// Iterator over subkeys names
 pub struct EnumKeys<'key> {
@@ -18,11 +18,18 @@ impl Iterator for EnumKeys<'_> {
 
     fn next(&mut self) -> Option<io::Result<String>> {
         match self.key.enum_key(self.index) {
-            v @ Some(_) => {
+            None => None,
+            Some(Err(err)) => {
                 self.index += 1;
-                v
+                Some(Err(err))
             }
-            e @ None => e,
+            Some(Ok(name_os_string)) => {
+                self.index += 1;
+                match name_os_string.into_string() {
+                    Ok(name_string) => Some(Ok(name_string)),
+                    Err(_) => Some(werr!(winerror::ERROR_INVALID_DATA)),
+                }
+            }
         }
     }
 

@@ -5,7 +5,7 @@
 // except according to those terms.
 use crate::{RegKey, RegValue};
 use std::io;
-use winapi::shared::minwindef::DWORD;
+use winapi::shared::{minwindef::DWORD, winerror};
 
 /// Iterator over values
 pub struct EnumValues<'key> {
@@ -18,11 +18,18 @@ impl<'a> Iterator for EnumValues<'a> {
 
     fn next(&mut self) -> Option<io::Result<(String, RegValue<'static>)>> {
         match self.key.enum_value(self.index) {
-            v @ Some(_) => {
+            None => None,
+            Some(Err(err)) => {
                 self.index += 1;
-                v
+                Some(Err(err))
             }
-            e @ None => e,
+            Some(Ok((name_os_string, value))) => {
+                self.index += 1;
+                match name_os_string.into_string() {
+                    Ok(name_string) => Some(Ok((name_string, value))),
+                    Err(_) => Some(werr!(winerror::ERROR_INVALID_DATA)),
+                }
+            }
         }
     }
 

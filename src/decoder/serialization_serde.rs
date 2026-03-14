@@ -7,6 +7,7 @@ use super::{DecodeResult, Decoder, DecoderCursor, DecoderError, DECODER_SAM};
 use crate::{types::FromRegValue, RegValue};
 use serde::de::*;
 use std::fmt;
+use winapi::shared::winerror;
 
 impl Error for DecoderError {
     fn custom<T: fmt::Display>(msg: T) -> Self {
@@ -313,7 +314,12 @@ impl<'de> MapAccess<'de> for Decoder {
             }
             Key(index) => match self.key.enum_key(index) {
                 Some(res) => {
-                    self.cursor = KeyName(index, res?);
+                    self.cursor = KeyName(
+                        index,
+                        res?.into_string().map_err(|_| {
+                            std::io::Error::from_raw_os_error(winerror::ERROR_INVALID_DATA as i32)
+                        })?,
+                    );
                     seed.deserialize(&mut *self).map(Some)
                 }
                 None => {
@@ -325,7 +331,14 @@ impl<'de> MapAccess<'de> for Decoder {
                 let next_value = self.key.enum_value(index);
                 match next_value {
                     Some(res) => {
-                        self.cursor = FieldName(index, res?.0);
+                        self.cursor = FieldName(
+                            index,
+                            res?.0.into_string().map_err(|_| {
+                                std::io::Error::from_raw_os_error(
+                                    winerror::ERROR_INVALID_DATA as i32,
+                                )
+                            })?,
+                        );
                         seed.deserialize(&mut *self).map(Some)
                     }
                     None => Ok(None),

@@ -236,6 +236,19 @@ fn test_enum_keys() {
 }
 
 #[test]
+fn test_enum_keys_os_string() {
+    with_key!(key, "EnumKeysOsString" => {
+        let mut keys1 = vec!("qwerty", "asdf", "1", "2", "3", "5", "8", "йцукен");
+        keys1.sort_unstable();
+        for i in &keys1 {
+            key.create_subkey(i).unwrap();
+        }
+        let keys2: Vec<_> = key.enum_keys_os_string().map(|x| x.unwrap()).collect();
+        assert_eq!(keys1, keys2);
+    });
+}
+
+#[test]
 fn test_enum_values() {
     with_key!(key, "EnumValues" => {
         let mut vals1 = vec!("qwerty", "asdf", "1", "2", "3", "5", "8", "йцукен");
@@ -243,9 +256,30 @@ fn test_enum_values() {
         for i in &vals1 {
             key.set_value(i,i).unwrap();
         }
-        let mut vals2: Vec<String> = Vec::with_capacity(vals1.len());
-        let mut vals3: Vec<String> = Vec::with_capacity(vals1.len());
+        let mut vals2: Vec<_> = Vec::with_capacity(vals1.len());
+        let mut vals3: Vec<_> = Vec::with_capacity(vals1.len());
         for (name, val) in key.enum_values()
+            .map(|x| x.unwrap())
+        {
+            vals2.push(name);
+            vals3.push(String::from_reg_value(&val).unwrap());
+        }
+        assert_eq!(vals1, vals2);
+        assert_eq!(vals1, vals3);
+    });
+}
+
+#[test]
+fn test_enum_values_os_string() {
+    with_key!(key, "EnumValuesOsString" => {
+        let mut vals1 = vec!("qwerty", "asdf", "1", "2", "3", "5", "8", "йцукен");
+        vals1.sort_unstable();
+        for i in &vals1 {
+            key.set_value(i,i).unwrap();
+        }
+        let mut vals2: Vec<_> = Vec::with_capacity(vals1.len());
+        let mut vals3: Vec<_> = Vec::with_capacity(vals1.len());
+        for (name, val) in key.enum_values_os_string()
             .map(|x| x.unwrap())
         {
             vals2.push(name);

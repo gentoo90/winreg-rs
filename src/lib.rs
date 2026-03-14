@@ -111,7 +111,9 @@ cfg_if::cfg_if! {
     } else {
         pub use crate::reg_key::{RegKey, HKEY, HKCC, HKCR, HKCU, HKLM, HKU};
         pub use crate::enum_keys::EnumKeys;
+        pub use crate::enum_keys_os_string::EnumKeysOsString;
         pub use crate::enum_values::EnumValues;
+        pub use crate::enum_values_os_string::EnumValuesOsString;
         pub use crate::reg_key_metadata::RegKeyMetadata;
         pub use crate::reg_value::RegValue;
 
@@ -125,7 +127,9 @@ cfg_if::cfg_if! {
         pub mod reg_key_metadata;
         pub mod reg_value;
         pub mod enum_keys;
+        pub mod enum_keys_os_string;
         pub mod enum_values;
+        pub mod enum_values_os_string;
         #[cfg(feature = "transactions")]
         pub mod transaction;
         pub mod types;
